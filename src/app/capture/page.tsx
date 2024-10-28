@@ -1,6 +1,5 @@
 "use client";
 
-import Toolbar from "@/components/Toolbar";
 import VideoControlsLauncher from "@/components/VideoControlsLauncher";
 
 export default function page() {
