@@ -180,8 +180,7 @@ function handleError(
   set: (
     partial:
       | Partial<PaymentsStoreState>
-      | ((state: PaymentsStoreState) => Partial<PaymentsStoreState>),
-    replace?: boolean
+      | ((state: PaymentsStoreState) => Partial<PaymentsStoreState>)
   ) => void,
   error: unknown,
   defaultMessage: string
