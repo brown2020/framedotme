@@ -1,14 +1,31 @@
+// components/VideoControlsPage.tsx
 "use client";
 
-import useScreenRecorder from "@/hooks/useScreenRecorder";
 import React, { useEffect, useRef, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import useScreenRecorder from "@/hooks/useScreenRecorder";
+import { cn } from "@/lib/utils";
 
 export default function VideoControlsPage() {
   const [videoWidth, setVideoWidth] = useState(0);
   const [videoHeight, setVideoHeight] = useState(0);
-  const { recorderStatus, initializeRecorder, screenStream, resetRecorder } =
-    useScreenRecorder();
+  const {
+    recorderStatus,
+    updateStatus,
+    initializeRecorder,
+    screenStream,
+    resetRecorder,
+    error,
+  } = useScreenRecorder();
   const screenVideoElem = useRef<HTMLVideoElement | null>(null);
+
+  // Add auto-initialization
+  useEffect(() => {
+    if (recorderStatus === "idle") {
+      initializeRecorder();
+    }
+  }, [recorderStatus, initializeRecorder]);
 
   useEffect(() => {
     const currentScreenVideoElem = screenVideoElem.current;
@@ -25,9 +42,9 @@ export default function VideoControlsPage() {
       updateVideoDimensions();
     };
 
-    if (currentScreenVideoElem && screenStream.current) {
-      currentScreenVideoElem.srcObject = screenStream.current;
-      currentScreenVideoElem.play();
+    if (currentScreenVideoElem && screenStream) {
+      currentScreenVideoElem.srcObject = screenStream;
+      currentScreenVideoElem.play().catch(console.error);
       currentScreenVideoElem.addEventListener(
         "loadedmetadata",
         handleLoadedMetadata
@@ -45,54 +62,94 @@ export default function VideoControlsPage() {
       }
       clearInterval(intervalId);
     };
-  }, [screenStream, recorderStatus]);
+  }, [screenStream]);
 
-  const buttonText =
-    recorderStatus === "idle" ? "Initialize Recording" : recorderStatus;
+  const handleRecordingControl = () => {
+    if (recorderStatus === "idle") {
+      initializeRecorder();
+    } else if (recorderStatus === "ready") {
+      updateStatus("shouldStart");
+    } else if (recorderStatus === "recording") {
+      updateStatus("shouldStop");
+    }
+  };
 
-  const buttonDisabled =
-    recorderStatus === "ready" ||
-    recorderStatus === "shouldStart" ||
-    recorderStatus === "shouldStop" ||
-    recorderStatus === "starting" ||
-    recorderStatus === "recording" ||
-    recorderStatus === "saving";
+  const getRecordButtonText = () => {
+    switch (recorderStatus) {
+      case "idle":
+        return "Initialize Recording";
+      case "ready":
+        return "Start Recording";
+      case "recording":
+        return "Stop Recording";
+      case "saving":
+        return "Saving...";
+      default:
+        return "Initialize Recording";
+    }
+  };
 
-  const buttonClass = `px-4 py-2 w-40 text-white rounded-md mr-auto disabled:opacity-50 w-full ${
-    recorderStatus === "recording" ? "bg-red-500" : "bg-green-500"
-  }`;
+  const getRecordButtonClass = () => {
+    switch (recorderStatus) {
+      case "recording":
+        return "bg-red-500 hover:bg-red-600";
+      case "ready":
+        return "bg-green-500 hover:bg-green-600";
+      case "saving":
+        return "bg-yellow-500 hover:bg-yellow-600";
+      default:
+        return "";
+    }
+  };
+
+  const isRecordButtonDisabled = !["idle", "ready", "recording"].includes(
+    recorderStatus
+  );
 
   return (
     <div className="flex flex-col space-y-3 h-full p-4">
-      <div className="text-2xl">Video Controls</div>
-      <p>Status from Local Storage: {recorderStatus}</p>
-      <p>
-        Please go back to the main tab and interact as needed. Control your
-        recording here:
-      </p>
-      <button
-        className={buttonClass}
-        onClick={initializeRecorder}
-        disabled={buttonDisabled}
-      >
-        {buttonText}
-      </button>
+      <div className="text-2xl font-bold">Video Controls</div>
 
-      <button className="btn bg-green-500" onClick={resetRecorder}>
-        Reset
-      </button>
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="w-full border mr-auto">
+      <p className="text-sm text-gray-600">Status: {recorderStatus}</p>
+
+      <div className="flex gap-2">
+        <Button
+          variant="default"
+          className={cn(getRecordButtonClass())}
+          onClick={handleRecordingControl}
+          disabled={isRecordButtonDisabled}
+        >
+          {getRecordButtonText()}
+        </Button>
+
+        <Button
+          variant="secondary"
+          onClick={resetRecorder}
+          disabled={
+            recorderStatus === "recording" || recorderStatus === "saving"
+          }
+        >
+          Reset
+        </Button>
+      </div>
+
+      <div className="w-full border border-gray-200 rounded-lg overflow-hidden">
         <video
           ref={screenVideoElem}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-contain bg-black"
           autoPlay
           muted
           controls
         />
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 text-sm text-gray-600">
         <div className="flex flex-col">
           <div>Width: {videoWidth}px</div>
           <div>Height: {videoHeight}px</div>

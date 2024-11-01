@@ -1,6 +1,11 @@
+// components/VideoControlsLauncher.tsx
+"use client";
+
 import React, { useEffect, useRef } from "react";
 import { VideoIcon } from "lucide-react";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function VideoControlsLauncher() {
   const { recorderStatus, updateStatus } = useRecorderStatusStore();
@@ -19,19 +24,20 @@ export default function VideoControlsLauncher() {
     } else {
       const width = 400;
       const height = 660;
-      const left = 0;
+      const left = window.screen.width - width;
       const top = 0;
 
       const features = `width=${width},height=${height},left=${left},top=${top}`;
 
-      // Open a new window with the specified features
+      // Reset status before opening window
+      updateStatus("idle");
+
       videoControlsWindowRef.current = window.open(
         "/videocontrols",
         "videoControlsWindow",
         features
       );
 
-      // Add event listener for the window close event
       videoControlsWindowRef.current?.addEventListener("beforeunload", () => {
         videoControlsWindowRef.current = null;
       });
@@ -56,23 +62,28 @@ export default function VideoControlsLauncher() {
   const getButtonClass = () => {
     switch (recorderStatus) {
       case "recording":
-        return "bg-red-500 opacity-100"; // Class for recording state
+        return "bg-red-500 hover:bg-red-600";
       case "ready":
-        return "bg-yellow-500 opacity-100"; // Class for starting/saving state
-      case "idle":
-      case "starting":
-      case "saving":
+        return "bg-yellow-500 hover:bg-yellow-600";
+      case "error":
+        return "bg-destructive hover:bg-destructive/90";
       default:
-        return "bg-transparent hover:bg-white/30 opacity-50 hover:opacity-100 focus:bg-white/30 focus:opacity-100"; // Default class
+        return "bg-transparent hover:bg-white/30";
     }
   };
 
-  const buttonClass = `flex flex-col h-full items-center justify-center px-2 py-1 w-full text-white transition-opacity duration-500 flex-shrink-0 focus:outline-none focus:transition-none ${getButtonClass()}`;
-
   return (
-    <button className={buttonClass} onClick={openVideoControls}>
+    <Button
+      variant="ghost"
+      className={cn(
+        "flex flex-col h-full items-center justify-center px-2 py-1 w-full",
+        "text-white transition-all duration-200",
+        getButtonClass()
+      )}
+      onClick={openVideoControls}
+    >
       <VideoIcon className="h-6 w-6 mx-auto" />
       <div className="text-xs">Record</div>
-    </button>
+    </Button>
   );
 }

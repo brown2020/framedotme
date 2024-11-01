@@ -9,7 +9,8 @@ import useAuthToken from "@/hooks/useAuthToken";
 import { useInitializeStores } from "@/zustand/useInitializeStores";
 
 import { usePathname, useRouter } from "next/navigation";
-import ErrorBoundary from "./ErrorBoundary";
+import { RecorderStatusProvider } from "./RecorderStatusProvider";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export function ClientProvider({ children }: { children: React.ReactNode }) {
   const { loading, uid } = useAuthToken(process.env.NEXT_PUBLIC_COOKIE_NAME!);
@@ -75,10 +76,17 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
       </ErrorBoundary>
     );
 
+  // Only wrap children with RecorderStatusProvider when user is authenticated
+  const wrappedChildren = uid ? (
+    <RecorderStatusProvider>{children}</RecorderStatusProvider>
+  ) : (
+    children
+  );
+
   return (
     <ErrorBoundary>
       <div className="flex flex-col h-full">
-        {children}
+        {wrappedChildren}
         {!window.ReactNativeWebView && (
           <CookieConsent>
             This app uses cookies to enhance the user experience.
