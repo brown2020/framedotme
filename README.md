@@ -13,7 +13,7 @@ Frame.me is a streamlined screen recording application built with Next.js and Ty
 
 ## Tech Stack
 
-- Next.js 14
+- Next.js 15
 - TypeScript
 - Firebase (Storage & Firestore)
 - Zustand (State Management)
