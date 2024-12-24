@@ -76,7 +76,7 @@ export default function VideoControlsLauncher() {
     <Button
       variant="ghost"
       className={cn(
-        "flex flex-col h-full items-center justify-center px-2 py-1 w-full",
+        "flex flex-col h-full items-center justify-center px-2 py-1 w-full rounded-none",
         "text-white transition-all duration-200",
         getButtonClass()
       )}
