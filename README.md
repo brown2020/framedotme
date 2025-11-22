@@ -13,12 +13,14 @@ Frame.me is a streamlined screen recording application built with Next.js and Ty
 
 ## Tech Stack
 
-- Next.js 15
+- Next.js 16
+- React 19
 - TypeScript
-- Firebase (Storage & Firestore)
-- Zustand (State Management)
-- Tailwind CSS
+- Firebase 12 (Authentication, Storage & Firestore)
+- Zustand 5 (State Management)
+- Tailwind CSS 4
 - shadcn/ui Components
+- Stripe Integration
 
 ## Core Components
 
@@ -26,7 +28,7 @@ Frame.me is a streamlined screen recording application built with Next.js and Ty
 
 - `MediaStreamManager`: Handles screen capture and audio stream management
 - `RecordingManager`: Controls recording operations and chunk management
-- `StorageManager`: Manages Firebase storage operations
+- `storageService`: Manages Firebase storage operations and metadata
 
 ### UI Components
 

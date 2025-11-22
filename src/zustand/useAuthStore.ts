@@ -1,8 +1,8 @@
-import { db } from "@/firebase/firebaseClient";
-import { Timestamp, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { create } from "zustand";
+import { Timestamp } from "firebase/firestore";
+import { updateUserDetailsInFirestore } from "@/services/userService";
 
-interface AuthState {
+export interface AuthState {
   uid: string;
   firebaseUid: string;
   authEmail: string;
@@ -50,39 +50,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const { ...oldState } = get();
     const newState = { ...oldState, ...details };
     set(newState);
-    await updateUserDetailsInFirestore(newState, get().uid);
+    
+    // We only update Firestore if we have a UID
+    if (get().uid) {
+        try {
+            await updateUserDetailsInFirestore(newState, get().uid);
+            console.log("Auth details updated successfully in Firestore.");
+        } catch (error) {
+             console.error("Error updating auth details in Firestore:", error);
+        }
+    }
   },
 
   clearAuthDetails: () => set({ ...defaultAuthState }),
 }));
 
-async function updateUserDetailsInFirestore(
-  details: Partial<AuthState>,
-  uid: string
-) {
-  if (uid) {
-    const userRef = doc(db, `users/${uid}`);
-
-    // Sanitize the details object to exclude any functions
-    const sanitizedDetails = { ...details };
-
-    // Remove any unexpected functions or properties
-    Object.keys(sanitizedDetails).forEach((key) => {
-      if (typeof sanitizedDetails[key as keyof AuthState] === "function") {
-        delete sanitizedDetails[key as keyof AuthState];
-      }
-    });
-
-    console.log("Updating auth details in Firestore:", sanitizedDetails);
-    try {
-      await setDoc(
-        userRef,
-        { ...sanitizedDetails, lastSignIn: serverTimestamp() },
-        { merge: true }
-      );
-      console.log("Auth details updated successfully in Firestore.");
-    } catch (error) {
-      console.error("Error updating auth details in Firestore:", error);
-    }
-  }
-}

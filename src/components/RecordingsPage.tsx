@@ -1,60 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Timestamp,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  orderBy,
-  query,
-} from "@firebase/firestore";
-
-import { deleteObject, ref } from "@firebase/storage";
+import { Timestamp } from "@firebase/firestore";
 import { useAuthStore } from "@/zustand/useAuthStore";
-import { db, storage } from "@/firebase/firebaseClient";
-
-export type VideoType = {
-  id: string;
-  downloadUrl: string;
-  createdAt: Timestamp;
-  filename: string;
-  showOnProfile: boolean;
-  botId?: string;
-  botName?: string;
-  modelId?: string;
-  modelName?: string;
-  language?: string;
-  languageCode?: string;
-};
+import { 
+  fetchUserRecordings, 
+  deleteRecording, 
+  downloadRecording 
+} from "@/services/storageService";
+import { VideoMetadata } from "@/types/video";
 
 export default function RecordingsPage() {
   const uid = useAuthStore((state) => state.uid);
 
-  const [videos, setVideos] = useState<VideoType[]>([]);
-  const [featuredVideo, setFeaturedVideo] = useState<VideoType | null>(null);
+  const [videos, setVideos] = useState<VideoMetadata[]>([]);
+  const [featuredVideo, setFeaturedVideo] = useState<VideoMetadata | null>(null);
 
   useEffect(() => {
     if (!uid) return;
     const fetchVideos = async () => {
       try {
-        const videosRef = collection(db, `users/${uid}/botcasts`);
-        const q = query(videosRef, orderBy("createdAt", "desc"));
-        const querySnapshot = await getDocs(q);
-        const videosData = querySnapshot.docs.map((doc) => ({
-          id: doc.id || doc.data().id || "",
-          downloadUrl: doc.data().downloadUrl || "",
-          createdAt: doc.data().createdAt || Timestamp.now(),
-          filename: doc.data().filename || "",
-          showOnProfile: doc.data().showOnProfile || false,
-          botId: doc.data().botId || "",
-          botName: doc.data().botName || "",
-          modelId: doc.data().modelId || "",
-          modelName: doc.data().modelName || "",
-          language: doc.data().language || "",
-          languageCode: doc.data().languageCode || "",
-        }));
+        const videosData = await fetchUserRecordings(uid);
         setVideos(videosData);
         if (videosData.length > 0) {
           setFeaturedVideo(videosData[0]);
@@ -71,27 +37,18 @@ export default function RecordingsPage() {
   }, [uid]);
 
   const handleFeaturedVideoChange = (
-    video: VideoType,
+    video: VideoMetadata,
     event: React.MouseEvent<HTMLButtonElement>
   ) => {
     event.stopPropagation();
     setFeaturedVideo(video);
   };
 
-  const deleteVideo = async (video: VideoType) => {
+  const handleDeleteVideo = async (video: VideoMetadata) => {
     if (!confirm("Are you sure you want to delete this video?")) return;
 
     try {
-      if (video.filename && video.filename !== "no filename") {
-        const filePath = `${uid}/botcasts/${video.filename}`;
-        const storageRef = ref(storage, filePath);
-        await deleteObject(storageRef);
-      } else {
-        const storageRef = ref(storage, video.downloadUrl);
-        await deleteObject(storageRef);
-      }
-
-      await deleteDoc(doc(db, `users/${uid}/botcasts`, video.id));
+      await deleteRecording(uid, video);
 
       setVideos(videos.filter((v) => v.id !== video.id));
 
@@ -108,24 +65,9 @@ export default function RecordingsPage() {
     setFeaturedVideo(null);
   };
 
-  const downloadVideo = async (video: VideoType) => {
+  const handleDownloadVideo = async (video: VideoMetadata) => {
     try {
-      const response = await fetch(video.downloadUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download =
-        video.filename && video.filename !== "no filename"
-          ? video.filename
-          : "botcasting_video.webm";
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      window.URL.revokeObjectURL(url); // Clean up the URL object
+      await downloadRecording(video);
     } catch (error) {
       console.error("Error downloading the video:", error);
     }
@@ -171,13 +113,13 @@ export default function RecordingsPage() {
             </button>
             <button
               className="text-white bg-blue-500 p-2 rounded-md w-max my-2"
-              onClick={() => downloadVideo(featuredVideo)}
+              onClick={() => handleDownloadVideo(featuredVideo)}
             >
               Download
             </button>
             <button
               className="text-white bg-red-500 p-2 rounded-md w-max my-2"
-              onClick={() => deleteVideo(featuredVideo)}
+              onClick={() => handleDeleteVideo(featuredVideo)}
             >
               Delete
             </button>

@@ -3,7 +3,8 @@ import { useCallback, useRef, useState, useEffect } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
 import { MediaStreamManager } from "../utils/MediaStreamManager";
-import { StorageManager } from "../utils/StorageManager";
+import { uploadRecording } from "@/services/storageService";
+import { downloadBlob } from "@/utils/downloadUtils";
 import { RecordingManager } from "../utils/RecordingManager";
 import { MediaStreamError } from "../types/mediaStreamTypes";
 
@@ -17,16 +18,6 @@ export const useScreenRecorder = () => {
     new MediaStreamManager((status) => updateStatus(status))
   );
   const recordingManager = useRef<RecordingManager>(new RecordingManager());
-  const storageManager = useRef<StorageManager | null>(null);
-
-  // Initialize or update storage manager when uid changes
-  useEffect(() => {
-    if (uid) {
-      storageManager.current = new StorageManager(uid);
-    } else {
-      storageManager.current = null;
-    }
-  }, [uid]);
 
   const handleError = useCallback(
     (error: unknown) => {
@@ -56,7 +47,7 @@ export const useScreenRecorder = () => {
 
   const handleRecordingData = useCallback(
     async (finalBlob: Blob) => {
-      if (!uid || !storageManager.current) {
+      if (!uid) {
         setError("Not authenticated. Please sign in to save recordings.");
         return;
       }
@@ -66,7 +57,8 @@ export const useScreenRecorder = () => {
         const random = Math.floor(Math.random() * 1000);
         const filename = `video_${timestamp}_${random}.webm`;
 
-        await storageManager.current.uploadRecording(
+        await uploadRecording(
+          uid,
           finalBlob,
           filename,
           (progress) => {
@@ -78,17 +70,9 @@ export const useScreenRecorder = () => {
           }
         );
 
-        // Create download link
-        const url = URL.createObjectURL(finalBlob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 100);
+        // Download locally
+        downloadBlob(finalBlob, filename);
+
       } catch (error) {
         handleError(error);
       }

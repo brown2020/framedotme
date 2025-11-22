@@ -1,8 +1,11 @@
 import { create } from "zustand";
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { useAuthStore } from "./useAuthStore";
-import { db } from "@/firebase/firebaseClient";
-import { deleteUser, getAuth } from "firebase/auth";
+import { 
+  fetchUserProfile, 
+  saveUserProfile, 
+  updateUserProfile, 
+  deleteUserAccount 
+} from "@/services/userService";
 
 export interface ProfileType {
   email: string;
@@ -77,30 +80,22 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     if (!uid) return;
 
     try {
-      const userRef = doc(db, `users/${uid}/profile/userData`);
-      const docSnap = await getDoc(userRef);
+      const profileData = await fetchUserProfile(uid);
 
-      const newProfile = docSnap.exists()
-        ? mergeProfileWithDefaults(docSnap.data() as ProfileType, {
-          authEmail,
-          authDisplayName,
-          authPhotoUrl,
-        })
+      const newProfile = profileData
+        ? mergeProfileWithDefaults(profileData, {
+            authEmail,
+            authDisplayName,
+            authPhotoUrl,
+          })
         : createNewProfile(
-          authEmail,
-          authDisplayName,
-          authPhotoUrl,
-          authEmailVerified
-        );
+            authEmail,
+            authDisplayName,
+            authPhotoUrl,
+            authEmailVerified
+          );
 
-      console.log(
-        docSnap.exists()
-          ? "Profile found:"
-          : "No profile found. Creating new profile document.",
-        newProfile
-      );
-
-      await setDoc(userRef, newProfile);
+      await saveUserProfile(uid, newProfile);
       set({ profile: newProfile });
     } catch (error) {
       handleProfileError("fetching or creating profile", error);
@@ -112,33 +107,21 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     if (!uid) return;
 
     try {
-      const userRef = doc(db, `users/${uid}/profile/userData`);
       const updatedProfile = { ...get().profile, ...newProfile };
 
       set({ profile: updatedProfile });
-      await updateDoc(userRef, updatedProfile);
-      console.log("Profile updated successfully");
+      await updateUserProfile(uid, updatedProfile);
     } catch (error) {
       handleProfileError("updating profile", error);
     }
   },
 
   deleteAccount: async () => {
-    const auth = getAuth(); // Get Firebase auth instance
-    const currentUser = auth.currentUser;
-
     const uid = useAuthStore.getState().uid;
-    if (!uid || !currentUser) return;
+    if (!uid) return;
 
     try {
-      const userRef = doc(db, `users/${uid}/profile/userData`);
-      // Delete the user profile data from Firestore
-      await deleteDoc(userRef);
-
-      //Delete the user from Firebase Authentication
-      await deleteUser(currentUser);
-
-      console.log("Account deleted successfully");
+      await deleteUserAccount(uid);
     } catch (error) {
       handleProfileError("deleting account", error);
     }
@@ -153,7 +136,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 
     try {
       const newCredits = profile.credits - amount;
-      await updateCredits(uid, newCredits);
+      await updateUserProfile(uid, { credits: newCredits });
       set({ profile: { ...profile, credits: newCredits } });
       return true;
     } catch (error) {
@@ -170,7 +153,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     const newCredits = profile.credits + amount;
 
     try {
-      await updateCredits(uid, newCredits);
+      await updateUserProfile(uid, { credits: newCredits });
       set({ profile: { ...profile, credits: newCredits } });
     } catch (error) {
       handleProfileError("adding credits", error);
@@ -203,12 +186,6 @@ function createNewProfile(
     useCredits: true,
     runway_ml_api_key: "",
   };
-}
-
-// Helper function to update credits
-async function updateCredits(uid: string, credits: number): Promise<void> {
-  const userRef = doc(db, `users/${uid}/profile/userData`);
-  await updateDoc(userRef, { credits });
 }
 
 // Helper function to handle errors

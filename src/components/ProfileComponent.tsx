@@ -48,6 +48,7 @@ export default function ProfileComponent() {
   }, [addCredits, addPayment]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowCreditsSection(!isIOSReactNativeWebView());
   }, []);
 
