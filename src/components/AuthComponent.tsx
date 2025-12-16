@@ -77,6 +77,8 @@ export default function AuthComponent() {
 
   const handleSignOut = async () => {
     try {
+      // Best-effort: clear server-side session cookie first
+      await fetch("/api/session", { method: "DELETE" });
       await signOut(auth);
       clearAuthDetails();
     } catch (error) {

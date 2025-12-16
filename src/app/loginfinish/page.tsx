@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { FirebaseError } from "firebase/app";
 import useProfileStore from "@/zustand/useProfileStore";
+import { deleteCookie, getCookie } from "cookies-next";
 
 export default function LoginFinishPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function LoginFinishPage() {
 
   useEffect(() => {
     async function attemptSignIn() {
+      let redirectPath = "/capture";
       try {
         if (!isSignInWithEmailLink(auth, window.location.href)) {
           throw new Error("Sign in link is not valid");
@@ -61,6 +63,11 @@ export default function LoginFinishPage() {
           authDisplayName: selectedName,
         });
         updateProfile({ displayName: selectedName });
+
+        const cookieRedirect = getCookie("redirect_url");
+        if (typeof cookieRedirect === "string" && cookieRedirect.startsWith("/")) {
+          redirectPath = cookieRedirect;
+        }
       } catch (error) {
         let errorMessage = "Unknown error signing in";
         if (error instanceof FirebaseError) {
@@ -71,10 +78,12 @@ export default function LoginFinishPage() {
 
         console.log("ERROR", errorMessage);
         alert(errorMessage);
+        redirectPath = "/";
       } finally {
         window.localStorage.removeItem("frameEmail");
         window.localStorage.removeItem("frameName");
-        router.replace("/capture");
+        deleteCookie("redirect_url");
+        router.replace(redirectPath);
       }
     }
 

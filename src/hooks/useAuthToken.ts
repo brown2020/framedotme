@@ -27,6 +27,23 @@ const useAuthToken = (cookieName = "authToken") => {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
       });
+
+      // Upgrade to a secure httpOnly session cookie for server-side route protection.
+      // Best-effort: if this fails, we still have the legacy (JS-readable) token cookie.
+      try {
+        await fetch("/api/session", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ idToken: idTokenResult }),
+        });
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error("Failed to set session cookie:", error.message);
+        } else {
+          console.error("Failed to set session cookie");
+        }
+      }
+
       if (!window.ReactNativeWebView) {
         window.localStorage.setItem(lastTokenRefresh, Date.now().toString());
       }
@@ -37,6 +54,13 @@ const useAuthToken = (cookieName = "authToken") => {
         console.error("Error refreshing token");
       }
       deleteCookie(cookieName);
+
+      // Best-effort cleanup of server-side session cookie
+      try {
+        await fetch("/api/session", { method: "DELETE" });
+      } catch {
+        // ignore
+      }
     }
   };
 
@@ -84,6 +108,8 @@ const useAuthToken = (cookieName = "authToken") => {
     } else {
       clearAuthDetails();
       deleteCookie(cookieName);
+      // Best-effort cleanup of server-side session cookie
+      void fetch("/api/session", { method: "DELETE" }).catch(() => undefined);
     }
   }, [clearAuthDetails, cookieName, setAuthDetails, user]);
 

@@ -79,3 +79,4 @@ export const deleteUserAccount = async (uid: string) => {
   await deleteUser(currentUser);
 };
 
+
