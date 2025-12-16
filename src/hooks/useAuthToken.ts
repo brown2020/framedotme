@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { getIdToken } from "firebase/auth";
 import { deleteCookie, setCookie } from "cookies-next";
 import { debounce } from "lodash";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
+import { LEGACY_ID_TOKEN_COOKIE_NAME } from "@/lib/constants";
 
-const useAuthToken = (cookieName = "authToken") => {
+const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
   const [user, loading, error] = useAuthState(auth);
   const setAuthDetails = useAuthStore((state) => state.setAuthDetails);
   const clearAuthDetails = useAuthStore((state) => state.clearAuthDetails);
@@ -14,11 +15,33 @@ const useAuthToken = (cookieName = "authToken") => {
   const refreshInterval = 50 * 60 * 1000; // 50 minutes
   const lastTokenRefresh = `lastTokenRefresh_${cookieName}`;
 
-  const [activityTimeout, setActivityTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const activityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refreshAuthToken = async () => {
+  const setServerSessionCookie = useCallback(async (idToken: string) => {
+    try {
+      await fetch("/api/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Failed to set session cookie:", error.message);
+      } else {
+        console.error("Failed to set session cookie");
+      }
+    }
+  }, []);
+
+  const clearServerSessionCookie = useCallback(async () => {
+    try {
+      await fetch("/api/session", { method: "DELETE" });
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const refreshAuthToken = useCallback(async () => {
     try {
       if (!auth.currentUser) throw new Error("No user found");
       const idTokenResult = await getIdToken(auth.currentUser, true);
@@ -30,19 +53,7 @@ const useAuthToken = (cookieName = "authToken") => {
 
       // Upgrade to a secure httpOnly session cookie for server-side route protection.
       // Best-effort: if this fails, we still have the legacy (JS-readable) token cookie.
-      try {
-        await fetch("/api/session", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ idToken: idTokenResult }),
-        });
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error("Failed to set session cookie:", error.message);
-        } else {
-          console.error("Failed to set session cookie");
-        }
-      }
+      await setServerSessionCookie(idTokenResult);
 
       if (!window.ReactNativeWebView) {
         window.localStorage.setItem(lastTokenRefresh, Date.now().toString());
@@ -56,29 +67,30 @@ const useAuthToken = (cookieName = "authToken") => {
       deleteCookie(cookieName);
 
       // Best-effort cleanup of server-side session cookie
-      try {
-        await fetch("/api/session", { method: "DELETE" });
-      } catch {
-        // ignore
-      }
+      await clearServerSessionCookie();
     }
-  };
+  }, [clearServerSessionCookie, cookieName, lastTokenRefresh, setServerSessionCookie]);
 
-  const scheduleTokenRefresh = () => {
-    if (activityTimeout) {
-      clearTimeout(activityTimeout);
+  const scheduleTokenRefresh = useCallback(() => {
+    if (activityTimeoutRef.current) {
+      clearTimeout(activityTimeoutRef.current);
+      activityTimeoutRef.current = null;
     }
     if (document.visibilityState === "visible") {
       const timeoutId = setTimeout(refreshAuthToken, refreshInterval);
-      setActivityTimeout(timeoutId);
+      activityTimeoutRef.current = timeoutId;
     }
-  };
+  }, [refreshAuthToken, refreshInterval]);
 
-  const handleStorageChange = debounce((e: StorageEvent) => {
-    if (e.key === lastTokenRefresh) {
-      scheduleTokenRefresh();
-    }
-  }, 1000);
+  const handleStorageChange = useMemo(
+    () =>
+      debounce((e: StorageEvent) => {
+        if (e.key === lastTokenRefresh) {
+          scheduleTokenRefresh();
+        }
+      }, 1000),
+    [lastTokenRefresh, scheduleTokenRefresh]
+  );
 
   useEffect(() => {
     if (!window.ReactNativeWebView) {
@@ -87,12 +99,13 @@ const useAuthToken = (cookieName = "authToken") => {
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      if (activityTimeout) {
-        clearTimeout(activityTimeout);
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current);
+        activityTimeoutRef.current = null;
       }
       handleStorageChange.cancel();
     };
-  }, [activityTimeout, handleStorageChange]);
+  }, [handleStorageChange]);
 
   useEffect(() => {
     if (user?.uid) {
@@ -109,9 +122,9 @@ const useAuthToken = (cookieName = "authToken") => {
       clearAuthDetails();
       deleteCookie(cookieName);
       // Best-effort cleanup of server-side session cookie
-      void fetch("/api/session", { method: "DELETE" }).catch(() => undefined);
+      void clearServerSessionCookie();
     }
-  }, [clearAuthDetails, cookieName, setAuthDetails, user]);
+  }, [clearAuthDetails, clearServerSessionCookie, cookieName, setAuthDetails, user]);
 
   return { uid: user?.uid, loading, error };
 };

@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { FirebaseError } from "firebase/app";
 import useProfileStore from "@/zustand/useProfileStore";
 import { deleteCookie, getCookie } from "cookies-next";
+import { REDIRECT_URL_COOKIE_NAME } from "@/lib/constants";
 
 export default function LoginFinishPage() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function LoginFinishPage() {
         });
         updateProfile({ displayName: selectedName });
 
-        const cookieRedirect = getCookie("redirect_url");
+        const cookieRedirect = getCookie(REDIRECT_URL_COOKIE_NAME);
         if (typeof cookieRedirect === "string" && cookieRedirect.startsWith("/")) {
           redirectPath = cookieRedirect;
         }
@@ -82,7 +83,7 @@ export default function LoginFinishPage() {
       } finally {
         window.localStorage.removeItem("frameEmail");
         window.localStorage.removeItem("frameName");
-        deleteCookie("redirect_url");
+        deleteCookie(REDIRECT_URL_COOKIE_NAME);
         router.replace(redirectPath);
       }
     }
