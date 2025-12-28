@@ -1,4 +1,4 @@
-import { db, storage } from "@/firebase/firebaseClient";
+import { auth, db, storage } from "@/firebase/firebaseClient";
 import {
   ref,
   uploadBytesResumable,
@@ -57,9 +57,16 @@ export const uploadRecording = async (
   onProgress?.({ progress: 0, status: "starting" });
 
   try {
+    // Helpful when debugging popups / multi-window auth issues
+    console.debug("[uploadRecording] auth.currentUser?.uid =", auth.currentUser?.uid);
+
     const filePath = `${userId}/botcasts/${filename}`;
     const storageRef = ref(storage, filePath);
-    const uploadTask = uploadBytesResumable(storageRef, videoBlob);
+    // Provide explicit contentType so Storage Rules can validate reliably.
+    // (Browsers may omit Blob contentType, which otherwise becomes null in rules.)
+    const uploadTask = uploadBytesResumable(storageRef, videoBlob, {
+      contentType: filename.endsWith(".webm") ? "video/webm" : "video/*",
+    });
 
     return new Promise((resolve, reject) => {
       uploadTask.on(
@@ -73,6 +80,12 @@ export const uploadRecording = async (
           });
         },
         (error) => {
+          console.error("[uploadRecording] Storage upload failed:", error);
+          try {
+            (error as unknown as { stage?: string }).stage = "storage-upload";
+          } catch {
+            // ignore
+          }
           onProgress?.({
             progress: 0,
             status: "error",
@@ -90,12 +103,24 @@ export const uploadRecording = async (
             });
             resolve(downloadURL);
           } catch (error) {
+            console.error("[uploadRecording] Firestore record creation failed:", error);
+            try {
+              (error as unknown as { stage?: string }).stage = "firestore-botcasts-setDoc";
+            } catch {
+              // ignore
+            }
             reject(error);
           }
         }
       );
     });
   } catch (error) {
+    console.error("[uploadRecording] Failed to initialize upload:", error);
+    try {
+      (error as unknown as { stage?: string }).stage = "upload-init";
+    } catch {
+      // ignore
+    }
     onProgress?.({
       progress: 0,
       status: "error",
@@ -120,7 +145,28 @@ const createFirestoreRecord = async (
     showOnProfile: false,
   };
 
-  await setDoc(botcastRef, metadata);
+  try {
+    // Force token retrieval right before the write (helps in popup/multi-window situations).
+    // Do not log the token; just ensure it can be fetched.
+    await auth.currentUser?.getIdToken();
+    await setDoc(botcastRef, metadata);
+  } catch (error) {
+    try {
+      const anyErr = error as unknown as { stage?: string; debug?: string };
+      anyErr.stage = "firestore-botcasts-setDoc";
+      anyErr.debug = `path=${botcastRef.path} authUid=${auth.currentUser?.uid ?? "null"} userId=${userId} filename=${filename}`;
+    } catch {
+      // ignore
+    }
+    console.error("[createFirestoreRecord] setDoc denied", {
+      path: botcastRef.path,
+      authUid: auth.currentUser?.uid,
+      userId,
+      filename,
+      error,
+    });
+    throw error;
+  }
 };
 
 export const deleteRecording = async (

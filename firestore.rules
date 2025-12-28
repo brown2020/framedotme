@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function noPrivEscalationOnUserDoc() {
+      // Minimal protection: client may NOT set privileged flags.
+      // If these fields are absent, this evaluates true.
+      return (!("isAdmin" in request.resource.data) || request.resource.data.isAdmin == false)
+        && (!("isAllowed" in request.resource.data) || request.resource.data.isAllowed == false)
+        && (!("isInvited" in request.resource.data) || request.resource.data.isInvited == false)
+        && (!("premium" in request.resource.data) || request.resource.data.premium == false);
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User-owned namespace
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && noPrivEscalationOnUserDoc();
+      allow update: if isOwner(userId) && noPrivEscalationOnUserDoc();
+      allow delete: if isOwner(userId);
+
+      match /profile/userData {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /settings/recorder {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /botcasts/{botcastId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /payments/{paymentDocId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        // Prevent client-side tampering of payment records after creation.
+        allow update: if false;
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}
+
+

@@ -8,6 +8,31 @@ import { downloadBlob } from "@/utils/downloadUtils";
 import { RecordingManager } from "../utils/RecordingManager";
 import { MediaStreamError } from "../types/mediaStreamTypes";
 
+function getErrorDetails(err: unknown): { code?: string; message: string } {
+  if (err && typeof err === "object") {
+    const anyErr = err as {
+      code?: unknown;
+      message?: unknown;
+      name?: unknown;
+      stage?: unknown;
+      debug?: unknown;
+    };
+    const code = typeof anyErr.code === "string" ? anyErr.code : undefined;
+    const message =
+      typeof anyErr.message === "string"
+        ? anyErr.message
+        : typeof anyErr.name === "string"
+          ? anyErr.name
+          : "Unknown error";
+    const stage = typeof anyErr.stage === "string" ? anyErr.stage : undefined;
+    const debug = typeof anyErr.debug === "string" ? anyErr.debug : undefined;
+    const stitchedCode = stage ? `${stage}${code ? ` | ${code}` : ""}` : code;
+    const stitchedMessage = debug ? `${message} (${debug})` : message;
+    return { code: stitchedCode, message: stitchedMessage };
+  }
+  return { message: typeof err === "string" ? err : "Unknown error" };
+}
+
 export const useScreenRecorder = () => {
   const { recorderStatus, updateStatus } = useRecorderStatusStore();
   const { uid } = useAuthStore();
@@ -38,7 +63,12 @@ export const useScreenRecorder = () => {
             setError("An unexpected error occurred. Please try again.");
         }
       } else {
-        setError("An unexpected error occurred. Please try again.");
+        const details = getErrorDetails(error);
+        // Surface the real Firebase error so debugging isn't guesswork.
+        // Example codes: "storage/unauthorized", "permission-denied"
+        setError(details.code ? `${details.code}: ${details.message}` : details.message);
+        // Also log full object for devtools (includes serverResponse sometimes)
+        console.error("Recording save failed:", error);
       }
       updateStatus("error");
     },
@@ -108,7 +138,10 @@ export const useScreenRecorder = () => {
 
     try {
       if (!uid) {
-        throw new Error("Please sign in to start recording");
+        // Not an exceptional condition during initial render / redirect.
+        // Show a friendly message and bail without triggering the Next.js error overlay.
+        setError("Please sign in to start recording");
+        return;
       }
 
       setError(null);

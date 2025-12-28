@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -17,5 +17,13 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
+
+// Make auth persistence explicit so secondary windows/popups reliably share the session.
+// Best-effort: if it fails, Firebase falls back to its default behavior.
+if (typeof window !== "undefined") {
+  void setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error("[firebaseClient] Failed to set auth persistence:", error);
+  });
+}
 
 export { auth, db, storage };

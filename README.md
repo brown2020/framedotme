@@ -13,14 +13,41 @@ Frame.me is a streamlined screen recording application built with Next.js and Ty
 
 ## Tech Stack
 
-- Next.js 16
-- React 19
+- Next.js 16 (locked: 16.1.1)
+- React 19 (locked: 19.2.3)
 - TypeScript
-- Firebase 12 (Authentication, Storage & Firestore)
-- Zustand 5 (State Management)
-- Tailwind CSS 4
+- Firebase (client SDK; locked: 12.7.0) + Firebase Admin SDK (locked: 13.6.0)
+- Zustand (locked: 5.0.9)
+- Tailwind CSS 4 (locked: 4.1.18)
+- Radix UI primitives/icons
 - shadcn/ui Components
-- Stripe Integration
+- Stripe (server SDK locked: 20.1.0; Stripe.js locked: 8.6.0)
+
+## Firebase Security Rules (Firestore + Storage)
+
+This repo includes a “default deny” security posture and scopes user data by authenticated UID.
+
+### Firestore (`firestore.rules`)
+
+- **Default deny**: all reads/writes are denied unless explicitly allowed.
+- **User namespace**: `/users/{userId}` is readable/writable only by the authenticated owner (`request.auth.uid == userId`).
+- **Privilege escalation guard**: clients cannot set privileged flags on the user doc (`isAdmin`, `isAllowed`, `isInvited`, `premium` must be absent or `false` on create/update).
+- **Subcollections** (owner-only CRUD):
+  - `/users/{userId}/profile/userData`
+  - `/users/{userId}/settings/recorder`
+  - `/users/{userId}/botcasts/{botcastId}`
+- **Payments**:
+  - `/users/{userId}/payments/{paymentDocId}`: owner can read/create/delete
+  - **Updates are denied** (prevents client-side tampering after creation)
+
+### Storage (`storage.rules`)
+
+- **Default deny**: all reads/writes are denied unless explicitly allowed.
+- **Recording objects**: `/{userId}/botcasts/{filename}`
+  - **read**: owner-only
+  - **create/update**: owner-only and `< 500MB`
+  - **delete**: owner-only
+  - **list**: denied (recordings are discovered via Firestore, not bucket listing)
 
 ## Core Components
 
@@ -37,6 +64,10 @@ Frame.me is a streamlined screen recording application built with Next.js and Ty
 - `RecorderStatusProvider`: Global recording status management
 
 ## Getting Started
+
+### Prerequisites
+
+- Node.js (Next.js in this repo requires Node `>=20.9.0`)
 
 1. Clone the repository:
 
@@ -92,7 +123,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) - see the [LICENSE.md](LICENSE.md) file for details
 
 ## Acknowledgments
 

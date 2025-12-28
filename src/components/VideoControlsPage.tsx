@@ -6,10 +6,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import useScreenRecorder from "@/hooks/useScreenRecorder";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/zustand/useAuthStore";
 
 export default function VideoControlsPage() {
   const [videoWidth, setVideoWidth] = useState(0);
   const [videoHeight, setVideoHeight] = useState(0);
+  const uid = useAuthStore((state) => state.uid);
   const {
     recorderStatus,
     updateStatus,
@@ -22,10 +24,11 @@ export default function VideoControlsPage() {
 
   // Add auto-initialization
   useEffect(() => {
+    if (!uid) return;
     if (recorderStatus === "idle") {
       initializeRecorder();
     }
-  }, [recorderStatus, initializeRecorder]);
+  }, [recorderStatus, initializeRecorder, uid]);
 
   useEffect(() => {
     const currentScreenVideoElem = screenVideoElem.current;
@@ -65,6 +68,7 @@ export default function VideoControlsPage() {
   }, [screenStream]);
 
   const handleRecordingControl = () => {
+    if (!uid) return;
     if (recorderStatus === "idle") {
       initializeRecorder();
     } else if (recorderStatus === "ready") {

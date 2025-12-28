@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // User recordings
+    match /{userId}/botcasts/{filename} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && request.resource.size < 500 * 1024 * 1024;
+
+      // Deletes do not have a request.resource; allow owner deletes explicitly.
+      allow delete: if isOwner(userId);
+
+      // Do not allow listing arbitrary files; recordings are discovered via Firestore.
+      allow list: if false;
+    }
+  }
+}
+
+
