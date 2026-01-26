@@ -5,19 +5,49 @@ import { useAuthStore } from "@/zustand/useAuthStore";
 import { usePaymentsStore } from "@/zustand/usePaymentsStore";
 import useProfileStore from "@/zustand/useProfileStore";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 
 type Props = {
   payment_intent: string;
 };
 
+type PaymentState = {
+  loading: boolean;
+  message: string;
+  paymentData: {
+    id: string;
+    created: number;
+    amount: number;
+    status: string;
+  } | null;
+};
+
+type PaymentAction =
+  | { type: "SET_LOADING"; loading: boolean }
+  | { type: "SET_ERROR"; message: string }
+  | { type: "SET_SUCCESS"; message: string; data: { id: string; created: number; amount: number; status: string } };
+
+function paymentReducer(state: PaymentState, action: PaymentAction): PaymentState {
+  switch (action.type) {
+    case "SET_LOADING":
+      return { ...state, loading: action.loading };
+    case "SET_ERROR":
+      return { ...state, loading: false, message: action.message, paymentData: null };
+    case "SET_SUCCESS":
+      return { ...state, loading: false, message: action.message, paymentData: action.data };
+    default:
+      return state;
+  }
+}
+
+const initialState: PaymentState = {
+  loading: true,
+  message: "",
+  paymentData: null,
+};
+
 export default function PaymentSuccessPage({ payment_intent }: Props) {
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [created, setCreated] = useState(0);
-  const [id, setId] = useState("");
-  const [amount, setAmount] = useState(0);
-  const [status, setStatus] = useState("");
+  const [state, dispatch] = useReducer(paymentReducer, initialState);
 
   const addPayment = usePaymentsStore((state) => state.addPayment);
   const checkIfPaymentProcessed = usePaymentsStore(
@@ -28,8 +58,7 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
 
   useEffect(() => {
     if (!payment_intent) {
-      setMessage("No payment intent found");
-      setLoading(false);
+      dispatch({ type: "SET_ERROR", message: "No payment intent found" });
       return;
     }
 
@@ -42,28 +71,20 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
         if (data.status === "succeeded") {
           // Check if payment is already processed
           const existingPayment = await checkIfPaymentProcessed(uid, data.id);
+          
           if (existingPayment) {
-            setMessage("Payment has already been processed.");
-
-            // Convert Timestamp to milliseconds before setting state
-            if (existingPayment.createdAt) {
-              setCreated(existingPayment.createdAt.toMillis());
-            } else {
-              setCreated(0); // Fallback if createdAt is null
-            }
-
-            setId(existingPayment.id);
-            setAmount(existingPayment.amount);
-            setStatus(existingPayment.status);
-            setLoading(false);
+            dispatch({
+              type: "SET_SUCCESS",
+              message: "Payment has already been processed.",
+              data: {
+                id: existingPayment.id,
+                created: existingPayment.createdAt?.toMillis() || 0,
+                amount: existingPayment.amount,
+                status: existingPayment.status,
+              },
+            });
             return;
           }
-
-          setMessage("Payment successful");
-          setCreated(data.created * 1000); // Assuming `data.created` is a UNIX timestamp in seconds
-          setId(data.id);
-          setAmount(data.amount);
-          setStatus(data.status);
 
           // Add payment to store
           await addPayment(uid, {
@@ -79,15 +100,24 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
           // Add credits to profile
           const creditsToAdd = data.amount + 1;
           await addCredits(uid, creditsToAdd);
+
+          dispatch({
+            type: "SET_SUCCESS",
+            message: "Payment successful",
+            data: {
+              id: data.id,
+              created: data.created * 1000,
+              amount: data.amount,
+              status: data.status,
+            },
+          });
         } else {
           console.error("Payment validation failed:", data.status);
-          setMessage("Payment validation failed");
+          dispatch({ type: "SET_ERROR", message: "Payment validation failed" });
         }
       } catch (error) {
         console.error("Error handling payment success:", error);
-        setMessage("Error handling payment success");
-      } finally {
-        setLoading(false);
+        dispatch({ type: "SET_ERROR", message: "Error handling payment success" });
       }
     };
 
@@ -96,22 +126,22 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
 
   return (
     <main className="max-w-6xl flex flex-col gap-2.5 mx-auto p-10 text-black text-center border m-10 rounded-md border-black">
-      {loading ? (
+      {state.loading ? (
         <div>validating...</div>
-      ) : id ? (
+      ) : state.paymentData ? (
         <div className="mb-10">
           <h1 className="text-4xl font-extrabold mb-2">Thank you!</h1>
           <h2 className="text-2xl">You successfully purchased credits</h2>
           <div className="bg-white p-2 rounded-md my-5 text-4xl font-bold mx-auto">
-            ${amount / 100}
+            ${state.paymentData.amount / 100}
           </div>
           <div>Uid: {uid}</div>
-          <div>Id: {id}</div>
-          <div>Created: {new Date(created).toLocaleString()}</div>
-          <div>Status: {status}</div>
+          <div>Id: {state.paymentData.id}</div>
+          <div>Created: {new Date(state.paymentData.created).toLocaleString()}</div>
+          <div>Status: {state.paymentData.status}</div>
         </div>
       ) : (
-        <div>{message}</div>
+        <div>{state.message}</div>
       )}
 
       <Link

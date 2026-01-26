@@ -1,3 +1,5 @@
+import { RECORDING_CHUNK_INTERVAL_MS } from "@/lib/constants";
+
 // utils/RecordingManager.ts
 export class RecordingManager {
   private mediaRecorder: MediaRecorder | null = null;
@@ -21,7 +23,7 @@ export class RecordingManager {
       };
 
       // Record in 1-minute chunks to prevent memory issues
-      this.mediaRecorder.start(60 * 1000);
+      this.mediaRecorder.start(RECORDING_CHUNK_INTERVAL_MS);
       return this.mediaRecorder;
     } catch (error) {
       console.error("Failed to start recording:", error);
@@ -73,8 +75,8 @@ export class RecordingManager {
   }
 
   private calculateDuration(): number {
-    // Approximate duration based on chunks
-    return this.chunks.length * 60; // since we're recording in 60-second chunks
+    // Approximate duration based on chunks (in seconds)
+    return this.chunks.length * (RECORDING_CHUNK_INTERVAL_MS / 1000);
   }
 
   private calculateTotalSize(): number {

@@ -6,6 +6,8 @@ import {
   updateUserProfile, 
   deleteUserAccount 
 } from "@/services/userService";
+import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/lib/constants";
+import { logError } from "@/utils/errorHandling";
 
 export interface ProfileType {
   email: string;
@@ -64,7 +66,7 @@ const mergeProfileWithDefaults = (
 ): ProfileType => ({
   ...defaultProfile,
   ...profile,
-  credits: profile.credits && profile.credits >= 100 ? profile.credits : 1000,
+  credits: profile.credits && profile.credits >= CREDITS_THRESHOLD ? profile.credits : DEFAULT_CREDITS,
   email: authState.authEmail || profile.email || "",
   contactEmail: profile.contactEmail || authState.authEmail || "",
   displayName: profile.displayName || authState.authDisplayName || "",
@@ -171,7 +173,7 @@ function createNewProfile(
     displayName: authDisplayName || "",
     photoUrl: authPhotoUrl || "",
     emailVerified: authEmailVerified || false,
-    credits: 1000,
+    credits: DEFAULT_CREDITS,
     fireworks_api_key: "",
     openai_api_key: "",
     stability_api_key: "",
@@ -187,9 +189,7 @@ function createNewProfile(
 
 // Helper function to handle errors
 function handleProfileError(action: string, error: unknown): void {
-  const errorMessage =
-    error instanceof Error ? error.message : "An unknown error occurred";
-  console.error(`Error ${action}:`, errorMessage);
+  logError(`Profile - ${action}`, error);
 }
 
 export default useProfileStore;

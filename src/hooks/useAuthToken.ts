@@ -4,7 +4,11 @@ import { deleteCookie, setCookie } from "cookies-next";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
-import { LEGACY_ID_TOKEN_COOKIE_NAME } from "@/lib/constants";
+import { 
+  LEGACY_ID_TOKEN_COOKIE_NAME, 
+  TOKEN_REFRESH_INTERVAL_MS, 
+  TOKEN_REFRESH_DEBOUNCE_MS 
+} from "@/lib/constants";
 
 // Custom debounce implementation
 function debounce<T extends (...args: any[]) => any>(
@@ -31,7 +35,6 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
   const setAuthDetails = useAuthStore((state) => state.setAuthDetails);
   const clearAuthDetails = useAuthStore((state) => state.clearAuthDetails);
 
-  const refreshInterval = 50 * 60 * 1000; // 50 minutes
   const lastTokenRefresh = `lastTokenRefresh_${cookieName}`;
 
   const activityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,10 +99,10 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
       activityTimeoutRef.current = null;
     }
     if (document.visibilityState === "visible") {
-      const timeoutId = setTimeout(refreshAuthToken, refreshInterval);
+      const timeoutId = setTimeout(refreshAuthToken, TOKEN_REFRESH_INTERVAL_MS);
       activityTimeoutRef.current = timeoutId;
     }
-  }, [refreshAuthToken, refreshInterval]);
+  }, [refreshAuthToken]);
 
   const handleStorageChange = useMemo(
     () =>
@@ -107,7 +110,7 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
         if (e.key === lastTokenRefresh) {
           scheduleTokenRefresh();
         }
-      }, 1000),
+      }, TOKEN_REFRESH_DEBOUNCE_MS),
     [lastTokenRefresh, scheduleTokenRefresh]
   );
 

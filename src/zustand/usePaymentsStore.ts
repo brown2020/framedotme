@@ -7,9 +7,9 @@ import {
   getDocs,
   Timestamp,
 } from "firebase/firestore";
-import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
 import { db } from "@/firebase/firebaseClient";
+import { getErrorMessage, logError } from "@/utils/errorHandling";
 
 export type PaymentType = {
   id: string;
@@ -48,7 +48,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
       const payments = await fetchUserPayments(uid);
       set({ payments, paymentsLoading: false });
     } catch (error) {
-      handleError(set, error, "Error fetching payments");
+      handleError(set, error, "fetch payments");
     }
   },
 
@@ -76,7 +76,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
 
       toast.success("Payment added successfully.");
     } catch (error) {
-      handleError(set, error, "Error adding payment");
+      handleError(set, error, "add payment");
     }
   },
 
@@ -180,9 +180,9 @@ function handleError(
       | ((state: PaymentsStoreState) => Partial<PaymentsStoreState>)
   ) => void,
   error: unknown,
-  defaultMessage: string
+  context: string
 ): void {
-  const errorMessage = error instanceof Error ? error.message : defaultMessage;
-  console.error(defaultMessage, errorMessage);
+  const errorMessage = getErrorMessage(error);
+  logError(`Payments - ${context}`, error);
   set({ paymentsError: errorMessage, paymentsLoading: false });
 }
