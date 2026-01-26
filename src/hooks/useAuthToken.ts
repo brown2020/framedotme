@@ -116,6 +116,11 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
       window.addEventListener("storage", handleStorageChange);
     }
 
+    // Schedule initial token refresh if user is authenticated
+    if (user?.uid) {
+      scheduleTokenRefresh();
+    }
+
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       if (activityTimeoutRef.current) {
@@ -124,7 +129,7 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
       }
       handleStorageChange.cancel();
     };
-  }, [handleStorageChange]);
+  }, [handleStorageChange, scheduleTokenRefresh, user?.uid]);
 
   useEffect(() => {
     if (user?.uid) {

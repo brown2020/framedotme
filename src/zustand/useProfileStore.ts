@@ -47,11 +47,11 @@ const defaultProfile: ProfileType = {
 
 interface ProfileState {
   profile: ProfileType;
-  fetchProfile: () => Promise<void>;
-  updateProfile: (newProfile: Partial<ProfileType>) => Promise<void>;
-  minusCredits: (amount: number) => Promise<boolean>;
-  addCredits: (amount: number) => Promise<void>;
-  deleteAccount: () => Promise<void>;
+  fetchProfile: (uid: string) => Promise<void>;
+  updateProfile: (uid: string, newProfile: Partial<ProfileType>) => Promise<void>;
+  minusCredits: (uid: string, amount: number) => Promise<boolean>;
+  addCredits: (uid: string, amount: number) => Promise<void>;
+  deleteAccount: (uid: string) => Promise<void>;
 }
 
 const mergeProfileWithDefaults = (
@@ -74,10 +74,11 @@ const mergeProfileWithDefaults = (
 const useProfileStore = create<ProfileState>((set, get) => ({
   profile: defaultProfile,
 
-  fetchProfile: async () => {
-    const { uid, authEmail, authDisplayName, authPhotoUrl, authEmailVerified } =
-      useAuthStore.getState();
+  fetchProfile: async (uid: string) => {
     if (!uid) return;
+
+    const { authEmail, authDisplayName, authPhotoUrl, authEmailVerified } =
+      useAuthStore.getState();
 
     try {
       const profileData = await fetchUserProfile(uid);
@@ -102,8 +103,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     }
   },
 
-  updateProfile: async (newProfile: Partial<ProfileType>) => {
-    const uid = useAuthStore.getState().uid;
+  updateProfile: async (uid: string, newProfile: Partial<ProfileType>) => {
     if (!uid) return;
 
     try {
@@ -116,8 +116,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     }
   },
 
-  deleteAccount: async () => {
-    const uid = useAuthStore.getState().uid;
+  deleteAccount: async (uid: string) => {
     if (!uid) return;
 
     try {
@@ -127,8 +126,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     }
   },
 
-  minusCredits: async (amount: number) => {
-    const uid = useAuthStore.getState().uid;
+  minusCredits: async (uid: string, amount: number) => {
     if (!uid) return false;
 
     const profile = get().profile;
@@ -145,8 +143,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     }
   },
 
-  addCredits: async (amount: number) => {
-    const uid = useAuthStore.getState().uid;
+  addCredits: async (uid: string, amount: number) => {
     if (!uid) return;
 
     const profile = get().profile;

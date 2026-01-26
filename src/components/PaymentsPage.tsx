@@ -11,7 +11,7 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     if (uid) {
-      fetchPayments();
+      fetchPayments(uid);
     }
   }, [uid, fetchPayments]);
 

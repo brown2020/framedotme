@@ -14,7 +14,6 @@ type Props = {
 export default function PaymentSuccessPage({ payment_intent }: Props) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-
   const [created, setCreated] = useState(0);
   const [id, setId] = useState("");
   const [amount, setAmount] = useState(0);
@@ -25,7 +24,6 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
     (state) => state.checkIfPaymentProcessed
   );
   const addCredits = useProfileStore((state) => state.addCredits);
-
   const uid = useAuthStore((state) => state.uid);
 
   useEffect(() => {
@@ -36,12 +34,14 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
     }
 
     const handlePaymentSuccess = async () => {
+      if (!uid) return;
+      
       try {
         const data = await validatePaymentIntent(payment_intent);
 
         if (data.status === "succeeded") {
           // Check if payment is already processed
-          const existingPayment = await checkIfPaymentProcessed(data.id);
+          const existingPayment = await checkIfPaymentProcessed(uid, data.id);
           if (existingPayment) {
             setMessage("Payment has already been processed.");
 
@@ -66,7 +66,7 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
           setStatus(data.status);
 
           // Add payment to store
-          await addPayment({
+          await addPayment(uid, {
             id: data.id,
             amount: data.amount,
             status: data.status,
@@ -78,7 +78,7 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
 
           // Add credits to profile
           const creditsToAdd = data.amount + 1;
-          await addCredits(creditsToAdd);
+          await addCredits(uid, creditsToAdd);
         } else {
           console.error("Payment validation failed:", data.status);
           setMessage("Payment validation failed");

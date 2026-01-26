@@ -78,11 +78,14 @@ export default function VideoComponent({
     );
   }
 
-  if (poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)) {
-    if (isVideoPlaying) {
+  useEffect(() => {
+    // Stop video if we're showing poster/gif instead
+    if ((poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)) && isVideoPlaying) {
       toggleVideoPlaying();
     }
+  }, [poster, isAnimated, silentGif, waitingGif, isVideoPlaying, toggleVideoPlaying]);
 
+  if (poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)) {
     return (
       <div className={containerClasses}>
         <div

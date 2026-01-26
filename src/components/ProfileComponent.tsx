@@ -20,13 +20,16 @@ export default function ProfileComponent() {
   const addPayment = usePaymentsStore((state) => state.addPayment);
   const deleteAccount = useProfileStore((state) => state.deleteAccount);
   const clearAuthDetails = useAuthStore((s) => s.clearAuthDetails);
+  const uid = useAuthStore((s) => s.uid);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     const handleMessageFromRN = async (event: MessageEvent) => {
+      if (!uid) return;
+      
       const message = event.data;
       if (message?.type === "IAP_SUCCESS") {
-        await addPayment({
+        await addPayment(uid, {
           id: message.message,
           amount: message.amount,
           status: "succeeded",
@@ -35,7 +38,7 @@ export default function ProfileComponent() {
           productId: message.productId,
           currency: message.currency,
         });
-        await addCredits(10000);
+        await addCredits(uid, 10000);
       }
     };
 
@@ -45,7 +48,7 @@ export default function ProfileComponent() {
     return () => {
       window.removeEventListener("message", handleMessageFromRN);
     };
-  }, [addCredits, addPayment]);
+  }, [addCredits, addPayment, uid]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -65,9 +68,11 @@ export default function ProfileComponent() {
   };
 
   const onDeleteConfirm = useCallback(async () => {
+    if (!uid) return;
+    
     setShowDeleteModal(false);
     try {
-      await deleteAccount();
+      await deleteAccount(uid);
       await signOut(auth);
       clearAuthDetails();
       toast.success("Account deleted successfully.");
@@ -75,7 +80,7 @@ export default function ProfileComponent() {
     } catch (error) {
       console.error("Error on deletion of account:", error);
     }
-  }, [deleteAccount, clearAuthDetails, router]);
+  }, [deleteAccount, clearAuthDetails, router, uid]);
 
   return (
     <div className="flex flex-col gap-4">

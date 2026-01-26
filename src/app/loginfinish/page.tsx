@@ -14,6 +14,7 @@ export default function LoginFinishPage() {
   const router = useRouter();
   const setAuthDetails = useAuthStore((s) => s.setAuthDetails);
   const updateProfile = useProfileStore((s) => s.updateProfile);
+  const uid = useAuthStore((s) => s.uid);
 
   useEffect(() => {
     async function attemptSignIn() {
@@ -63,7 +64,10 @@ export default function LoginFinishPage() {
           authEmail,
           authDisplayName: selectedName,
         });
-        updateProfile({ displayName: selectedName });
+        
+        if (uid) {
+          updateProfile(uid, { displayName: selectedName });
+        }
 
         const cookieRedirect = getCookie(REDIRECT_URL_COOKIE_NAME);
         if (typeof cookieRedirect === "string" && cookieRedirect.startsWith("/")) {
@@ -89,5 +93,5 @@ export default function LoginFinishPage() {
     }
 
     attemptSignIn();
-  }, [router, setAuthDetails, updateProfile]);
+  }, [router, setAuthDetails, updateProfile, uid]);
 }

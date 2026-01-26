@@ -26,9 +26,9 @@ interface PaymentsStoreState {
   payments: PaymentType[];
   paymentsLoading: boolean;
   paymentsError: string | null;
-  fetchPayments: () => Promise<void>;
-  addPayment: (payment: Omit<PaymentType, "createdAt">) => Promise<void>;
-  checkIfPaymentProcessed: (paymentId: string) => Promise<PaymentType | null>;
+  fetchPayments: (uid: string) => Promise<void>;
+  addPayment: (uid: string, payment: Omit<PaymentType, "createdAt">) => Promise<void>;
+  checkIfPaymentProcessed: (uid: string, paymentId: string) => Promise<PaymentType | null>;
 }
 
 export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
@@ -36,8 +36,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
   paymentsLoading: false,
   paymentsError: null,
 
-  fetchPayments: async () => {
-    const uid = useAuthStore.getState().uid;
+  fetchPayments: async (uid: string) => {
     if (!uid) {
       console.error("Invalid UID for fetchPayments");
       return;
@@ -53,8 +52,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
     }
   },
 
-  addPayment: async (payment) => {
-    const uid = useAuthStore.getState().uid;
+  addPayment: async (uid: string, payment: Omit<PaymentType, "createdAt">) => {
     if (!uid) {
       console.error("Invalid UID for addPayment");
       return;
@@ -82,8 +80,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
     }
   },
 
-  checkIfPaymentProcessed: async (paymentId) => {
-    const uid = useAuthStore.getState().uid;
+  checkIfPaymentProcessed: async (uid: string, paymentId: string) => {
     if (!uid) return null;
     return await findProcessedPayment(uid, paymentId);
   },
