@@ -1,11 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { getIdToken } from "firebase/auth";
 import { deleteCookie, setCookie } from "cookies-next";
-import { debounce } from "lodash";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
 import { LEGACY_ID_TOKEN_COOKIE_NAME } from "@/lib/constants";
+
+// Custom debounce implementation
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): T & { cancel: () => void } {
+  let timeout: NodeJS.Timeout | null = null;
+  
+  const debounced = ((...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  }) as T & { cancel: () => void };
+  
+  debounced.cancel = () => {
+    if (timeout) clearTimeout(timeout);
+    timeout = null;
+  };
+  
+  return debounced;
+}
 
 const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
   const [user, loading, error] = useAuthState(auth);

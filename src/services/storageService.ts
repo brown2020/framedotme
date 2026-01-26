@@ -17,12 +17,7 @@ import {
 } from "firebase/firestore";
 import { downloadFromUrl } from "@/utils/downloadUtils";
 import { VideoMetadata } from "@/types/video";
-
-export interface UploadProgress {
-  progress: number;
-  status: "starting" | "uploading" | "completed" | "error";
-  error?: Error;
-}
+import { UploadProgress } from "@/types/recorder";
 
 export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata[]> => {
   const videosRef = collection(db, `users/${userId}/botcasts`);

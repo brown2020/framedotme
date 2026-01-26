@@ -1,6 +1,6 @@
 import PrivacyPage from "@/components/PrivacyPage";
 
-export default function page() {
+export default function Privacy() {
   return (
     <PrivacyPage
       companyName="Frame.me"

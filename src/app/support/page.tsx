@@ -1,6 +1,6 @@
 import SupportPage from "@/components/SupportPage";
 
-export default function page() {
+export default function Support() {
   return (
     <SupportPage
       companyName="Frame.me"

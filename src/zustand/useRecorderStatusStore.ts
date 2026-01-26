@@ -4,17 +4,7 @@ import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { useAuthStore } from "./useAuthStore";
 import { db } from "@/firebase/firebaseClient";
 import React from "react";
-
-type RecorderStatusType =
-  | "idle"
-  | "ready"
-  | "shouldStart"
-  | "shouldStop"
-  | "starting"
-  | "recording"
-  | "saving"
-  | "error"
-  | "unknown";
+import { RecorderStatusType } from "@/types/recorder";
 
 interface RecorderStatusState {
   recorderStatus: RecorderStatusType;
