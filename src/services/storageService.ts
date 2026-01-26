@@ -19,6 +19,11 @@ import { downloadFromUrl } from "@/utils/downloadUtils";
 import { VideoMetadata } from "@/types/video";
 import { UploadProgress } from "@/types/recorder";
 
+/**
+ * Fetches all recordings for a specific user from Firestore
+ * @param userId - The user's unique identifier
+ * @returns Array of video metadata sorted by creation date (newest first)
+ */
 export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata[]> => {
   const videosRef = collection(db, `users/${userId}/botcasts`);
   const q = query(videosRef, orderBy("createdAt", "desc"));
@@ -39,6 +44,14 @@ export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata
     })) as VideoMetadata[];
 };
 
+/**
+ * Uploads a recording to Firebase Storage and creates a Firestore record
+ * @param userId - The user's unique identifier
+ * @param videoBlob - The video Blob to upload
+ * @param filename - Name for the uploaded file
+ * @param onProgress - Optional callback for upload progress updates
+ * @returns Promise resolving to the download URL of the uploaded file
+ */
 export const uploadRecording = async (
   userId: string,
   videoBlob: Blob,
@@ -164,6 +177,11 @@ const createFirestoreRecord = async (
   }
 };
 
+/**
+ * Deletes a recording from both Firebase Storage and Firestore
+ * @param userId - The user's unique identifier
+ * @param video - Metadata of the video to delete
+ */
 export const deleteRecording = async (
   userId: string,
   video: VideoMetadata

@@ -48,6 +48,11 @@ export const fetchUserProfile = async (uid: string) => {
   return docSnap.exists() ? (docSnap.data() as ProfileType) : null;
 };
 
+/**
+ * Saves a complete user profile to Firestore
+ * @param uid - The user's unique identifier
+ * @param profileData - Complete profile data to save
+ */
 export const saveUserProfile = async (
   uid: string,
   profileData: ProfileType
@@ -56,6 +61,11 @@ export const saveUserProfile = async (
   await setDoc(userRef, profileData);
 };
 
+/**
+ * Updates specific fields in a user's profile
+ * @param uid - The user's unique identifier
+ * @param updates - Partial profile data to update
+ */
 export const updateUserProfile = async (
   uid: string,
   data: Partial<ProfileType>

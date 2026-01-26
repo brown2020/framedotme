@@ -1,11 +1,19 @@
 import { RECORDING_CHUNK_INTERVAL_MS } from "@/lib/constants";
 
-// utils/RecordingManager.ts
+/**
+ * Manages media recording with chunk-based storage to prevent memory issues
+ */
 export class RecordingManager {
   private mediaRecorder: MediaRecorder | null = null;
   private chunks: Blob[] = [];
   private onDataAvailableCallback: ((data: Blob) => void) | null = null;
 
+  /**
+   * Starts recording from the provided media stream
+   * @param stream - MediaStream to record from
+   * @param onDataAvailable - Callback fired when chunk data is available
+   * @returns The MediaRecorder instance
+   */
   startRecording(stream: MediaStream, onDataAvailable: (data: Blob) => void) {
     try {
       this.chunks = [];
@@ -31,6 +39,10 @@ export class RecordingManager {
     }
   }
 
+  /**
+   * Stops the current recording and returns the complete recording as a Blob
+   * @returns Promise that resolves with the complete recording Blob
+   */
   stopRecording(): Promise<Blob> {
     return new Promise((resolve, reject) => {
       if (!this.mediaRecorder) {
@@ -64,6 +76,10 @@ export class RecordingManager {
     }
   }
 
+  /**
+   * Gets the current state of the recording
+   * @returns Current recording state with metrics
+   */
   getRecordingState(): RecordingState {
     return {
       isRecording: this.mediaRecorder?.state === "recording",
