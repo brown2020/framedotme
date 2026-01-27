@@ -17,3 +17,7 @@ export const useRecorderStatusStore = create<RecorderStatusState>((set) => ({
 
   setError: (error: Error | null) => set({ lastError: error }),
 }));
+
+// Selectors for optimized re-renders
+export const useRecorderStatus = () => useRecorderStatusStore((state) => state.recorderStatus);
+export const useRecorderError = () => useRecorderStatusStore((state) => state.lastError);

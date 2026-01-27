@@ -1,3 +1,5 @@
+"use client";
+
 import { Component, ErrorInfo, ReactNode } from "react";
 import { logger } from "@/utils/logger";
 
@@ -8,7 +10,6 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   errorMessage?: string;
-  errorStack?: string;
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -21,7 +22,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     return {
       hasError: true,
       errorMessage: error.message,
-      errorStack: error.stack,
     };
   }
 
@@ -34,14 +34,15 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   };
 
   renderErrorDetails() {
-    const { errorMessage, errorStack } = this.state;
-    return (
-      <div>
-        <p>Error Message: {errorMessage}</p>
-        <p>Error Stack:</p>
-        <pre>{errorStack}</pre>
-      </div>
-    );
+    const { errorMessage } = this.state;
+    if (process.env.NODE_ENV === "development") {
+      return (
+        <div>
+          <p>Error Message: {errorMessage}</p>
+        </div>
+      );
+    }
+    return null;
   }
 
   override render() {

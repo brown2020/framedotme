@@ -21,7 +21,7 @@ export default function Header() {
           } else {
             logger.debug("Not React Native WebView environment");
           }
-          setTimeout(() => router.push("/"), 100);
+          router.push("/");
         }}
       >
         <ScanIcon size={30} className="text-white" />
@@ -41,7 +41,7 @@ export default function Header() {
                 isActive ? "opacity-100 bg-white/30" : "opacity-50"
               }`}
               onClick={() => {
-                setTimeout(() => router.push(item.path), 100);
+                router.push(item.path);
               }}
             >
             <div className="h-9 aspect-square">

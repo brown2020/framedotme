@@ -5,11 +5,29 @@ import {
   where,
   getDocs,
   Timestamp,
+  DocumentData,
 } from "firebase/firestore";
 import { db } from "@/firebase/firebaseClient";
 import { PaymentType } from "@/zustand/usePaymentsStore";
 import { validateUserId } from "@/lib/validation";
 import { getUserPaymentsPath } from "@/lib/firestore";
+
+/**
+ * Maps Firestore document data to PaymentType
+ * @internal Helper function to maintain consistency in data mapping
+ */
+function mapDocumentToPayment(data: DocumentData, docId?: string): PaymentType {
+  return {
+    id: docId || data.id,
+    amount: data.amount,
+    createdAt: data.createdAt,
+    status: data.status,
+    mode: data.mode,
+    currency: data.currency,
+    platform: data.platform,
+    productId: data.productId,
+  };
+}
 
 /**
  * Fetches all payments for a user from Firestore
@@ -29,16 +47,9 @@ export async function fetchUserPayments(uid: string): Promise<PaymentType[]> {
   const validatedUid = validateUserId(uid);
   const q = query(collection(db, getUserPaymentsPath(validatedUid)));
   const querySnapshot = await getDocs(q);
-  const payments = querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    amount: doc.data().amount,
-    createdAt: doc.data().createdAt,
-    status: doc.data().status,
-    mode: doc.data().mode,
-    currency: doc.data().currency,
-    platform: doc.data().platform,
-    productId: doc.data().productId,
-  }));
+  const payments = querySnapshot.docs.map((doc) => 
+    mapDocumentToPayment(doc.data(), doc.id)
+  );
 
   return sortPayments(payments);
 }
@@ -125,17 +136,7 @@ export async function findProcessedPayment(
 
   if (!querySnapshot.empty && querySnapshot.docs[0]) {
     const doc = querySnapshot.docs[0];
-    const data = doc.data();
-    return {
-      id: data.id,
-      amount: data.amount,
-      createdAt: data.createdAt,
-      status: data.status,
-      mode: data.mode,
-      currency: data.currency,
-      platform: data.platform,
-      productId: data.productId,
-    };
+    return mapDocumentToPayment(doc.data());
   }
 
   return null;

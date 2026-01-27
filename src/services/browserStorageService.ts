@@ -4,13 +4,22 @@ import { logger } from "@/utils/logger";
  * Safe wrapper for localStorage operations with error handling
  */
 class BrowserStorageService {
+  private _isAvailable: boolean | null = null;
+
   private isAvailable(): boolean {
+    // Cache the availability check
+    if (this._isAvailable !== null) {
+      return this._isAvailable;
+    }
+
     try {
       const testKey = "__storage_test__";
       window.localStorage.setItem(testKey, "test");
       window.localStorage.removeItem(testKey);
+      this._isAvailable = true;
       return true;
     } catch {
+      this._isAvailable = false;
       return false;
     }
   }

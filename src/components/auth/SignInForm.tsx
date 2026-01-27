@@ -25,8 +25,8 @@ function AuthButton({
         <Image
           src={logo}
           alt={`${label} logo`}
-          layout="fill"
-          objectFit="contain"
+          fill
+          className="object-contain"
         />
       </div>
       <span className="grow text-center">{label}</span>

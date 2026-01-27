@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { Timestamp } from "firebase/firestore";
-import toast from "react-hot-toast";
 import { getErrorMessage, logError } from "@/utils/errorHandling";
 import { logger } from "@/utils/logger";
 import {
@@ -42,11 +41,11 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
       return;
     }
 
-    set({ paymentsLoading: true });
+    set({ paymentsLoading: true, paymentsError: null });
 
     try {
       const payments = await fetchUserPayments(uid);
-      set({ payments, paymentsLoading: false });
+      set({ payments, paymentsLoading: false, paymentsError: null });
     } catch (error) {
       handleError(set, error, "fetch payments");
     }
@@ -58,23 +57,20 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
       return;
     }
 
-    set({ paymentsLoading: true });
+    set({ paymentsLoading: true, paymentsError: null });
 
     try {
       const paymentExists = await checkPaymentExists(uid, payment.id);
       if (paymentExists) {
-        toast.error("Payment with this ID already exists.");
-        set({ paymentsLoading: false });
+        set({ paymentsLoading: false, paymentsError: "Payment with this ID already exists." });
         return;
       }
 
       const newPayment = await createPayment(uid, payment);
       set((state) => {
         const updatedPayments = sortPayments([...state.payments, newPayment]);
-        return { payments: updatedPayments, paymentsLoading: false };
+        return { payments: updatedPayments, paymentsLoading: false, paymentsError: null };
       });
-
-      toast.success("Payment added successfully.");
     } catch (error) {
       handleError(set, error, "add payment");
     }
@@ -99,3 +95,8 @@ function handleError(
   logError(`Payments - ${context}`, error);
   set({ paymentsError: errorMessage, paymentsLoading: false });
 }
+
+// Selectors for optimized re-renders
+export const usePayments = () => usePaymentsStore((state) => state.payments);
+export const usePaymentsLoading = () => usePaymentsStore((state) => state.paymentsLoading);
+export const usePaymentsError = () => usePaymentsStore((state) => state.paymentsError);

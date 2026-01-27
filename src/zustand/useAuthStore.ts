@@ -52,3 +52,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
   clearAuthDetails: () => set({ ...defaultAuthState }),
 }));
 
+// Selectors for optimized re-renders
+export const useAuthUid = () => useAuthStore((state) => state.uid);
+export const useAuthEmail = () => useAuthStore((state) => state.authEmail);
+export const useAuthDisplayName = () => useAuthStore((state) => state.authDisplayName);
+export const useAuthPhotoUrl = () => useAuthStore((state) => state.authPhotoUrl);
+export const useAuthEmailVerified = () => useAuthStore((state) => state.authEmailVerified);
+export const useAuthReady = () => useAuthStore((state) => state.authReady);
+export const useAuthPending = () => useAuthStore((state) => state.authPending);
+export const useIsAuthenticated = () => useAuthStore((state) => !!state.uid);
+export const useIsAdmin = () => useAuthStore((state) => state.isAdmin);
+export const useIsAllowed = () => useAuthStore((state) => state.isAllowed);
+export const useCredits = () => useAuthStore((state) => state.credits);
+export const useIsPremium = () => useAuthStore((state) => state.premium);
+

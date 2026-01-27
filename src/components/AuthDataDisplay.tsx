@@ -1,3 +1,5 @@
+"use client";
+
 import { useAuthStore } from "@/zustand/useAuthStore";
 
 export default function AuthDataDisplay() {

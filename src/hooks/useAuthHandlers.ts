@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   GoogleAuthProvider,
   sendSignInLinkToEmail,
@@ -46,7 +46,7 @@ export function useAuthHandlers(hideModal: () => void) {
   /**
    * Handles Google OAuth sign-in
    */
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     if (!acceptTerms) return;
 
     try {
@@ -67,12 +67,12 @@ export function useAuthHandlers(hideModal: () => void) {
     } finally {
       hideModal();
     }
-  };
+  }, [acceptTerms, hideModal]);
 
   /**
    * Handles user sign-out
    */
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     try {
       // Best-effort: clear server-side session cookie first
       await fetch("/api/session", { method: "DELETE" });
@@ -83,12 +83,12 @@ export function useAuthHandlers(hideModal: () => void) {
     } finally {
       hideModal();
     }
-  };
+  }, [clearAuthDetails, hideModal]);
 
   /**
    * Handles password-based login
    */
-  const handlePasswordLogin = async () => {
+  const handlePasswordLogin = useCallback(async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
@@ -103,12 +103,12 @@ export function useAuthHandlers(hideModal: () => void) {
     } finally {
       hideModal();
     }
-  };
+  }, [email, password, hideModal]);
 
   /**
    * Handles password-based signup (creates new account)
    */
-  const handlePasswordSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePasswordSignup = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       await createUserWithEmailAndPassword(auth, email, password);
@@ -129,12 +129,12 @@ export function useAuthHandlers(hideModal: () => void) {
         toast.error(error.message);
       }
     }
-  };
+  }, [email, password, hideModal, handlePasswordLogin]);
 
   /**
    * Handles email link sign-in (passwordless)
    */
-  const handleEmailLinkSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailLinkSignIn = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const actionCodeSettings = {
@@ -151,12 +151,12 @@ export function useAuthHandlers(hideModal: () => void) {
       handleError("Send sign-in link", error, { showToast: true });
       hideModal();
     }
-  };
+  }, [email, name, setAuthDetails, hideModal]);
 
   /**
    * Handles password reset email
    */
-  const handlePasswordReset = async () => {
+  const handlePasswordReset = useCallback(async () => {
     if (!email) {
       toast.error("Please enter your email to reset your password.");
       return;
@@ -170,7 +170,7 @@ export function useAuthHandlers(hideModal: () => void) {
         toast.error(error.message);
       }
     }
-  };
+  }, [email]);
 
   return {
     // Form state

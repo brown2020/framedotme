@@ -93,13 +93,21 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   updateProfile: async (uid: string, newProfile: Partial<ProfileType>) => {
     if (!uid) return;
 
+    const previousProfile = get().profile;
+    
     try {
-      const updatedProfile = { ...get().profile, ...newProfile };
+      const updatedProfile = { ...previousProfile, ...newProfile };
 
+      // Optimistic update
       set({ profile: updatedProfile });
+      
+      // API call
       await updateUserProfile(uid, updatedProfile);
     } catch (error) {
+      // Rollback on failure
+      set({ profile: previousProfile });
       handleProfileError("updating profile", error);
+      throw error;
     }
   },
 
@@ -116,15 +124,21 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   minusCredits: async (uid: string, amount: number) => {
     if (!uid) return false;
 
-    const profile = get().profile;
-    if (profile.credits < amount) return false;
+    const previousProfile = get().profile;
+    if (previousProfile.credits < amount) return false;
 
     try {
-      const newCredits = profile.credits - amount;
+      const newCredits = previousProfile.credits - amount;
+      
+      // Optimistic update
+      set({ profile: { ...previousProfile, credits: newCredits } });
+      
+      // API call
       await updateUserProfile(uid, { credits: newCredits });
-      set({ profile: { ...profile, credits: newCredits } });
       return true;
     } catch (error) {
+      // Rollback on failure
+      set({ profile: previousProfile });
       handleProfileError("using credits", error);
       return false;
     }
@@ -133,14 +147,20 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   addCredits: async (uid: string, amount: number) => {
     if (!uid) return;
 
-    const profile = get().profile;
-    const newCredits = profile.credits + amount;
+    const previousProfile = get().profile;
+    const newCredits = previousProfile.credits + amount;
 
     try {
+      // Optimistic update
+      set({ profile: { ...previousProfile, credits: newCredits } });
+      
+      // API call
       await updateUserProfile(uid, { credits: newCredits });
-      set({ profile: { ...profile, credits: newCredits } });
     } catch (error) {
+      // Rollback on failure
+      set({ profile: previousProfile });
       handleProfileError("adding credits", error);
+      throw error;
     }
   },
 }));
@@ -169,5 +189,13 @@ function createNewProfile(
 function handleProfileError(action: string, error: unknown): void {
   logError(`Profile - ${action}`, error);
 }
+
+// Selectors for optimized re-renders
+export const useProfile = () => useProfileStore((state) => state.profile);
+export const useProfileEmail = () => useProfileStore((state) => state.profile.email);
+export const useProfileCredits = () => useProfileStore((state) => state.profile.credits);
+export const useProfileDisplayName = () => useProfileStore((state) => state.profile.displayName);
+export const useProfilePhotoUrl = () => useProfileStore((state) => state.profile.photoUrl);
+export const useProfileUseCredits = () => useProfileStore((state) => state.profile.useCredits);
 
 export default useProfileStore;

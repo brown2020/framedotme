@@ -103,6 +103,7 @@ export default function RecordingsPage() {
         onConfirm={() => {
           if (videoToDelete) {
             handleDeleteVideo(videoToDelete);
+            setVideoToDelete(null);
           }
         }}
         onCancel={() => setVideoToDelete(null)}
