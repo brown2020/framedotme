@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { 
   fetchUserRecordings, 
@@ -15,6 +15,7 @@ import { ConfirmDialog } from "./ui/confirm-dialog";
 import { ClipLoader } from "react-spinners";
 import { FeaturedVideoPlayer } from "./FeaturedVideoPlayer";
 import { VideoGridItem } from "./VideoGridItem";
+import toast from "react-hot-toast";
 
 /**
  * Recordings page component that displays all user recordings
@@ -42,17 +43,18 @@ export default function RecordingsPage(): ReactElement {
     });
   }, [uid, fetchVideos]);
 
-  const handleFeaturedVideoChange = (
+  const handleFeaturedVideoChange = useCallback((
     video: VideoMetadata,
     event: React.MouseEvent<HTMLButtonElement>
   ) => {
     event.stopPropagation();
     setFeaturedVideo(video);
-  };
+  }, []);
 
   const handleDeleteVideo = async (video: VideoMetadata) => {
     try {
       await deleteRecording(uid, video);
+      toast.success("Recording deleted successfully");
       
       // Refetch videos after deletion
       void fetchVideos(() => fetchUserRecordings(uid));
@@ -63,6 +65,7 @@ export default function RecordingsPage(): ReactElement {
       }
     } catch (error) {
       logger.error("Error deleting video", error);
+      toast.error("Failed to delete recording. Please try again.");
     }
   };
 
@@ -73,8 +76,10 @@ export default function RecordingsPage(): ReactElement {
   const handleDownloadVideo = async (video: VideoMetadata) => {
     try {
       await downloadRecording(video);
+      toast.success("Recording download started");
     } catch (error) {
       logger.error("Error downloading the video", error);
+      toast.error("Failed to download recording. Please try again.");
     }
   };
 

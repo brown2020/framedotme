@@ -3,7 +3,6 @@
 import useProfileStore from "@/zustand/useProfileStore";
 import { useCallback, useEffect, useState } from "react";
 import { isReactNativeWebView } from "@/utils/platform";
-import { usePaymentsStore } from "@/zustand/usePaymentsStore";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebaseClient";
 import { useRouter } from "next/navigation";
@@ -11,45 +10,20 @@ import toast from "react-hot-toast";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import { logger } from "@/utils/logger";
+import { useIAPHandler } from "@/hooks/useIAPHandler";
 
 export default function ProfileComponent() {
   const profile = useProfileStore((state) => state.profile);
   const router = useRouter();
 
   const [showCreditsSection, setShowCreditsSection] = useState(true);
-  const addCredits = useProfileStore((state) => state.addCredits);
-  const addPayment = usePaymentsStore((state) => state.addPayment);
   const deleteAccount = useProfileStore((state) => state.deleteAccount);
   const clearAuthDetails = useAuthStore((s) => s.clearAuthDetails);
   const uid = useAuthStore((s) => s.uid);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  useEffect(() => {
-    const handleMessageFromRN = async (event: MessageEvent) => {
-      if (!uid) return;
-      
-      const message = event.data;
-      if (message?.type === "IAP_SUCCESS") {
-        await addPayment(uid, {
-          id: message.message,
-          amount: message.amount,
-          status: "succeeded",
-          mode: "iap",
-          platform: message.platform,
-          productId: message.productId,
-          currency: message.currency,
-        });
-        await addCredits(uid, 10000);
-      }
-    };
-
-    // Listen for messages from the RN WebView
-    window.addEventListener("message", handleMessageFromRN);
-
-    return () => {
-      window.removeEventListener("message", handleMessageFromRN);
-    };
-  }, [addCredits, addPayment, uid]);
+  // Handle IAP messages from React Native WebView
+  useIAPHandler(uid);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -80,36 +54,46 @@ export default function ProfileComponent() {
       router.replace("/");
     } catch (error) {
       logger.error("Error on deletion of account", error);
+      toast.error("Failed to delete account. Please try again.");
     }
   }, [deleteAccount, clearAuthDetails, router, uid]);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col sm:flex-row px-5 py-3 gap-3 border border-gray-500 rounded-md">
+      <section 
+        className="flex flex-col sm:flex-row px-5 py-3 gap-3 border border-gray-500 rounded-md"
+        aria-labelledby="credits-section"
+      >
         <div className="flex gap-2 w-full items-center">
-          <div className="flex-1">
-            Usage Credits: {Math.round(profile.credits)}
+          <div className="flex-1" id="credits-section">
+            <strong>Usage Credits:</strong> {Math.round(profile.credits)}
           </div>
           <button
-            className="bg-blue-500 text-white px-3 py-2 rounded-md hover:opacity-50 flex-1 text-center"
+            className="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600 transition-colors flex-1 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={handleBuyClick}
+            aria-label="Purchase 10,000 credits"
           >
             Buy 10,000 Credits
           </button>
         </div>
-        <div className="text-sm text-gray-600 mt-2">
+        <p className="text-sm text-gray-600 mt-2">
           You can either buy credits or add your own API keys.
-        </div>
-      </div>
+        </p>
+      </section>
 
-      <div className="flex flex-col px-5 py-3 gap-3 border border-gray-500 rounded-md">
+      <section 
+        className="flex flex-col px-5 py-3 gap-3 border border-gray-500 rounded-md"
+        aria-labelledby="danger-zone"
+      >
+        <h2 id="danger-zone" className="sr-only">Danger Zone</h2>
         <button
-          className="btn-primary bg-[#e32012] self-start rounded-md hover:bg-[#e32012]/30"
+          className="btn-primary bg-[#e32012] self-start rounded-md hover:bg-[#e32012]/50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
           onClick={handleDeleteClick}
+          aria-label="Delete your account permanently"
         >
           Delete Account
         </button>
-      </div>
+      </section>
 
       <DeleteConfirmModal
         showDeleteModal={showDeleteModal}

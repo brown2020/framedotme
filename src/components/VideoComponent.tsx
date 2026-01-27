@@ -1,11 +1,11 @@
 "use client";
 
 import type { ReactElement } from "react";
-import Image from "next/image";
-import { useEffect } from "react";
+import { useMemo } from "react";
 import logo from "@/app/assets/logo.png";
-import { globalVideoRef } from "@/utils/avFunctions";
-import { DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT } from "@/lib/constants";
+import { useVideoPlayback, useVideoOverlaySync } from "@/hooks/useVideoPlayback";
+import { VideoPlayer } from "./video/VideoPlayer";
+import { VideoOverlay } from "./video/VideoOverlay";
 
 type Props = {
   videoSrc?: string;
@@ -20,6 +20,10 @@ type Props = {
 // Default fallback image
 const DEFAULT_IMAGE = typeof logo === "string" ? logo : logo.src || "";
 
+/**
+ * VideoComponent - Main video display component that handles video playback and overlay display
+ * Orchestrates video playback, animated GIFs, and poster images
+ */
 export default function VideoComponent({
   videoSrc,
   silentGif,
@@ -29,114 +33,47 @@ export default function VideoComponent({
   isAnimated,
   poster,
 }: Props): ReactElement | null {
-  // First useEffect: Handle video playback
-  useEffect(() => {
-    if (!globalVideoRef.current) return;
-    if (isAnimated) return;
+  // Handle video playback state
+  useVideoPlayback(isAnimated, isVideoPlaying, toggleVideoPlaying);
+  
+  // Sync video state with overlay display
+  useVideoOverlaySync(poster, isAnimated, silentGif, waitingGif, isVideoPlaying, toggleVideoPlaying);
 
-    const videoElement = globalVideoRef.current;
-
-    const handleEnded = () => {
-      if (isVideoPlaying) {
-        toggleVideoPlaying();
-      }
-    };
-
-    videoElement.addEventListener("ended", handleEnded);
-
-    if (isVideoPlaying) {
-      videoElement.muted = false;
-      videoElement.volume = 1.0;
-      videoElement.play();
-    } else {
-      videoElement.pause();
-      videoElement.currentTime = 0;
-      videoElement.volume = 0.0;
-      videoElement.muted = true;
-    }
-    return () => {
-      videoElement.removeEventListener("ended", handleEnded);
-    };
-  }, [isAnimated, isVideoPlaying, toggleVideoPlaying]);
-
-  // Second useEffect: Stop video if showing poster/gif instead
-  // MUST be before any conditional returns to satisfy React hooks rules
-  useEffect(() => {
-    if ((poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)) && isVideoPlaying) {
-      toggleVideoPlaying();
-    }
-  }, [poster, isAnimated, silentGif, waitingGif, isVideoPlaying, toggleVideoPlaying]);
-
-  const handleVideoToggle = () => {
-    toggleVideoPlaying();
-  };
-
-  const showVideo = videoSrc && !isAnimated && isVideoPlaying;
-  const showImageOverlay = Boolean(poster || (isAnimated && silentGif) || (!isAnimated && waitingGif));
-  const waitingImageSrc = waitingGif || poster || DEFAULT_IMAGE;
-  const silentImageSrc = silentGif || DEFAULT_IMAGE;
+  // Memoize computed values to prevent unnecessary recalculations
+  const displayState = useMemo(() => ({
+    showVideo: videoSrc && !isAnimated && isVideoPlaying,
+    showImageOverlay: Boolean(poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)),
+    waitingImageSrc: waitingGif || poster || DEFAULT_IMAGE,
+    silentImageSrc: silentGif || DEFAULT_IMAGE,
+    isAnimatedWithGif: isAnimated && !!silentGif,
+  }), [videoSrc, isAnimated, isVideoPlaying, poster, silentGif, waitingGif]);
 
   const containerClasses = `flex-1 h-full w-full relative overflow-hidden cursor-pointer bg-black`;
   const mediaClasses = `transform -translate-x-1/2 h-full object-cover absolute top-0 left-1/2 w-auto`;
 
-  if (showVideo) {
+  if (displayState.showVideo && videoSrc) {
     return (
-      <div className={containerClasses} onClick={handleVideoToggle}>
-        <video
-          height={DEFAULT_VIDEO_HEIGHT}
-          width={DEFAULT_VIDEO_WIDTH}
-          ref={globalVideoRef}
-          className={mediaClasses}
-          src={videoSrc}
-          autoPlay={isVideoPlaying}
-          muted={!isVideoPlaying}
-          poster={poster}
-          playsInline
-        />
-      </div>
+      <VideoPlayer
+        videoSrc={videoSrc}
+        poster={poster}
+        isVideoPlaying={isVideoPlaying}
+        onToggle={toggleVideoPlaying}
+        containerClasses={containerClasses}
+        mediaClasses={mediaClasses}
+      />
     );
   }
 
-  if (showImageOverlay) {
-    const isAnimatedWithGif = isAnimated && silentGif;
-    
+  if (displayState.showImageOverlay) {
     return (
-      <div className={containerClasses}>
-        {/* Waiting/Poster Layer */}
-        <div
-          className={`absolute top-0 left-0 h-full w-full bg-black ${
-            isAnimatedWithGif ? "z-0 opacity-0" : "z-10 opacity-100"
-          }`}
-        >
-          <Image
-            src={waitingImageSrc}
-            onClick={handleVideoToggle}
-            alt="waiting animation"
-            className={mediaClasses}
-            height={512}
-            width={512}
-            priority
-            unoptimized
-          />
-        </div>
-        
-        {/* Silent Animation Layer */}
-        <div
-          className={`absolute top-0 left-0 h-full w-full ${
-            isAnimatedWithGif ? "z-10 opacity-100 cursor-default" : "z-0 opacity-0"
-          }`}
-        >
-          <Image
-            src={silentImageSrc}
-            alt="silent animation"
-            className={mediaClasses}
-            height={512}
-            width={512}
-            priority
-            unoptimized
-          />
-        </div>
-      </div>
+      <VideoOverlay
+        waitingImageSrc={displayState.waitingImageSrc}
+        silentImageSrc={displayState.silentImageSrc}
+        isAnimatedWithGif={displayState.isAnimatedWithGif}
+        onToggle={toggleVideoPlaying}
+        containerClasses={containerClasses}
+        mediaClasses={mediaClasses}
+      />
     );
   }
 

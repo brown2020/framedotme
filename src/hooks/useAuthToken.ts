@@ -1,27 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { getIdToken } from "firebase/auth";
-import { deleteCookie, setCookie } from "cookies-next";
+import { useCallback, useEffect } from "react";
+import { deleteCookie } from "cookies-next";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
-import { 
-  LEGACY_ID_TOKEN_COOKIE_NAME, 
-  TOKEN_REFRESH_INTERVAL_MS, 
-  TOKEN_REFRESH_DEBOUNCE_MS 
-} from "@/lib/constants";
-import { browserStorage, AUTH_STORAGE_KEYS } from "@/services/browserStorageService";
+import { LEGACY_ID_TOKEN_COOKIE_NAME } from "@/lib/constants";
 import { logger } from "@/utils/logger";
-import { isReactNativeWebView } from "@/utils/platform";
-import { debounce } from "@/utils/debounce";
+import { useTokenRefresh } from "./useTokenRefresh";
 
+/**
+ * Hook to manage Firebase authentication state and token synchronization
+ * Handles user authentication state, session cookies, and automatic token refresh
+ * 
+ * @param cookieName - Name of the cookie to store the auth token
+ * @returns User authentication state (uid, loading, error)
+ */
 const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
   const [user, loading, error] = useAuthState(auth);
   const setAuthDetails = useAuthStore((state) => state.setAuthDetails);
-  const clearAuthDetails = useAuthStore((state) => state.clearAuthDetails);
-
-  const lastTokenRefresh = AUTH_STORAGE_KEYS.TOKEN_REFRESH(cookieName);
-
-  const activityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setServerSessionCookie = useCallback(async (idToken: string) => {
     try {
@@ -43,75 +38,8 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
     }
   }, []);
 
-  const refreshAuthToken = useCallback(async () => {
-    try {
-      if (!auth.currentUser) throw new Error("No user found");
-      const idTokenResult = await getIdToken(auth.currentUser, true);
-
-      setCookie(cookieName, idTokenResult, {
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-      });
-
-      // Upgrade to a secure httpOnly session cookie for server-side route protection.
-      // Best-effort: if this fails, we still have the legacy (JS-readable) token cookie.
-      await setServerSessionCookie(idTokenResult);
-
-      if (!isReactNativeWebView()) {
-        browserStorage.setItem(lastTokenRefresh, Date.now().toString());
-      }
-    } catch (error: unknown) {
-      logger.error("Error refreshing token", error);
-      deleteCookie(cookieName);
-
-      // Best-effort cleanup of server-side session cookie
-      await clearServerSessionCookie();
-    }
-  }, [clearServerSessionCookie, cookieName, lastTokenRefresh, setServerSessionCookie]);
-
-  const scheduleTokenRefresh = useCallback(() => {
-    if (activityTimeoutRef.current) {
-      clearTimeout(activityTimeoutRef.current);
-      activityTimeoutRef.current = null;
-    }
-    if (document.visibilityState === "visible") {
-      const timeoutId = setTimeout(refreshAuthToken, TOKEN_REFRESH_INTERVAL_MS);
-      activityTimeoutRef.current = timeoutId;
-    }
-  }, [refreshAuthToken]);
-
-  // Create debounced handler once and store in ref
-  const debouncedHandlerRef = useRef(
-    debounce((e: StorageEvent, tokenRefreshKey: string, refresh: () => void) => {
-      if (e.key === tokenRefreshKey) {
-        refresh();
-      }
-    }, TOKEN_REFRESH_DEBOUNCE_MS)
-  );
-
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      debouncedHandlerRef.current(e, lastTokenRefresh, scheduleTokenRefresh);
-    };
-
-    if (!isReactNativeWebView()) {
-      window.addEventListener("storage", handleStorageChange);
-    }
-
-    // Schedule initial token refresh if user is authenticated
-    if (user?.uid) {
-      scheduleTokenRefresh();
-    }
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      if (activityTimeoutRef.current) {
-        clearTimeout(activityTimeoutRef.current);
-        activityTimeoutRef.current = null;
-      }
-      debouncedHandlerRef.current.cancel();
-    };
-  }, [lastTokenRefresh, scheduleTokenRefresh, user?.uid]);
+  // Handle automatic token refresh
+  useTokenRefresh(cookieName, user?.uid, setServerSessionCookie, clearServerSessionCookie);
 
   useEffect(() => {
     // Don't do anything until Firebase auth state is determined
