@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { 
   fetchUserRecordings, 
@@ -27,7 +27,7 @@ export default function RecordingsPage() {
         setLoading(true);
         const videosData = await fetchUserRecordings(uid);
         setVideos(videosData);
-        if (videosData.length > 0) {
+        if (videosData.length > 0 && videosData[0]) {
           setFeaturedVideo(videosData[0]);
         }
       } catch (error) {
@@ -40,40 +40,40 @@ export default function RecordingsPage() {
     fetchVideos();
   }, [uid]);
 
-  const handleFeaturedVideoChange = (
+  const handleFeaturedVideoChange = useCallback((
     video: VideoMetadata,
     event: React.MouseEvent<HTMLButtonElement>
   ) => {
     event.stopPropagation();
     setFeaturedVideo(video);
-  };
+  }, []);
 
-  const handleDeleteVideo = async (video: VideoMetadata) => {
+  const handleDeleteVideo = useCallback(async (video: VideoMetadata) => {
     try {
       await deleteRecording(uid, video);
 
-      setVideos(videos.filter((v) => v.id !== video.id));
+      setVideos((prevVideos) => prevVideos.filter((v) => v.id !== video.id));
 
       // If the deleted video is the featured video, reset the featured video
-      if (featuredVideo && featuredVideo.id === video.id) {
-        setFeaturedVideo(null);
-      }
+      setFeaturedVideo((prevFeatured) => 
+        prevFeatured?.id === video.id ? null : prevFeatured
+      );
     } catch (error) {
       logger.error("Error deleting video", error);
     }
-  };
+  }, [uid]);
 
-  const clearFeaturedVideo = () => {
+  const clearFeaturedVideo = useCallback(() => {
     setFeaturedVideo(null);
-  };
+  }, []);
 
-  const handleDownloadVideo = async (video: VideoMetadata) => {
+  const handleDownloadVideo = useCallback(async (video: VideoMetadata) => {
     try {
       await downloadRecording(video);
     } catch (error) {
       logger.error("Error downloading the video", error);
     }
-  };
+  }, []);
 
   if (loading) {
     return (

@@ -8,12 +8,26 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebase/firebaseClient";
 import { PaymentType } from "@/zustand/usePaymentsStore";
+import { validateUserId } from "@/lib/validation";
+import { getUserPaymentsPath } from "@/lib/firestore";
 
 /**
  * Fetches all payments for a user from Firestore
+ * Returns payments sorted by creation date (newest first)
+ * 
+ * @param uid - The user's unique identifier
+ * @returns Promise resolving to array of payment records
+ * @throws {ValidationError} If uid is invalid
+ * 
+ * @example
+ * ```typescript
+ * const payments = await fetchUserPayments(user.uid);
+ * payments.forEach(p => console.log(p.amount));
+ * ```
  */
 export async function fetchUserPayments(uid: string): Promise<PaymentType[]> {
-  const q = query(collection(db, "users", uid, "payments"));
+  const validatedUid = validateUserId(uid);
+  const q = query(collection(db, getUserPaymentsPath(validatedUid)));
   const querySnapshot = await getDocs(q);
   const payments = querySnapshot.docs.map((doc) => ({
     id: doc.id,
@@ -31,13 +45,19 @@ export async function fetchUserPayments(uid: string): Promise<PaymentType[]> {
 
 /**
  * Checks if a payment with the given ID exists
+ * 
+ * @param uid - The user's unique identifier
+ * @param paymentId - The payment ID to check
+ * @returns Promise resolving to true if payment exists, false otherwise
+ * @throws {ValidationError} If uid is invalid
  */
 export async function checkPaymentExists(
   uid: string,
   paymentId: string
 ): Promise<boolean> {
+  const validatedUid = validateUserId(uid);
   const q = query(
-    collection(db, "users", uid, "payments"),
+    collection(db, getUserPaymentsPath(validatedUid)),
     where("id", "==", paymentId)
   );
   const querySnapshot = await getDocs(q);
@@ -46,12 +66,18 @@ export async function checkPaymentExists(
 
 /**
  * Creates a new payment record in Firestore
+ * 
+ * @param uid - The user's unique identifier
+ * @param payment - Payment data (without createdAt, will be added automatically)
+ * @returns Promise resolving to the created payment with createdAt
+ * @throws {ValidationError} If uid is invalid
  */
 export async function createPayment(
   uid: string,
   payment: Omit<PaymentType, "createdAt">
 ): Promise<PaymentType> {
-  const newPaymentDoc = await addDoc(collection(db, "users", uid, "payments"), {
+  const validatedUid = validateUserId(uid);
+  const newPaymentDoc = await addDoc(collection(db, getUserPaymentsPath(validatedUid)), {
     id: payment.id,
     amount: payment.amount,
     createdAt: Timestamp.now(),
@@ -75,13 +101,19 @@ export async function createPayment(
 }
 
 /**
- * Finds a processed payment by ID
+ * Finds a processed (succeeded) payment by ID
+ * 
+ * @param uid - The user's unique identifier
+ * @param paymentId - The payment ID to search for
+ * @returns Promise resolving to the payment if found and succeeded, null otherwise
+ * @throws {ValidationError} If uid is invalid
  */
 export async function findProcessedPayment(
   uid: string,
   paymentId: string
 ): Promise<PaymentType | null> {
-  const paymentsRef = collection(db, "users", uid, "payments");
+  const validatedUid = validateUserId(uid);
+  const paymentsRef = collection(db, getUserPaymentsPath(validatedUid));
   const q = query(
     paymentsRef,
     where("id", "==", paymentId),
@@ -89,7 +121,7 @@ export async function findProcessedPayment(
   );
   const querySnapshot = await getDocs(q);
 
-  if (!querySnapshot.empty) {
+  if (!querySnapshot.empty && querySnapshot.docs[0]) {
     return querySnapshot.docs[0].data() as PaymentType;
   }
 
@@ -98,6 +130,9 @@ export async function findProcessedPayment(
 
 /**
  * Sorts payments by creation date (newest first)
+ * 
+ * @param payments - Array of payments to sort
+ * @returns Sorted array with newest payments first
  */
 export function sortPayments(payments: PaymentType[]): PaymentType[] {
   return payments.sort(

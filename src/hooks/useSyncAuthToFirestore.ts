@@ -26,7 +26,42 @@ export function useSyncAuthToFirestore() {
       previousUidRef.current = authState.uid;
 
       try {
-        await updateUserDetailsInFirestore(authState, authState.uid);
+        // Extract only the data properties (exclude action functions)
+        const {
+          uid,
+          firebaseUid,
+          authEmail,
+          authDisplayName,
+          authPhotoUrl,
+          authEmailVerified,
+          authReady,
+          authPending,
+          isAdmin,
+          isAllowed,
+          isInvited,
+          lastSignIn,
+          premium,
+          credits
+        } = authState;
+        
+        const authData = {
+          uid,
+          firebaseUid,
+          authEmail,
+          authDisplayName,
+          authPhotoUrl,
+          authEmailVerified,
+          authReady,
+          authPending,
+          isAdmin,
+          isAllowed,
+          isInvited,
+          lastSignIn,
+          premium,
+          credits
+        };
+        
+        await updateUserDetailsInFirestore(authData, authState.uid);
         logger.debug("Auth details synced to Firestore");
       } catch (error) {
         logger.error("Failed to sync auth details to Firestore", error);

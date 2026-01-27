@@ -92,7 +92,10 @@ export function useAuthHandlers(hideModal: () => void) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
-      browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, email.split("@")[0]);
+      const emailName = email.split("@")[0];
+      if (emailName) {
+        browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
+      }
     } catch (error: unknown) {
       if (isFirebaseError(error)) {
         toast.error(error.message);
@@ -110,7 +113,10 @@ export function useAuthHandlers(hideModal: () => void) {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
-      browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, email.split("@")[0]);
+      const emailName = email.split("@")[0];
+      if (emailName) {
+        browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
+      }
     } catch (error: unknown) {
       if (error instanceof Error) {
         if ((error as { code?: string }).code === "auth/email-already-in-use") {

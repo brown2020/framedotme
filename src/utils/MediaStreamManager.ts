@@ -122,10 +122,15 @@ export class MediaStreamManager {
       const videoTrack = this.screenStream.getVideoTracks()[0];
       const audioTracks = destination.stream.getAudioTracks();
 
-      this.combinedStream = new MediaStream([
-        videoTrack,
-        ...(audioTracks.length > 0 ? [audioTracks[0]] : []),
-      ]);
+      const tracks: MediaStreamTrack[] = [];
+      if (videoTrack) {
+        tracks.push(videoTrack);
+      }
+      if (audioTracks.length > 0 && audioTracks[0]) {
+        tracks.push(audioTracks[0]);
+      }
+
+      this.combinedStream = new MediaStream(tracks);
 
       return this.combinedStream;
     } catch (error) {

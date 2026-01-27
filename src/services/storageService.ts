@@ -19,39 +19,75 @@ import { downloadFromUrl } from "@/utils/downloadUtils";
 import { VideoMetadata } from "@/types/video";
 import { UploadProgress } from "@/types/recorder";
 import { logger } from "@/utils/logger";
+import { StorageError } from "@/types/errors";
+import { validateUserId, validateFilename } from "@/lib/validation";
+import { getUserBotcastsPath } from "@/lib/firestore";
 
 /**
  * Fetches all recordings for a specific user from Firestore
- * @param userId - The user's unique identifier
- * @returns Array of video metadata sorted by creation date (newest first)
+ * 
+ * @param userId - The authenticated user's unique identifier
+ * @returns Promise resolving to array of video metadata sorted by creation date (newest first)
+ * @throws {ValidationError} If userId is invalid
+ * @throws {StorageError} If Firestore query fails
+ * 
+ * @example
+ * ```typescript
+ * const recordings = await fetchUserRecordings(user.uid);
+ * recordings.forEach(video => console.log(video.filename));
+ * ```
  */
 export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata[]> => {
-  const videosRef = collection(db, `users/${userId}/botcasts`);
-  const q = query(videosRef, orderBy("createdAt", "desc"));
-  const querySnapshot = await getDocs(q);
+  const validatedUserId = validateUserId(userId);
   
-  return querySnapshot.docs.map((doc) => ({
-      id: doc.id || doc.data().id || "",
-      downloadUrl: doc.data().downloadUrl || "",
-      createdAt: doc.data().createdAt || Timestamp.now(),
-      filename: doc.data().filename || "",
-      showOnProfile: doc.data().showOnProfile || false,
-      botId: doc.data().botId || "",
-      botName: doc.data().botName || "",
-      modelId: doc.data().modelId || "",
-      modelName: doc.data().modelName || "",
-      language: doc.data().language || "",
-      languageCode: doc.data().languageCode || "",
-    })) as VideoMetadata[];
+  try {
+    const videosRef = collection(db, getUserBotcastsPath(validatedUserId));
+    const q = query(videosRef, orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map((doc) => ({
+        id: doc.id || doc.data().id || "",
+        downloadUrl: doc.data().downloadUrl || "",
+        createdAt: doc.data().createdAt || Timestamp.now(),
+        filename: doc.data().filename || "",
+        showOnProfile: doc.data().showOnProfile || false,
+        botId: doc.data().botId || "",
+        botName: doc.data().botName || "",
+        modelId: doc.data().modelId || "",
+        modelName: doc.data().modelName || "",
+        language: doc.data().language || "",
+        languageCode: doc.data().languageCode || "",
+      })) as VideoMetadata[];
+  } catch (error) {
+    throw new StorageError(
+      'Failed to fetch user recordings',
+      'firestore-write',
+      error as Error,
+      { userId: validatedUserId }
+    );
+  }
 };
 
 /**
  * Uploads a recording to Firebase Storage and creates a Firestore record
- * @param userId - The user's unique identifier
- * @param videoBlob - The video Blob to upload
- * @param filename - Name for the uploaded file
+ * 
+ * @param userId - The authenticated user's unique identifier
+ * @param videoBlob - The video Blob to upload (must be valid video format)
+ * @param filename - Name for the uploaded file (should include .webm extension)
  * @param onProgress - Optional callback for upload progress updates
  * @returns Promise resolving to the download URL of the uploaded file
+ * @throws {ValidationError} If userId or filename is invalid
+ * @throws {StorageError} If upload or Firestore write fails
+ * 
+ * @example
+ * ```typescript
+ * const url = await uploadRecording(
+ *   user.uid,
+ *   recordingBlob,
+ *   'video_123.webm',
+ *   (progress) => console.log(`${progress.progress}%`)
+ * );
+ * ```
  */
 export const uploadRecording = async (
   userId: string,
@@ -59,22 +95,18 @@ export const uploadRecording = async (
   filename: string,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<string> => {
-  if (!userId) {
-    throw new Error("User ID is required for upload");
-  }
+  const validatedUserId = validateUserId(userId);
+  const validatedFilename = validateFilename(filename);
 
   onProgress?.({ progress: 0, status: "starting" });
 
   try {
-    // Helpful when debugging popups / multi-window auth issues
     logger.debug(`uploadRecording: auth.currentUser.uid = ${auth.currentUser?.uid}`);
 
-    const filePath = `${userId}/botcasts/${filename}`;
+    const filePath = `${validatedUserId}/botcasts/${validatedFilename}`;
     const storageRef = ref(storage, filePath);
-    // Provide explicit contentType so Storage Rules can validate reliably.
-    // (Browsers may omit Blob contentType, which otherwise becomes null in rules.)
     const uploadTask = uploadBytesResumable(storageRef, videoBlob, {
-      contentType: filename.endsWith(".webm") ? "video/webm" : "video/*",
+      contentType: validatedFilename.endsWith(".webm") ? "video/webm" : "video/*",
     });
 
     return new Promise((resolve, reject) => {
@@ -89,62 +121,74 @@ export const uploadRecording = async (
           });
         },
         (error) => {
-          logger.error("uploadRecording: Storage upload failed", error);
-          try {
-            (error as unknown as { stage?: string }).stage = "storage-upload";
-          } catch {
-            // ignore
-          }
+          const storageError = new StorageError(
+            'Failed to upload recording to storage',
+            'storage-upload',
+            error as Error,
+            { userId: validatedUserId, filename: validatedFilename }
+          );
+          logger.error("uploadRecording: Storage upload failed", storageError);
           onProgress?.({
             progress: 0,
             status: "error",
-            error: error as Error,
+            error: storageError,
           });
-          reject(error);
+          reject(storageError);
         },
         async () => {
           try {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            await createFirestoreRecord(userId, filename, downloadURL);
+            await createFirestoreRecord(validatedUserId, validatedFilename, downloadURL);
             onProgress?.({
               progress: 100,
               status: "completed",
             });
             resolve(downloadURL);
           } catch (error) {
-            logger.error("uploadRecording: Firestore record creation failed", error);
-            try {
-              (error as unknown as { stage?: string }).stage = "firestore-botcasts-setDoc";
-            } catch {
-              // ignore
-            }
-            reject(error);
+            const firestoreError = new StorageError(
+              'Failed to create Firestore record for upload',
+              'firestore-write',
+              error as Error,
+              { userId: validatedUserId, filename: validatedFilename }
+            );
+            logger.error("uploadRecording: Firestore record creation failed", firestoreError);
+            reject(firestoreError);
           }
         }
       );
     });
   } catch (error) {
-    logger.error("uploadRecording: Failed to initialize upload", error);
-    try {
-      (error as unknown as { stage?: string }).stage = "upload-init";
-    } catch {
-      // ignore
-    }
+    const initError = new StorageError(
+      'Failed to initialize upload',
+      'upload-init',
+      error as Error,
+      { userId: validatedUserId, filename: validatedFilename }
+    );
+    logger.error("uploadRecording: Failed to initialize upload", initError);
     onProgress?.({
       progress: 0,
       status: "error",
-      error: error as Error,
+      error: initError,
     });
-    throw error;
+    throw initError;
   }
 };
 
+/**
+ * Creates a Firestore record for an uploaded recording
+ * 
+ * @param userId - The user's unique identifier
+ * @param filename - The uploaded file's name
+ * @param downloadUrl - The Firebase Storage download URL
+ * @throws {StorageError} If Firestore write fails
+ * @internal
+ */
 const createFirestoreRecord = async (
   userId: string,
   filename: string,
   downloadUrl: string
-) => {
-  const botcastRef = doc(db, `users/${userId}/botcasts/${filename}`);
+): Promise<void> => {
+  const botcastRef = doc(db, `${getUserBotcastsPath(userId)}/${filename}`);
 
   const metadata: VideoMetadata = {
     id: botcastRef.id,
@@ -155,40 +199,48 @@ const createFirestoreRecord = async (
   };
 
   try {
-    // Force token retrieval right before the write (helps in popup/multi-window situations).
-    // Do not log the token; just ensure it can be fetched.
+    // Force token retrieval right before the write (helps in popup/multi-window situations)
     await auth.currentUser?.getIdToken();
     await setDoc(botcastRef, metadata);
   } catch (error) {
-    try {
-      const anyErr = error as unknown as { stage?: string; debug?: string };
-      anyErr.stage = "firestore-botcasts-setDoc";
-      anyErr.debug = `path=${botcastRef.path} authUid=${auth.currentUser?.uid ?? "null"} userId=${userId} filename=${filename}`;
-    } catch {
-      // ignore
-    }
-    logger.error(`createFirestoreRecord: setDoc denied - path=${botcastRef.path} authUid=${auth.currentUser?.uid ?? "null"} userId=${userId} filename=${filename}`, error);
-    throw error;
+    throw new StorageError(
+      'Firestore write denied - check authentication and security rules',
+      'firestore-write',
+      error as Error,
+      {
+        path: botcastRef.path,
+        authUid: auth.currentUser?.uid ?? 'null',
+        userId,
+        filename
+      }
+    );
   }
 };
 
 /**
  * Deletes a recording from both Firebase Storage and Firestore
- * @param userId - The user's unique identifier
+ * 
+ * @param userId - The authenticated user's unique identifier
  * @param video - Metadata of the video to delete
+ * @returns Promise that resolves when deletion is complete
+ * @throws {ValidationError} If userId is invalid
+ * @throws {StorageError} If deletion from Storage or Firestore fails
+ * 
+ * @example
+ * ```typescript
+ * await deleteRecording(user.uid, videoToDelete);
+ * ```
  */
 export const deleteRecording = async (
   userId: string,
   video: VideoMetadata
 ): Promise<void> => {
-  if (!userId) {
-    throw new Error("User ID is required for deletion");
-  }
+  const validatedUserId = validateUserId(userId);
 
   try {
     // Delete from storage
     if (video.filename && video.filename !== "no filename") {
-      const filePath = `${userId}/botcasts/${video.filename}`;
+      const filePath = `${validatedUserId}/botcasts/${video.filename}`;
       const storageRef = ref(storage, filePath);
       await deleteObject(storageRef);
     } else {
@@ -197,13 +249,29 @@ export const deleteRecording = async (
     }
 
     // Delete from Firestore
-    await deleteDoc(doc(db, `users/${userId}/botcasts`, video.id));
+    await deleteDoc(doc(db, getUserBotcastsPath(validatedUserId), video.id));
   } catch (error) {
-    logger.error("Error deleting recording", error);
-    throw error;
+    throw new StorageError(
+      'Failed to delete recording',
+      'storage-delete',
+      error as Error,
+      { userId: validatedUserId, videoId: video.id }
+    );
   }
 };
 
+/**
+ * Downloads a recording to the user's device
+ * 
+ * @param video - Metadata of the video to download
+ * @returns Promise that resolves when download initiates
+ * @throws {Error} If download fails
+ * 
+ * @example
+ * ```typescript
+ * await downloadRecording(selectedVideo);
+ * ```
+ */
 export const downloadRecording = async (video: VideoMetadata): Promise<void> => {
   const filename =
     video.filename && video.filename !== "no filename"
