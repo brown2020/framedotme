@@ -1,14 +1,22 @@
 // utils/platform.ts
-export function isIOSReactNativeWebView(): boolean {
+
+/**
+ * Checks if code is running in a React Native WebView
+ * @returns true if running in React Native WebView, false otherwise
+ */
+export function isReactNativeWebView(): boolean {
   if (typeof window === "undefined") {
-    return false; // Ensure this is only run client-side
+    return false;
   }
+  return typeof window.ReactNativeWebView !== "undefined";
+}
 
-  // Check if we are in a React Native WebView
-  const isReactNativeWebView = typeof window.ReactNativeWebView !== "undefined";
-
-  // Return trueif in a React Native WebView
-  return isReactNativeWebView;
+/**
+ * Legacy alias for backwards compatibility
+ * @deprecated Use isReactNativeWebView instead
+ */
+export function isIOSReactNativeWebView(): boolean {
+  return isReactNativeWebView();
 }
 
 const restrictedWords = [

@@ -7,6 +7,7 @@ import {
   SESSION_COOKIE_NAME,
 } from "./src/lib/constants";
 import { verifyIdToken, verifySessionToken } from "./src/lib/session";
+import { logger } from "./src/utils/logger";
 
 const COOKIE_PATH = "/";
 
@@ -84,7 +85,7 @@ export async function proxy(request: NextRequest) {
 
     return NextResponse.next();
   } catch (error) {
-    console.error("Proxy error:", error);
+    logger.error("Proxy error:", error);
     return clearAuthCookies(
       NextResponse.redirect(new URL(ROUTES.home, request.url))
     );

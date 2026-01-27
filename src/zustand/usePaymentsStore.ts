@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { Timestamp } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { getErrorMessage, logError } from "@/utils/errorHandling";
+import { logger } from "@/utils/logger";
 import {
   fetchUserPayments,
   checkPaymentExists,
@@ -37,7 +38,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
 
   fetchPayments: async (uid: string) => {
     if (!uid) {
-      console.error("Invalid UID for fetchPayments");
+      logger.error("Invalid UID for fetchPayments");
       return;
     }
 
@@ -53,7 +54,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
 
   addPayment: async (uid: string, payment: Omit<PaymentType, "createdAt">) => {
     if (!uid) {
-      console.error("Invalid UID for addPayment");
+      logger.error("Invalid UID for addPayment");
       return;
     }
 

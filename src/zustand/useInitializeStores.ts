@@ -3,11 +3,23 @@ import { useAuthStore } from "./useAuthStore";
 import useProfileStore from "./useProfileStore";
 
 export const useInitializeStores = () => {
-  const uid = useAuthStore((state) => state.uid);
+  const {
+    uid,
+    authEmail,
+    authDisplayName,
+    authPhotoUrl,
+    authEmailVerified
+  } = useAuthStore();
   const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
   useEffect(() => {
     if (!uid) return;
-    fetchProfile(uid);
-  }, [fetchProfile, uid]);
+    
+    fetchProfile(uid, {
+      authEmail,
+      authDisplayName,
+      authPhotoUrl,
+      authEmailVerified
+    });
+  }, [fetchProfile, uid, authEmail, authDisplayName, authPhotoUrl, authEmailVerified]);
 };

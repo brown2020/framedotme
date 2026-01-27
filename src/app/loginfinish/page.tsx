@@ -9,6 +9,7 @@ import { FirebaseError } from "firebase/app";
 import useProfileStore from "@/zustand/useProfileStore";
 import { deleteCookie, getCookie } from "cookies-next";
 import { REDIRECT_URL_COOKIE_NAME } from "@/lib/constants";
+import { logger } from "@/utils/logger";
 
 export default function LoginFinishPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function LoginFinishPage() {
         let email = window.localStorage.getItem("frameEmail");
         const name = window.localStorage.getItem("frameName") || "";
 
-        console.log("User signed in successfully:", email, name);
+        logger.debug("User signed in successfully:", email, name);
         if (!email) {
           email = window.prompt("Please confirm your email");
           if (!email) {
@@ -46,13 +47,13 @@ export default function LoginFinishPage() {
         const uid = user?.uid;
         const selectedName = name || user?.displayName || "";
 
-        console.log("User auth data:", authEmail, uid, selectedName);
+        logger.debug("User auth data:", authEmail, uid, selectedName);
 
         if (!uid || !authEmail) {
           throw new Error("No user found");
         }
 
-        console.log(
+        logger.info(
           "User signed in successfully:",
           authEmail,
           uid,
@@ -81,7 +82,7 @@ export default function LoginFinishPage() {
           errorMessage = error.message;
         }
 
-        console.log("ERROR", errorMessage);
+        logger.error("Login finish error:", errorMessage);
         alert(errorMessage);
         redirectPath = "/";
       } finally {

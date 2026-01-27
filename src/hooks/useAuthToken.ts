@@ -11,9 +11,12 @@ import {
 } from "@/lib/constants";
 import { browserStorage, AUTH_STORAGE_KEYS } from "@/services/browserStorageService";
 import { logger } from "@/utils/logger";
+import { isReactNativeWebView } from "@/utils/platform";
 
-// Custom debounce implementation
-function debounce<T extends (...args: any[]) => any>(
+/**
+ * Debounces a function with cleanup support
+ */
+function debounce<T extends (...args: Parameters<T>) => void>(
   func: T,
   wait: number
 ): T & { cancel: () => void } {
@@ -75,7 +78,7 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
       // Best-effort: if this fails, we still have the legacy (JS-readable) token cookie.
       await setServerSessionCookie(idTokenResult);
 
-      if (!window.ReactNativeWebView) {
+      if (!isReactNativeWebView()) {
         browserStorage.setItem(lastTokenRefresh, Date.now().toString());
       }
     } catch (error: unknown) {
@@ -109,7 +112,7 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
   );
 
   useEffect(() => {
-    if (!window.ReactNativeWebView) {
+    if (!isReactNativeWebView()) {
       window.addEventListener("storage", handleStorageChange);
     }
 

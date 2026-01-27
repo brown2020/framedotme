@@ -34,7 +34,7 @@ import { getUserBotcastsPath } from "@/lib/firestore";
  * @example
  * ```typescript
  * const recordings = await fetchUserRecordings(user.uid);
- * recordings.forEach(video => console.log(video.filename));
+ * recordings.forEach(video => logger.debug(video.filename));
  * ```
  */
 export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata[]> => {
@@ -45,19 +45,22 @@ export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata
     const q = query(videosRef, orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map((doc) => ({
-        id: doc.id || doc.data().id || "",
-        downloadUrl: doc.data().downloadUrl || "",
-        createdAt: doc.data().createdAt || Timestamp.now(),
-        filename: doc.data().filename || "",
-        showOnProfile: doc.data().showOnProfile || false,
-        botId: doc.data().botId || "",
-        botName: doc.data().botName || "",
-        modelId: doc.data().modelId || "",
-        modelName: doc.data().modelName || "",
-        language: doc.data().language || "",
-        languageCode: doc.data().languageCode || "",
-      })) as VideoMetadata[];
+    return querySnapshot.docs.map((doc): VideoMetadata => {
+      const data = doc.data();
+      return {
+        id: doc.id || data.id || "",
+        downloadUrl: data.downloadUrl || "",
+        createdAt: data.createdAt || Timestamp.now(),
+        filename: data.filename || "",
+        showOnProfile: data.showOnProfile || false,
+        botId: data.botId,
+        botName: data.botName,
+        modelId: data.modelId,
+        modelName: data.modelName,
+        language: data.language,
+        languageCode: data.languageCode,
+      };
+    });
   } catch (error) {
     throw new StorageError(
       'Failed to fetch user recordings',

@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { useAuthStore } from "./useAuthStore";
 import { 
   fetchUserProfile, 
   saveUserProfile, 
@@ -47,9 +46,16 @@ const defaultProfile: ProfileType = {
   runway_ml_api_key: "",
 };
 
+interface AuthContext {
+  authEmail?: string;
+  authDisplayName?: string;
+  authPhotoUrl?: string;
+  authEmailVerified?: boolean;
+}
+
 interface ProfileState {
   profile: ProfileType;
-  fetchProfile: (uid: string) => Promise<void>;
+  fetchProfile: (uid: string, authContext?: AuthContext) => Promise<void>;
   updateProfile: (uid: string, newProfile: Partial<ProfileType>) => Promise<void>;
   minusCredits: (uid: string, amount: number) => Promise<boolean>;
   addCredits: (uid: string, amount: number) => Promise<void>;
@@ -76,26 +82,19 @@ const mergeProfileWithDefaults = (
 const useProfileStore = create<ProfileState>((set, get) => ({
   profile: defaultProfile,
 
-  fetchProfile: async (uid: string) => {
+  fetchProfile: async (uid: string, authContext?: AuthContext) => {
     if (!uid) return;
-
-    const { authEmail, authDisplayName, authPhotoUrl, authEmailVerified } =
-      useAuthStore.getState();
 
     try {
       const profileData = await fetchUserProfile(uid);
 
       const newProfile = profileData
-        ? mergeProfileWithDefaults(profileData, {
-            authEmail,
-            authDisplayName,
-            authPhotoUrl,
-          })
+        ? mergeProfileWithDefaults(profileData, authContext || {})
         : createNewProfile(
-            authEmail,
-            authDisplayName,
-            authPhotoUrl,
-            authEmailVerified
+            authContext?.authEmail,
+            authContext?.authDisplayName,
+            authContext?.authPhotoUrl,
+            authContext?.authEmailVerified
           );
 
       await saveUserProfile(uid, newProfile);

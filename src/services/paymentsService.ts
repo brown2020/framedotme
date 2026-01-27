@@ -77,10 +77,12 @@ export async function createPayment(
   payment: Omit<PaymentType, "createdAt">
 ): Promise<PaymentType> {
   const validatedUid = validateUserId(uid);
+  const createdAt = Timestamp.now();
+  
   const newPaymentDoc = await addDoc(collection(db, getUserPaymentsPath(validatedUid)), {
     id: payment.id,
     amount: payment.amount,
-    createdAt: Timestamp.now(),
+    createdAt,
     status: payment.status,
     mode: payment.mode,
     currency: payment.currency,
@@ -91,7 +93,7 @@ export async function createPayment(
   return {
     id: newPaymentDoc.id,
     amount: payment.amount,
-    createdAt: Timestamp.now(),
+    createdAt,
     status: payment.status,
     mode: payment.mode,
     currency: payment.currency,
@@ -122,7 +124,18 @@ export async function findProcessedPayment(
   const querySnapshot = await getDocs(q);
 
   if (!querySnapshot.empty && querySnapshot.docs[0]) {
-    return querySnapshot.docs[0].data() as PaymentType;
+    const doc = querySnapshot.docs[0];
+    const data = doc.data();
+    return {
+      id: data.id,
+      amount: data.amount,
+      createdAt: data.createdAt,
+      status: data.status,
+      mode: data.mode,
+      currency: data.currency,
+      platform: data.platform,
+      productId: data.productId,
+    };
   }
 
   return null;

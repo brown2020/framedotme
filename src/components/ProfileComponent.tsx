@@ -2,7 +2,7 @@
 
 import useProfileStore from "@/zustand/useProfileStore";
 import { useCallback, useEffect, useState } from "react";
-import { isIOSReactNativeWebView } from "@/utils/platform";
+import { isReactNativeWebView } from "@/utils/platform";
 import { usePaymentsStore } from "@/zustand/usePaymentsStore";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebaseClient";
@@ -53,7 +53,7 @@ export default function ProfileComponent() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShowCreditsSection(!isIOSReactNativeWebView());
+    setShowCreditsSection(!isReactNativeWebView());
   }, []);
 
   const handleBuyClick = useCallback(() => {

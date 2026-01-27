@@ -66,14 +66,35 @@ export const updateUserDetailsInFirestore = async (
  * @example
  * ```typescript
  * const profile = await fetchUserProfile(user.uid);
- * if (profile) console.log(profile.displayName);
+ * if (profile) logger.debug(profile.displayName);
  * ```
  */
 export const fetchUserProfile = async (uid: string): Promise<ProfileType | null> => {
   const validatedUid = validateUserId(uid);
   const userRef = doc(db, getUserProfilePath(validatedUid));
   const docSnap = await getDoc(userRef);
-  return docSnap.exists() ? (docSnap.data() as ProfileType) : null;
+  
+  if (!docSnap.exists()) return null;
+  
+  const data = docSnap.data();
+  return {
+    email: data.email || "",
+    contactEmail: data.contactEmail || "",
+    displayName: data.displayName || "",
+    photoUrl: data.photoUrl || "",
+    emailVerified: data.emailVerified || false,
+    credits: data.credits || 0,
+    fireworks_api_key: data.fireworks_api_key || "",
+    openai_api_key: data.openai_api_key || "",
+    stability_api_key: data.stability_api_key || "",
+    bria_api_key: data.bria_api_key || "",
+    did_api_key: data.did_api_key || "",
+    replicate_api_key: data.replicate_api_key || "",
+    selectedAvatar: data.selectedAvatar || "",
+    selectedTalkingPhoto: data.selectedTalkingPhoto || "",
+    useCredits: data.useCredits !== undefined ? data.useCredits : true,
+    runway_ml_api_key: data.runway_ml_api_key || "",
+  };
 };
 
 /**

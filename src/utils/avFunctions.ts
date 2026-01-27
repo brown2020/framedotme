@@ -1,4 +1,5 @@
 import { createRef } from "react";
+import { logger } from "./logger";
 
 // Initialize globalAudioElement conditionally
 export const globalAudioElement =
@@ -38,9 +39,9 @@ export const playAudio = (audioSrc: string, onEndCallback = () => {}) => {
     globalAudioElement.play();
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error("Audio play error:", error.message);
+      logger.error("Audio play error:", error.message);
     } else {
-      console.error("Audio play error: Unknown error", error);
+      logger.error("Audio play error: Unknown error", error);
     }
   }
 };

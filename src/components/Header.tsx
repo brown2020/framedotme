@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { navItems } from "@/constants/menuItems";
 import { ScanIcon } from "lucide-react";
 import { logger } from "@/utils/logger";
+import { isReactNativeWebView } from "@/utils/platform";
 
 export default function Header() {
   const router = useRouter();
@@ -15,8 +16,8 @@ export default function Header() {
       <div
         className="flex items-center cursor-pointer"
         onClick={() => {
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage("refresh");
+          if (isReactNativeWebView()) {
+            window.ReactNativeWebView?.postMessage("refresh");
           } else {
             logger.debug("Not React Native WebView environment");
           }

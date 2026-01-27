@@ -13,6 +13,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { RecorderStatusProvider } from "./RecorderStatusProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { shouldRedirectToHome } from "@/utils/routing";
+import { isReactNativeWebView } from "@/utils/platform";
 
 export function ClientProvider({ children }: { children: React.ReactNode }) {
   const { loading, uid } = useAuthToken(process.env.NEXT_PUBLIC_COOKIE_NAME!);
@@ -41,7 +42,7 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (window.ReactNativeWebView) {
+    if (isReactNativeWebView()) {
       document.body.classList.add("noscroll");
     } else {
       document.body.classList.remove("noscroll");
@@ -80,7 +81,7 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
     <ErrorBoundary>
       <div className="flex flex-col h-full">
         {wrappedChildren}
-        {!window.ReactNativeWebView && (
+        {!isReactNativeWebView() && (
           <CookieConsent>
             This app uses cookies to enhance the user experience.
           </CookieConsent>
