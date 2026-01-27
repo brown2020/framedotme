@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { useEffect, useRef } from "react";
 import { VideoIcon } from "lucide-react";
 import { useRecorderStatus } from "@/hooks/useRecorderStatus";
@@ -12,7 +13,7 @@ import {
   VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS,
 } from "@/lib/constants";
 
-export default function VideoControlsLauncher() {
+export default function VideoControlsLauncher(): ReactElement {
   const { recorderStatus, updateStatus } = useRecorderStatus();
   const videoControlsWindowRef = useRef<Window | null>(null);
 

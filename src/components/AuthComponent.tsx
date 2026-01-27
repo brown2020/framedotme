@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { useRef } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { isReactNativeWebView } from "@/utils/platform";
@@ -13,7 +14,7 @@ import { SignInForm } from "./auth/SignInForm";
 /**
  * Main authentication component that handles all sign-in/sign-up flows
  */
-export default function AuthComponent() {
+export default function AuthComponent(): ReactElement {
   const uid = useAuthStore((s) => s.uid);
   const authEmail = useAuthStore((s) => s.authEmail);
   const authDisplayName = useAuthStore((s) => s.authDisplayName);

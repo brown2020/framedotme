@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { useState } from "react";
 
 type Props = {
@@ -12,7 +13,7 @@ export default function DeleteConfirmModal({
   showDeleteModal,
   onHideModal,
   onDeleteConfirm,
-}: Props) {
+}: Props): ReactElement | null {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const handleDeleteConfirm = () => {

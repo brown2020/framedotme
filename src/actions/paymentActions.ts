@@ -5,7 +5,17 @@ import { logger } from "@/utils/logger";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
-export async function createPaymentIntent(amount: number) {
+interface PaymentIntentResult {
+  id: string;
+  amount: number;
+  created: number;
+  status: string;
+  client_secret: string | null;
+  currency: string;
+  description: string | null;
+}
+
+export async function createPaymentIntent(amount: number): Promise<string | null> {
   const product = process.env.NEXT_PUBLIC_STRIPE_PRODUCT_NAME;
 
   // Validate amount parameter
@@ -34,7 +44,7 @@ export async function createPaymentIntent(amount: number) {
   }
 }
 
-export async function validatePaymentIntent(paymentIntentId: string) {
+export async function validatePaymentIntent(paymentIntentId: string): Promise<PaymentIntentResult> {
   try {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 

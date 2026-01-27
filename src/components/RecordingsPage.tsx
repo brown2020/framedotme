@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { 
@@ -19,7 +20,7 @@ import { ClipLoader } from "react-spinners";
  * 
  * @returns The recordings page component with video grid and featured player
  */
-export default function RecordingsPage() {
+export default function RecordingsPage(): ReactElement {
   const uid = useAuthStore((state) => state.uid);
 
   const [videos, setVideos] = useState<VideoMetadata[]>([]);

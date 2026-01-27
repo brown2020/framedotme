@@ -1,6 +1,7 @@
 // components/VideoControlsPage.tsx
 "use client";
 
+import type { ReactElement } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { logger } from "@/utils/logger";
 import { VIDEO_DIMENSION_UPDATE_INTERVAL_MS } from "@/lib/constants";
 import { getRecorderButtonClass, getRecorderButtonText } from "@/utils/recorderStyles";
 
-export default function VideoControlsPage() {
+export default function VideoControlsPage(): ReactElement {
   const [videoWidth, setVideoWidth] = useState(0);
   const [videoHeight, setVideoHeight] = useState(0);
   const uid = useAuthStore((state) => state.uid);

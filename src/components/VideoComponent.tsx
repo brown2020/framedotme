@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import Image from "next/image";
 import { useEffect } from "react";
 import logo from "@/app/assets/logo.png";
@@ -26,7 +27,7 @@ export default function VideoComponent({
   toggleVideoPlaying,
   isAnimated,
   poster,
-}: Props) {
+}: Props): ReactElement | null {
   // First useEffect: Handle video playback
   useEffect(() => {
     if (!globalVideoRef.current) return;
