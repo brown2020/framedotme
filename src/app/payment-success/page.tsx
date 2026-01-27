@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import PaymentSuccessPage from "@/components/PaymentSuccessPage";
 import { useSearchParams } from "next/navigation";
 import { logger } from "@/utils/logger";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
@@ -19,12 +20,14 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function PaymentSuccess() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-[400px] items-center justify-center">
-        <LoadingSpinner label="Processing payment..." />
-      </div>
-    }>
-      <PaymentSuccessContent />
-    </Suspense>
+    <ErrorBoundary featureName="Payment Success">
+      <Suspense fallback={
+        <div className="flex min-h-[400px] items-center justify-center">
+          <LoadingSpinner label="Processing payment..." />
+        </div>
+      }>
+        <PaymentSuccessContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

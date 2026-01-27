@@ -7,7 +7,6 @@ import { downloadBlob } from "@/utils/downloadUtils";
 import { RecordingManager } from "../utils/RecordingManager";
 import { MediaStreamError } from "../types/mediaStreamTypes";
 import { RecorderStatusType } from "../types/recorder";
-import { updateRecorderStatus } from "@/services/recorderStatusService";
 import { logger } from "@/utils/logger";
 
 function getErrorDetails(err: unknown): { code?: string; message: string } {
@@ -43,22 +42,21 @@ export const useScreenRecorder = () => {
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
 
   const updateStatus = useCallback(
-    async (status: RecorderStatusType) => {
+    (status: RecorderStatusType) => {
       setRecorderStatus(status);
-      if (uid) {
-        try {
-          await updateRecorderStatus(uid, status);
-        } catch (error) {
-          logger.error("Failed to sync recorder status", error);
-        }
-      }
     },
-    [uid, setRecorderStatus]
+    [setRecorderStatus]
   );
+
+  const updateStatusRef = useRef(updateStatus);
+  
+  useEffect(() => {
+    updateStatusRef.current = updateStatus;
+  }, [updateStatus]);
 
   const mediaManager = useRef<MediaStreamManager>(
     new MediaStreamManager((status) => {
-      void updateStatus(status);
+      updateStatusRef.current(status);
     })
   );
   const recordingManager = useRef<RecordingManager>(new RecordingManager());
@@ -133,7 +131,7 @@ export const useScreenRecorder = () => {
     try {
       const combinedStream = await currentMediaManager.createCombinedStream();
       recordingManager.current.startRecording(combinedStream, () => {});
-      await updateStatus("recording");
+      updateStatus("recording");
     } catch (error) {
       handleError(error);
     }
@@ -141,11 +139,18 @@ export const useScreenRecorder = () => {
 
   const stopRecording = useCallback(async () => {
     const currentRecordingManager = recordingManager.current;
+    
+    // Guard: only stop if recording is actually in progress
+    if (!currentRecordingManager.isRecording) {
+      logger.warn("Attempted to stop recording when no recording is in progress");
+      return;
+    }
+    
     try {
-      await updateStatus("saving");
+      updateStatus("saving");
       const finalBlob = await currentRecordingManager.stopRecording();
       await handleRecordingData(finalBlob);
-      await updateStatus("ready");
+      updateStatus("ready");
     } catch (error) {
       handleError(error);
     }
@@ -167,18 +172,18 @@ export const useScreenRecorder = () => {
       const stream = await currentMediaManager.initializeScreenCapture();
       setScreenStream(stream);
       setIsRecordingWindowOpen(true);
-      await updateStatus("ready");
+      updateStatus("ready");
     } catch (error) {
       handleError(error);
     }
   }, [isRecordingWindowOpen, updateStatus, handleError, uid]);
 
-  const resetRecorder = useCallback(() => {
+  const resetRecorder = useCallback(async () => {
     const currentMediaManager = mediaManager.current;
     const currentRecordingManager = recordingManager.current;
 
     currentMediaManager.cleanup();
-    currentRecordingManager.cleanup();
+    await currentRecordingManager.cleanup();
     setError(null);
     setScreenStream(null);
     void updateStatus("idle");
@@ -217,7 +222,7 @@ export const useScreenRecorder = () => {
 
     return () => {
       currentMediaManager.cleanup();
-      currentRecordingManager.cleanup();
+      void currentRecordingManager.cleanup();
     };
   }, []);
 

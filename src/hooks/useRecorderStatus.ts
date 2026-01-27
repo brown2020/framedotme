@@ -12,6 +12,7 @@ import { logger } from "@/utils/logger";
 export function useRecorderStatus() {
   const recorderStatus = useRecorderStatusStore((state) => state.recorderStatus);
   const setRecorderStatus = useRecorderStatusStore((state) => state.setRecorderStatus);
+  const isUpdatingFromFirestore = useRecorderStatusStore((state) => state.isUpdatingFromFirestore);
   const uid = useAuthStore((state) => state.uid);
 
   const updateStatus = useCallback(
@@ -19,8 +20,8 @@ export function useRecorderStatus() {
       // Update local state immediately
       setRecorderStatus(status);
 
-      // Sync to Firestore if user is authenticated
-      if (uid) {
+      // Only sync to Firestore if not already updating from Firestore
+      if (uid && !isUpdatingFromFirestore) {
         try {
           await updateRecorderStatus(uid, status);
         } catch (error) {
@@ -28,7 +29,7 @@ export function useRecorderStatus() {
         }
       }
     },
-    [uid, setRecorderStatus]
+    [uid, setRecorderStatus, isUpdatingFromFirestore]
   );
 
   return {

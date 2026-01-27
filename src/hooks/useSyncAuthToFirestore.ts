@@ -12,50 +12,8 @@ export function useSyncAuthToFirestore(): void {
   // Use specific selectors instead of entire store to prevent unnecessary re-renders
   const uid = useAuthStore((state) => state.uid);
   const authReady = useAuthStore((state) => state.authReady);
-  const authEmail = useAuthStore((state) => state.authEmail);
-  const authDisplayName = useAuthStore((state) => state.authDisplayName);
-  const authPhotoUrl = useAuthStore((state) => state.authPhotoUrl);
-  const authEmailVerified = useAuthStore((state) => state.authEmailVerified);
-  const authPending = useAuthStore((state) => state.authPending);
-  const isAdmin = useAuthStore((state) => state.isAdmin);
-  const isAllowed = useAuthStore((state) => state.isAllowed);
-  const isInvited = useAuthStore((state) => state.isInvited);
-  const lastSignIn = useAuthStore((state) => state.lastSignIn);
-  const premium = useAuthStore((state) => state.premium);
 
   const previousUidRef = useRef<string>("");
-
-  // Memoize auth data to prevent recreating object on every render
-  const authData = useMemo(
-    () => ({
-      uid,
-      authEmail,
-      authDisplayName,
-      authPhotoUrl,
-      authEmailVerified,
-      authReady,
-      authPending,
-      isAdmin,
-      isAllowed,
-      isInvited,
-      lastSignIn,
-      premium,
-    }),
-    [
-      uid,
-      authEmail,
-      authDisplayName,
-      authPhotoUrl,
-      authEmailVerified,
-      authReady,
-      authPending,
-      isAdmin,
-      isAllowed,
-      isInvited,
-      lastSignIn,
-      premium,
-    ]
-  );
 
   useEffect(() => {
     const syncToFirestore = async () => {
@@ -72,6 +30,22 @@ export function useSyncAuthToFirestore(): void {
       previousUidRef.current = uid;
 
       try {
+        // Read fresh auth data from store at sync time
+        const authData = {
+          uid,
+          authEmail: useAuthStore.getState().authEmail,
+          authDisplayName: useAuthStore.getState().authDisplayName,
+          authPhotoUrl: useAuthStore.getState().authPhotoUrl,
+          authEmailVerified: useAuthStore.getState().authEmailVerified,
+          authReady: useAuthStore.getState().authReady,
+          authPending: useAuthStore.getState().authPending,
+          isAdmin: useAuthStore.getState().isAdmin,
+          isAllowed: useAuthStore.getState().isAllowed,
+          isInvited: useAuthStore.getState().isInvited,
+          lastSignIn: useAuthStore.getState().lastSignIn,
+          premium: useAuthStore.getState().premium,
+        };
+        
         await updateUserDetailsInFirestore(authData, uid);
         logger.debug("Auth details synced to Firestore");
       } catch (error) {
@@ -80,5 +54,5 @@ export function useSyncAuthToFirestore(): void {
     };
 
     void syncToFirestore();
-  }, [uid, authReady, authData]);
+  }, [uid, authReady]);
 }

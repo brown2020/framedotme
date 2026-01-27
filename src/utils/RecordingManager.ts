@@ -65,12 +65,29 @@ export class RecordingManager {
     });
   }
 
-  cleanup() {
-    if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
-      this.mediaRecorder.stop();
-    }
-    this.mediaRecorder = null;
-    this.chunks = [];
-    this.onDataAvailableCallback = null;
+  cleanup(): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
+        this.mediaRecorder.onstop = () => {
+          this.mediaRecorder = null;
+          this.chunks = [];
+          this.onDataAvailableCallback = null;
+          resolve();
+        };
+        this.mediaRecorder.stop();
+      } else {
+        this.mediaRecorder = null;
+        this.chunks = [];
+        this.onDataAvailableCallback = null;
+        resolve();
+      }
+    });
+  }
+
+  /**
+   * Check if recording is currently in progress
+   */
+  get isRecording(): boolean {
+    return this.mediaRecorder !== null && this.mediaRecorder.state === "recording";
   }
 }

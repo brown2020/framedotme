@@ -157,6 +157,11 @@ export function useAuthHandlers(hideModal: () => void) {
       browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
       browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, name);
       setAuthDetails({ authPending: true });
+      
+      // Clear pending state after 5 minutes if user doesn't complete sign-in
+      setTimeout(() => {
+        setAuthDetails({ authPending: false });
+      }, 5 * 60 * 1000);
     } catch (error) {
       handleError("Send sign-in link", error, { showToast: true });
     }

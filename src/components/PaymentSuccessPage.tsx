@@ -100,7 +100,7 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
           });
 
           // Add credits to profile
-          const creditsToAdd = data.amount + BONUS_CREDITS;
+          const creditsToAdd = Math.floor(data.amount / 100) + BONUS_CREDITS;
           await addCredits(uid, creditsToAdd);
 
           dispatch({

@@ -9,6 +9,11 @@ export class MediaStreamManager {
   private combinedStream: MediaStream | null = null;
   private audioContext: AudioContext | null = null;
   private statusCallback?: (status: RecorderStatusType) => void;
+  private trackListeners: Map<MediaStreamTrack, {
+    onended: () => void;
+    onmute: () => void;
+    onunmute: () => void;
+  }> = new Map();
 
   constructor(statusCallback?: (status: RecorderStatusType) => void) {
     this.statusCallback = statusCallback;
@@ -78,18 +83,24 @@ export class MediaStreamManager {
 
   private setupTrackListeners(stream: MediaStream) {
     stream.getTracks().forEach((track) => {
-      track.onended = () => {
-        this.updateStatus("idle");
-        this.cleanup();
+      const handlers = {
+        onended: () => {
+          this.updateStatus("idle");
+          this.cleanup();
+        },
+        onmute: () => {
+          logger.warn(`Track muted: ${track.kind}`);
+        },
+        onunmute: () => {
+          logger.info(`Track unmuted: ${track.kind}`);
+        },
       };
 
-      track.onmute = () => {
-        logger.warn(`Track muted: ${track.kind}`);
-      };
+      track.onended = handlers.onended;
+      track.onmute = handlers.onmute;
+      track.onunmute = handlers.onunmute;
 
-      track.onunmute = () => {
-        logger.info(`Track unmuted: ${track.kind}`);
-      };
+      this.trackListeners.set(track, handlers);
     });
   }
 
@@ -166,8 +177,14 @@ export class MediaStreamManager {
       (stream) => {
         if (stream) {
           stream.getTracks().forEach((track) => {
+            // Remove event listeners before stopping
+            if (this.trackListeners.has(track)) {
+              track.onended = null;
+              track.onmute = null;
+              track.onunmute = null;
+              this.trackListeners.delete(track);
+            }
             track.stop();
-            stream.removeTrack(track);
           });
         }
       }

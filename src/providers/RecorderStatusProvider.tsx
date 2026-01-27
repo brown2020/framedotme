@@ -18,7 +18,7 @@ export function RecorderStatusProvider({
 
     const unsubscribe = subscribeToRecorderStatus(
       uid,
-      (status) => setRecorderStatus(status),
+      (status) => setRecorderStatus(status, true),
       (error) => setError(error)
     );
 

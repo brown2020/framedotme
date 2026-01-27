@@ -3,6 +3,7 @@
 import PaymentCheckoutPage from "@/components/PaymentCheckoutPage";
 import convertToSubcurrency from "@/utils/convertToSubcurrency";
 import { DEFAULT_PAYMENT_AMOUNT, DEFAULT_PAYMENT_CURRENCY } from "@/constants/payment";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
@@ -15,15 +16,17 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY);
 
 export default function PaymentAttempt() {
   return (
-    <Elements
-      stripe={stripePromise}
-      options={{
-        mode: "payment",
-        amount: convertToSubcurrency(DEFAULT_PAYMENT_AMOUNT),
-        currency: DEFAULT_PAYMENT_CURRENCY,
-      }}
-    >
-      <PaymentCheckoutPage amount={DEFAULT_PAYMENT_AMOUNT} />
-    </Elements>
+    <ErrorBoundary featureName="Payment Checkout">
+      <Elements
+        stripe={stripePromise}
+        options={{
+          mode: "payment",
+          amount: convertToSubcurrency(DEFAULT_PAYMENT_AMOUNT),
+          currency: DEFAULT_PAYMENT_CURRENCY,
+        }}
+      >
+        <PaymentCheckoutPage amount={DEFAULT_PAYMENT_AMOUNT} />
+      </Elements>
+    </ErrorBoundary>
   );
 }

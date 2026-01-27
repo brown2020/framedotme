@@ -66,10 +66,8 @@ export const useTokenRefresh = (
       clearTimeout(activityTimeoutRef.current);
       activityTimeoutRef.current = null;
     }
-    if (document.visibilityState === "visible") {
-      const timeoutId = setTimeout(refreshAuthToken, TOKEN_REFRESH_INTERVAL_MS);
-      activityTimeoutRef.current = timeoutId;
-    }
+    const timeoutId = setTimeout(refreshAuthToken, TOKEN_REFRESH_INTERVAL_MS);
+    activityTimeoutRef.current = timeoutId;
   }, [refreshAuthToken]);
 
   // Create debounced handler once and store in ref
