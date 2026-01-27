@@ -25,3 +25,8 @@ export const TOKEN_REFRESH_DEBOUNCE_MS = 1000;
 
 // UI Constants
 export const VIDEO_DIMENSION_UPDATE_INTERVAL_MS = 500;
+
+// Video Controls Window
+export const VIDEO_CONTROLS_WINDOW_WIDTH = 400;
+export const VIDEO_CONTROLS_WINDOW_HEIGHT = 660;
+export const VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS = 500;

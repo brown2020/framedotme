@@ -1,25 +1,38 @@
-import { useEffect } from "react";
-import { useAuthStore } from "./useAuthStore";
+import { useEffect, useRef } from "react";
+import {
+  useAuthUid,
+  useAuthEmail,
+  useAuthDisplayName,
+  useAuthPhotoUrl,
+  useAuthEmailVerified,
+} from "./useAuthStore";
 import useProfileStore from "./useProfileStore";
 
+/**
+ * Initializes stores that depend on auth state
+ * Optimized to only fetch profile once per user session
+ */
 export const useInitializeStores = () => {
-  const {
-    uid,
-    authEmail,
-    authDisplayName,
-    authPhotoUrl,
-    authEmailVerified
-  } = useAuthStore();
+  const uid = useAuthUid();
+  const authEmail = useAuthEmail();
+  const authDisplayName = useAuthDisplayName();
+  const authPhotoUrl = useAuthPhotoUrl();
+  const authEmailVerified = useAuthEmailVerified();
+  
   const fetchProfile = useProfileStore((state) => state.fetchProfile);
+  const lastFetchedUidRef = useRef<string>("");
 
   useEffect(() => {
-    if (!uid) return;
+    // Only fetch if we have a uid and haven't fetched for this user yet
+    if (!uid || lastFetchedUidRef.current === uid) return;
+    
+    lastFetchedUidRef.current = uid;
     
     fetchProfile(uid, {
       authEmail,
       authDisplayName,
       authPhotoUrl,
-      authEmailVerified
+      authEmailVerified,
     });
-  }, [fetchProfile, uid, authEmail, authDisplayName, authPhotoUrl, authEmailVerified]);
+  }, [uid, authEmail, authDisplayName, authPhotoUrl, authEmailVerified, fetchProfile]);
 };

@@ -51,8 +51,9 @@ export const updateUserDetailsInFirestore = async (
       { merge: true }
     );
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
     logger.error("Error updating auth details in Firestore", error);
-    throw error;
+    throw new Error(`Failed to update user details: ${message}`);
   }
 };
 
@@ -71,23 +72,30 @@ export const updateUserDetailsInFirestore = async (
  */
 export const fetchUserProfile = async (uid: string): Promise<ProfileType | null> => {
   const validatedUid = validateUserId(uid);
-  const userRef = doc(db, getUserProfilePath(validatedUid));
-  const docSnap = await getDoc(userRef);
   
-  if (!docSnap.exists()) return null;
-  
-  const data = docSnap.data();
-  return {
-    email: data.email || "",
-    contactEmail: data.contactEmail || "",
-    displayName: data.displayName || "",
-    photoUrl: data.photoUrl || "",
-    emailVerified: data.emailVerified || false,
-    credits: data.credits || 0,
-    selectedAvatar: data.selectedAvatar || "",
-    selectedTalkingPhoto: data.selectedTalkingPhoto || "",
-    useCredits: data.useCredits !== undefined ? data.useCredits : true,
-  };
+  try {
+    const userRef = doc(db, getUserProfilePath(validatedUid));
+    const docSnap = await getDoc(userRef);
+    
+    if (!docSnap.exists()) return null;
+    
+    const data = docSnap.data();
+    return {
+      email: data.email || "",
+      contactEmail: data.contactEmail || "",
+      displayName: data.displayName || "",
+      photoUrl: data.photoUrl || "",
+      emailVerified: data.emailVerified || false,
+      credits: data.credits || 0,
+      selectedAvatar: data.selectedAvatar || "",
+      selectedTalkingPhoto: data.selectedTalkingPhoto || "",
+      useCredits: data.useCredits !== undefined ? data.useCredits : true,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    logger.error("Error fetching user profile", error);
+    throw new Error(`Failed to fetch user profile: ${message}`);
+  }
 };
 
 /**
@@ -112,8 +120,15 @@ export const saveUserProfile = async (
   profileData: ProfileType
 ): Promise<void> => {
   const validatedUid = validateUserId(uid);
-  const userRef = doc(db, getUserProfilePath(validatedUid));
-  await setDoc(userRef, profileData);
+  
+  try {
+    const userRef = doc(db, getUserProfilePath(validatedUid));
+    await setDoc(userRef, profileData);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    logger.error("Error saving user profile", error);
+    throw new Error(`Failed to save user profile: ${message}`);
+  }
 };
 
 /**
@@ -134,8 +149,15 @@ export const updateUserProfile = async (
   data: Partial<ProfileType>
 ): Promise<void> => {
   const validatedUid = validateUserId(uid);
-  const userRef = doc(db, getUserProfilePath(validatedUid));
-  await updateDoc(userRef, data);
+  
+  try {
+    const userRef = doc(db, getUserProfilePath(validatedUid));
+    await updateDoc(userRef, data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    logger.error("Error updating user profile", error);
+    throw new Error(`Failed to update user profile: ${message}`);
+  }
 };
 
 /**
@@ -154,18 +176,25 @@ export const updateUserProfile = async (
  */
 export const deleteUserAccount = async (uid: string): Promise<void> => {
   const validatedUid = validateUserId(uid);
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
-
-  if (!currentUser) throw new Error("No current user found");
-
-  const userRef = doc(db, getUserProfilePath(validatedUid));
   
-  // Delete the user profile data from Firestore
-  await deleteDoc(userRef);
+  try {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
 
-  // Delete the user from Firebase Authentication
-  await deleteUser(currentUser);
+    if (!currentUser) throw new Error("No current user found");
+
+    const userRef = doc(db, getUserProfilePath(validatedUid));
+    
+    // Delete the user profile data from Firestore
+    await deleteDoc(userRef);
+
+    // Delete the user from Firebase Authentication
+    await deleteUser(currentUser);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    logger.error("Error deleting user account", error);
+    throw new Error(`Failed to delete user account: ${message}`);
+  }
 };
 
 

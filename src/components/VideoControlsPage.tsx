@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { logger } from "@/utils/logger";
 import { VIDEO_DIMENSION_UPDATE_INTERVAL_MS } from "@/lib/constants";
+import { getRecorderButtonClass, getRecorderButtonText } from "@/utils/recorderStyles";
 
 export default function VideoControlsPage() {
   const [videoWidth, setVideoWidth] = useState(0);
@@ -80,34 +81,6 @@ export default function VideoControlsPage() {
     }
   };
 
-  const getRecordButtonText = () => {
-    switch (recorderStatus) {
-      case "idle":
-        return "Initialize Recording";
-      case "ready":
-        return "Start Recording";
-      case "recording":
-        return "Stop Recording";
-      case "saving":
-        return "Saving...";
-      default:
-        return "Initialize Recording";
-    }
-  };
-
-  const getRecordButtonClass = () => {
-    switch (recorderStatus) {
-      case "recording":
-        return "bg-red-500 hover:bg-red-600";
-      case "ready":
-        return "bg-green-500 hover:bg-green-600";
-      case "saving":
-        return "bg-yellow-500 hover:bg-yellow-600";
-      default:
-        return "";
-    }
-  };
-
   const isRecordButtonDisabled = !["idle", "ready", "recording"].includes(
     recorderStatus
   );
@@ -127,11 +100,11 @@ export default function VideoControlsPage() {
       <div className="flex gap-2">
         <Button
           variant="default"
-          className={cn(getRecordButtonClass())}
+          className={cn(getRecorderButtonClass(recorderStatus, "controls"))}
           onClick={handleRecordingControl}
           disabled={isRecordButtonDisabled}
         >
-          {getRecordButtonText()}
+          {getRecorderButtonText(recorderStatus)}
         </Button>
 
         <Button

@@ -5,6 +5,12 @@ import { VideoIcon } from "lucide-react";
 import { useRecorderStatus } from "@/hooks/useRecorderStatus";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getRecorderButtonClass } from "@/utils/recorderStyles";
+import {
+  VIDEO_CONTROLS_WINDOW_WIDTH,
+  VIDEO_CONTROLS_WINDOW_HEIGHT,
+  VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS,
+} from "@/lib/constants";
 
 export default function VideoControlsLauncher() {
   const { recorderStatus, updateStatus } = useRecorderStatus();
@@ -21,12 +27,10 @@ export default function VideoControlsLauncher() {
     ) {
       videoControlsWindowRef.current.focus();
     } else {
-      const width = 400;
-      const height = 660;
-      const left = window.screen.width - width;
+      const left = window.screen.width - VIDEO_CONTROLS_WINDOW_WIDTH;
       const top = 0;
 
-      const features = `width=${width},height=${height},left=${left},top=${top}`;
+      const features = `width=${VIDEO_CONTROLS_WINDOW_WIDTH},height=${VIDEO_CONTROLS_WINDOW_HEIGHT},left=${left},top=${top}`;
 
       // Reset status before opening window
       updateStatus("idle");
@@ -51,25 +55,12 @@ export default function VideoControlsLauncher() {
       }
     };
 
-    const intervalId = window.setInterval(checkWindowClosed, 500);
+    const intervalId = window.setInterval(checkWindowClosed, VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS);
 
     return () => {
       clearInterval(intervalId);
     };
   }, [updateStatus]);
-
-  const getButtonClass = () => {
-    switch (recorderStatus) {
-      case "recording":
-        return "bg-red-500 hover:bg-red-600";
-      case "ready":
-        return "bg-yellow-500 hover:bg-yellow-600";
-      case "error":
-        return "bg-destructive hover:bg-destructive/90";
-      default:
-        return "bg-transparent hover:bg-white/30";
-    }
-  };
 
   return (
     <Button
@@ -77,7 +68,7 @@ export default function VideoControlsLauncher() {
       className={cn(
         "flex flex-col h-full items-center justify-center px-2 py-1 w-full rounded-none",
         "text-white transition-all duration-200",
-        getButtonClass()
+        getRecorderButtonClass(recorderStatus, "launcher")
       )}
       onClick={openVideoControls}
     >

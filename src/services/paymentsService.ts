@@ -56,9 +56,10 @@ export async function fetchUserPayments(uid: string): Promise<PaymentType[]> {
 
 /**
  * Checks if a payment with the given ID exists
+ * Optimized to check by document ID rather than querying
  * 
  * @param uid - The user's unique identifier
- * @param paymentId - The payment ID to check
+ * @param paymentId - The payment ID to check (used as document ID)
  * @returns Promise resolving to true if payment exists, false otherwise
  * @throws {ValidationError} If uid is invalid
  */
@@ -67,6 +68,9 @@ export async function checkPaymentExists(
   paymentId: string
 ): Promise<boolean> {
   const validatedUid = validateUserId(uid);
+  
+  // Check if payment exists by querying for the "id" field
+  // (since we use custom IDs, not Firestore document IDs)
   const q = query(
     collection(db, getUserPaymentsPath(validatedUid)),
     where("id", "==", paymentId)

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import logo from "@/app/assets/logo.png";
 import { globalVideoRef } from "@/utils/avFunctions";
 
@@ -14,6 +14,9 @@ type Props = {
   isAnimated: boolean;
   poster?: string;
 };
+
+// Default fallback image
+const DEFAULT_IMAGE = typeof logo === "string" ? logo : logo.src || "";
 
 export default function VideoComponent({
   videoSrc,
@@ -66,10 +69,24 @@ export default function VideoComponent({
     toggleVideoPlaying();
   };
 
+  // Memoize computed values
+  const showVideo = useMemo(
+    () => videoSrc && !isAnimated && isVideoPlaying,
+    [videoSrc, isAnimated, isVideoPlaying]
+  );
+
+  const showImageOverlay = useMemo(
+    () => Boolean(poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)),
+    [poster, isAnimated, silentGif, waitingGif]
+  );
+
+  const waitingImageSrc = waitingGif || poster || DEFAULT_IMAGE;
+  const silentImageSrc = silentGif || DEFAULT_IMAGE;
+
   const containerClasses = `flex-1 h-full w-full relative overflow-hidden cursor-pointer bg-black`;
   const mediaClasses = `transform -translate-x-1/2 h-full object-cover absolute top-0 left-1/2 w-auto`;
 
-  if (videoSrc && !isAnimated && isVideoPlaying) {
+  if (showVideo) {
     return (
       <div className={containerClasses} onClick={handleVideoToggle}>
         <video
@@ -87,40 +104,43 @@ export default function VideoComponent({
     );
   }
 
-  if (poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)) {
+  if (showImageOverlay) {
+    const isAnimatedWithGif = isAnimated && silentGif;
+    
     return (
       <div className={containerClasses}>
+        {/* Waiting/Poster Layer */}
         <div
           className={`absolute top-0 left-0 h-full w-full bg-black ${
-            isAnimated && silentGif ? "z-0 opacity-0" : "z-10 opacity-100"
+            isAnimatedWithGif ? "z-0 opacity-0" : "z-10 opacity-100"
           }`}
         >
           <Image
-            src={waitingGif || poster || logo.src}
+            src={waitingImageSrc}
             onClick={handleVideoToggle}
-            alt="animation"
+            alt="waiting animation"
             className={mediaClasses}
             height={512}
             width={512}
-            priority={true}
-            unoptimized={true}
+            priority
+            unoptimized
           />
         </div>
+        
+        {/* Silent Animation Layer */}
         <div
           className={`absolute top-0 left-0 h-full w-full ${
-            isAnimated && silentGif
-              ? "z-10 opacity-100 cursor-default"
-              : "z-0 opacity-0"
+            isAnimatedWithGif ? "z-10 opacity-100 cursor-default" : "z-0 opacity-0"
           }`}
         >
           <Image
-            src={silentGif || logo.src}
-            alt="animation"
+            src={silentImageSrc}
+            alt="silent animation"
             className={mediaClasses}
             height={512}
             width={512}
-            priority={true}
-            unoptimized={true}
+            priority
+            unoptimized
           />
         </div>
       </div>
