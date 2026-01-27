@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useMemo } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
-import { isIOSReactNativeWebView } from "@/utils/platform";
+import { isReactNativeWebView } from "@/utils/platform";
 import { useAuthModal } from "@/hooks/useAuthModal";
 import { useAuthHandlers } from "@/hooks/useAuthHandlers";
 import { AuthModal } from "./auth/AuthModal";
@@ -20,7 +20,9 @@ export default function AuthComponent() {
   const authPending = useAuthStore((s) => s.authPending);
   
   const formRef = useRef<HTMLFormElement>(null);
-  const [showGoogleSignIn, setShowGoogleSignIn] = useState(true);
+  
+  // Calculate once during render - this value never changes during component lifecycle
+  const showGoogleSignIn = useMemo(() => !isReactNativeWebView(), []);
 
   const { isVisible, showModal, hideModal, modalRef } = useAuthModal();
   
@@ -41,11 +43,6 @@ export default function AuthComponent() {
     handleEmailLinkSignIn,
     handlePasswordReset,
   } = useAuthHandlers(hideModal);
-
-  useEffect(() => {
-    // Hide Google Sign-In button if in a React Native WebView on iOS
-    setShowGoogleSignIn(!isIOSReactNativeWebView());
-  }, []);
 
   const handleGoogleSignIn = async () => {
     if (!acceptTerms) {

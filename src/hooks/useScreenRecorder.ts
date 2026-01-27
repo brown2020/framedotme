@@ -40,6 +40,7 @@ export const useScreenRecorder = () => {
   const { uid } = useAuthStore();
   const [isRecordingWindowOpen, setIsRecordingWindowOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
 
   const updateStatus = useCallback(
     async (status: RecorderStatusType) => {
@@ -163,7 +164,8 @@ export const useScreenRecorder = () => {
 
       setError(null);
       const currentMediaManager = mediaManager.current;
-      await currentMediaManager.initializeScreenCapture();
+      const stream = await currentMediaManager.initializeScreenCapture();
+      setScreenStream(stream);
       setIsRecordingWindowOpen(true);
       updateStatus("ready");
     } catch (error) {
@@ -178,6 +180,7 @@ export const useScreenRecorder = () => {
     currentMediaManager.cleanup();
     currentRecordingManager.cleanup();
     setError(null);
+    setScreenStream(null);
     updateStatus("idle");
     setIsRecordingWindowOpen(false);
   }, [updateStatus]);
@@ -218,7 +221,7 @@ export const useScreenRecorder = () => {
     resetRecorder,
     error,
     isRecordingWindowOpen,
-    screenStream: mediaManager.current.currentScreenStream,
+    screenStream,
   };
 };
 

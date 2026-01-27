@@ -24,6 +24,7 @@ export default function VideoComponent({
   isAnimated,
   poster,
 }: Props) {
+  // First useEffect: Handle video playback
   useEffect(() => {
     if (!globalVideoRef.current) return;
     if (isAnimated) return;
@@ -53,6 +54,14 @@ export default function VideoComponent({
     };
   }, [isAnimated, isVideoPlaying, toggleVideoPlaying]);
 
+  // Second useEffect: Stop video if showing poster/gif instead
+  // MUST be before any conditional returns to satisfy React hooks rules
+  useEffect(() => {
+    if ((poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)) && isVideoPlaying) {
+      toggleVideoPlaying();
+    }
+  }, [poster, isAnimated, silentGif, waitingGif, isVideoPlaying, toggleVideoPlaying]);
+
   const handleVideoToggle = () => {
     toggleVideoPlaying();
   };
@@ -77,13 +86,6 @@ export default function VideoComponent({
       </div>
     );
   }
-
-  useEffect(() => {
-    // Stop video if we're showing poster/gif instead
-    if ((poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)) && isVideoPlaying) {
-      toggleVideoPlaying();
-    }
-  }, [poster, isAnimated, silentGif, waitingGif, isVideoPlaying, toggleVideoPlaying]);
 
   if (poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)) {
     return (
