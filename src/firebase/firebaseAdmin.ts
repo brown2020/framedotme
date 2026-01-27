@@ -17,10 +17,14 @@ const adminCredentials = buildConfig({
 });
 
 // Process private key to handle newlines
-// Safe to assert non-undefined since buildConfig validates required fields
+// buildConfig throws if required fields are missing, but TypeScript needs explicit check
+if (!adminCredentials.privateKey) {
+  throw new Error('FIREBASE_PRIVATE_KEY is required');
+}
+
 const processedCredentials = {
   ...adminCredentials,
-  privateKey: adminCredentials.privateKey!.replace(/\\n/g, "\n"),
+  privateKey: adminCredentials.privateKey.replace(/\\n/g, "\n"),
 };
 
 const storageBucket = buildConfig({

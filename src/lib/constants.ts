@@ -29,6 +29,8 @@ export const BONUS_CREDITS = 1;
 // Recording
 export const RECORDING_CHUNK_INTERVAL_MS = 60 * 1000; // 1 minute
 export const MAX_RECORDING_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
+export const RECORDING_FRAME_RATE = 30;
+export const RECORDING_MIME_TYPE = "video/webm;codecs=vp8,opus";
 
 // Authentication
 export const TOKEN_REFRESH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes
@@ -46,6 +48,12 @@ export const VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS = 500;
 
 // Download Utils
 export const DOWNLOAD_LINK_CLEANUP_TIMEOUT_MS = 100;
+
+// Z-Index Layers
+export const Z_INDEX = {
+  modal: 1000,
+  header: 10,
+} as const;
 
 // Payment
 export const DEFAULT_PAYMENT_AMOUNT = 99.99;

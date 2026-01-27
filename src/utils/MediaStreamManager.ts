@@ -1,6 +1,7 @@
 import { MediaStreamError } from "../types/mediaStreamTypes";
 import { RecorderStatusType } from "../types/recorder";
 import { logger } from "./logger";
+import { RECORDING_FRAME_RATE } from "@/lib/constants";
 
 export class MediaStreamManager {
   private screenStream: MediaStream | null = null;
@@ -20,7 +21,7 @@ export class MediaStreamManager {
     try {
       this.screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
-          frameRate: { ideal: 30 },
+          frameRate: { ideal: RECORDING_FRAME_RATE },
         },
         audio: true, // Keep this simple for screen share audio
       });

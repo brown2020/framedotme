@@ -1,4 +1,5 @@
 import { XIcon } from "lucide-react";
+import { Z_INDEX } from "@/lib/constants";
 
 /**
  * Reusable modal container for authentication flows
@@ -17,7 +18,7 @@ export function AuthModal({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[1000]">
+    <div className="fixed inset-0 bg-black/60 flex justify-center items-center" style={{ zIndex: Z_INDEX.modal }}>
       <div
         ref={modalRef}
         className="relative bg-white text-black p-4 rounded-lg shadow-lg w-full max-w-md mx-auto"

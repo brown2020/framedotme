@@ -6,6 +6,7 @@ import { navItems } from "@/constants/menuItems";
 import { ScanIcon } from "lucide-react";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";
+import { Z_INDEX } from "@/lib/constants";
 
 /**
  * Header component that displays the app logo and navigation menu
@@ -18,7 +19,7 @@ export default function Header() {
   const pathname = usePathname();
 
   return (
-    <div className="z-10 flex items-center justify-between h-16 px-4 bg-blue-800">
+    <div className="flex items-center justify-between h-16 px-4 bg-blue-800" style={{ zIndex: Z_INDEX.header }}>
       <div
         className="flex items-center cursor-pointer"
         onClick={() => {

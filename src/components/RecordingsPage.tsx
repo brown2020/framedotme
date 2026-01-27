@@ -13,6 +13,8 @@ import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { logger } from "@/utils/logger";
 import { ConfirmDialog } from "./ui/confirm-dialog";
 import { ClipLoader } from "react-spinners";
+import { FeaturedVideoPlayer } from "./FeaturedVideoPlayer";
+import { VideoGridItem } from "./VideoGridItem";
 
 /**
  * Recordings page component that displays all user recordings
@@ -110,69 +112,24 @@ export default function RecordingsPage(): ReactElement {
         onCancel={() => setVideoToDelete(null)}
       />
       <div className="p-4">
-      {featuredVideo && (
-        <div className="flex flex-col mb-4">
-          <div className="flex gap-2 flex-wrap text-xs">
-            <div>
-              Created At: {featuredVideo.createdAt.toDate().toLocaleString()}
-            </div>
-            <div>Filename: {featuredVideo.filename || "No filename"}</div>
-          </div>
-
-          <video
-            src={featuredVideo.downloadUrl}
-            controls
-            className="w-full border"
+        {featuredVideo && (
+          <FeaturedVideoPlayer
+            video={featuredVideo}
+            onClear={clearFeaturedVideo}
+            onDownload={handleDownloadVideo}
+            onDelete={(video) => setVideoToDelete(video)}
           />
-          <div className="flex gap-2">
-            <a
-              className="text-white bg-blue-500 p-2 rounded-md w-max my-2"
-              href={featuredVideo.downloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open in new window
-            </a>
-            <button
-              className="text-white bg-blue-500 p-2 rounded-md w-max my-2"
-              onClick={clearFeaturedVideo}
-            >
-              Clear Featured
-            </button>
-            <button
-              className="text-white bg-blue-500 p-2 rounded-md w-max my-2"
-              onClick={() => handleDownloadVideo(featuredVideo)}
-            >
-              Download
-            </button>
-            <button
-              className="text-white bg-red-500 p-2 rounded-md w-max my-2"
-              onClick={() => setVideoToDelete(featuredVideo)}
-            >
-              Delete
-            </button>
-          </div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {videos.map((video) => (
+            <VideoGridItem
+              key={video.id}
+              video={video}
+              onSelect={handleFeaturedVideoChange}
+            />
+          ))}
         </div>
-      )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {videos.map((video) => (
-          <div className="flex flex-col items-center" key={video.id}>
-            <button
-              onClick={(e) => handleFeaturedVideoChange(video, e)}
-              aria-label="Set as Featured"
-            >
-              <video
-                src={video.downloadUrl}
-                className="w-full h-full rounded-md"
-              />
-            </button>
-            <div className="flex flex-col w-full px-1">
-              <div className="overflow-hidden truncate">{video.filename}</div>
-            </div>
-          </div>
-        ))}
       </div>
-    </div>
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { RECORDING_CHUNK_INTERVAL_MS } from "@/lib/constants";
+import { RECORDING_CHUNK_INTERVAL_MS, RECORDING_MIME_TYPE } from "@/lib/constants";
 import { logger } from "./logger";
 
 /**
@@ -21,7 +21,7 @@ export class RecordingManager {
       this.onDataAvailableCallback = onDataAvailable;
 
       this.mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm;codecs=vp8,opus",
+        mimeType: RECORDING_MIME_TYPE,
       });
 
       this.mediaRecorder.ondataavailable = (event: BlobEvent) => {

@@ -7,7 +7,8 @@ import {
 } from "@/services/userService";
 import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/lib/constants";
 import { logError } from "@/utils/errorHandling";
-import type { Profile, AuthContext, DEFAULT_PROFILE } from "@/types/user";
+import { DEFAULT_PROFILE } from "@/types/user";
+import type { Profile, AuthContext } from "@/types/user";
 
 interface ProfileState {
   profile: Profile;
@@ -19,18 +20,6 @@ interface ProfileState {
   resetProfile: () => void;
 }
 
-const defaultProfile: Profile = {
-  email: "",
-  contactEmail: "",
-  displayName: "",
-  photoUrl: "",
-  emailVerified: false,
-  credits: 0,
-  selectedAvatar: "",
-  selectedTalkingPhoto: "",
-  useCredits: true,
-};
-
 const mergeProfileWithDefaults = (
   profile: Partial<Profile>,
   authState: {
@@ -39,7 +28,7 @@ const mergeProfileWithDefaults = (
     authPhotoUrl?: string;
   }
 ): Profile => ({
-  ...defaultProfile,
+  ...DEFAULT_PROFILE,
   ...profile,
   credits: profile.credits && profile.credits >= CREDITS_THRESHOLD ? profile.credits : DEFAULT_CREDITS,
   email: authState.authEmail || profile.email || "",
@@ -49,7 +38,7 @@ const mergeProfileWithDefaults = (
 });
 
 const useProfileStore = create<ProfileState>((set, get) => ({
-  profile: defaultProfile,
+  profile: DEFAULT_PROFILE,
 
   fetchProfile: async (uid: string, authContext?: AuthContext) => {
     if (!uid) return;
@@ -99,7 +88,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 
     try {
       await deleteUserAccount(uid);
-      set({ profile: defaultProfile });
+      set({ profile: DEFAULT_PROFILE });
     } catch (error) {
       handleProfileError("deleting account", error);
       throw error;
@@ -107,7 +96,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   },
 
   resetProfile: () => {
-    set({ profile: defaultProfile });
+    set({ profile: DEFAULT_PROFILE });
   },
 
   minusCredits: async (uid: string, amount: number) => {

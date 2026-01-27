@@ -11,6 +11,7 @@ import { db } from "@/firebase/firebaseClient";
 import type { Payment, PaymentInput, PaymentStatus } from "@/types/payment";
 import { validateUserId } from "@/lib/validation";
 import { getUserPaymentsPath } from "@/lib/firestore";
+import { PaymentError } from "@/types/errors";
 
 /**
  * Maps Firestore document data to Payment
@@ -62,7 +63,11 @@ export const fetchUserPayments = async (uid: string): Promise<Payment[]> => {
 
     return sortPayments(payments);
   } catch (error) {
-    throw error;
+    throw new PaymentError(
+      'Failed to fetch user payments',
+      undefined,
+      error as Error
+    );
   }
 };
 
@@ -91,7 +96,11 @@ export const checkPaymentExists = async (
     const querySnapshot = await getDocs(q);
     return !querySnapshot.empty;
   } catch (error) {
-    throw error;
+    throw new PaymentError(
+      'Failed to check payment existence',
+      paymentId,
+      error as Error
+    );
   }
 };
 
@@ -133,7 +142,11 @@ export const createPayment = async (
       productId: payment.productId,
     };
   } catch (error) {
-    throw error;
+    throw new PaymentError(
+      'Failed to create payment record',
+      payment.id,
+      error as Error
+    );
   }
 };
 
@@ -167,7 +180,11 @@ export const findProcessedPayment = async (
 
     return null;
   } catch (error) {
-    throw error;
+    throw new PaymentError(
+      'Failed to find processed payment',
+      paymentId,
+      error as Error
+    );
   }
 };
 
