@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/firebase/firebaseAdmin";
-import { SESSION_COOKIE_NAME } from "@/lib/constants";
+import { SESSION_COOKIE_NAME, SESSION_EXPIRES_IN_MS } from "@/lib/constants";
 import { logger } from "@/utils/logger";
-
-const SESSION_EXPIRES_IN_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 
 export async function POST(request: Request) {
   try {

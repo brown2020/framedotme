@@ -2,6 +2,7 @@
 
 import PaymentCheckoutPage from "@/components/PaymentCheckoutPage";
 import convertToSubcurrency from "@/utils/convertToSubcurrency";
+import { DEFAULT_PAYMENT_AMOUNT, DEFAULT_PAYMENT_CURRENCY } from "@/lib/constants";
 
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
@@ -13,18 +14,16 @@ if (process.env.NEXT_PUBLIC_STRIPE_KEY === undefined) {
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY);
 
 export default function PaymentAttempt() {
-  const amount = 99.99;
-
   return (
     <Elements
       stripe={stripePromise}
       options={{
         mode: "payment",
-        amount: convertToSubcurrency(amount),
-        currency: "usd",
+        amount: convertToSubcurrency(DEFAULT_PAYMENT_AMOUNT),
+        currency: DEFAULT_PAYMENT_CURRENCY,
       }}
     >
-      <PaymentCheckoutPage amount={amount} />
+      <PaymentCheckoutPage amount={DEFAULT_PAYMENT_AMOUNT} />
     </Elements>
   );
 }

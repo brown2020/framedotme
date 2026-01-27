@@ -7,20 +7,19 @@ import {
 } from "@/services/userService";
 import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/lib/constants";
 import { logError } from "@/utils/errorHandling";
+import type { Profile, AuthContext, DEFAULT_PROFILE } from "@/types/user";
 
-export interface ProfileType {
-  email: string;
-  contactEmail: string;
-  displayName: string;
-  photoUrl: string;
-  emailVerified: boolean;
-  credits: number;
-  selectedAvatar: string;
-  selectedTalkingPhoto: string;
-  useCredits: boolean;
+interface ProfileState {
+  profile: Profile;
+  fetchProfile: (uid: string, authContext?: AuthContext) => Promise<void>;
+  updateProfile: (uid: string, newProfile: Partial<Profile>) => Promise<void>;
+  minusCredits: (uid: string, amount: number) => Promise<boolean>;
+  addCredits: (uid: string, amount: number) => Promise<void>;
+  deleteAccount: (uid: string) => Promise<void>;
+  resetProfile: () => void;
 }
 
-const defaultProfile: ProfileType = {
+const defaultProfile: Profile = {
   email: "",
   contactEmail: "",
   displayName: "",
@@ -32,30 +31,14 @@ const defaultProfile: ProfileType = {
   useCredits: true,
 };
 
-interface AuthContext {
-  authEmail?: string;
-  authDisplayName?: string;
-  authPhotoUrl?: string;
-  authEmailVerified?: boolean;
-}
-
-interface ProfileState {
-  profile: ProfileType;
-  fetchProfile: (uid: string, authContext?: AuthContext) => Promise<void>;
-  updateProfile: (uid: string, newProfile: Partial<ProfileType>) => Promise<void>;
-  minusCredits: (uid: string, amount: number) => Promise<boolean>;
-  addCredits: (uid: string, amount: number) => Promise<void>;
-  deleteAccount: (uid: string) => Promise<void>;
-}
-
 const mergeProfileWithDefaults = (
-  profile: Partial<ProfileType>,
+  profile: Partial<Profile>,
   authState: {
     authEmail?: string;
     authDisplayName?: string;
     authPhotoUrl?: string;
   }
-): ProfileType => ({
+): Profile => ({
   ...defaultProfile,
   ...profile,
   credits: profile.credits && profile.credits >= CREDITS_THRESHOLD ? profile.credits : DEFAULT_CREDITS,
@@ -90,7 +73,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     }
   },
 
-  updateProfile: async (uid: string, newProfile: Partial<ProfileType>) => {
+  updateProfile: async (uid: string, newProfile: Partial<Profile>) => {
     if (!uid) return;
 
     const previousProfile = get().profile;
@@ -116,9 +99,15 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 
     try {
       await deleteUserAccount(uid);
+      set({ profile: defaultProfile });
     } catch (error) {
       handleProfileError("deleting account", error);
+      throw error;
     }
+  },
+
+  resetProfile: () => {
+    set({ profile: defaultProfile });
   },
 
   minusCredits: async (uid: string, amount: number) => {
@@ -171,7 +160,7 @@ function createNewProfile(
   authDisplayName?: string,
   authPhotoUrl?: string,
   authEmailVerified?: boolean
-): ProfileType {
+): Profile {
   return {
     email: authEmail || "",
     contactEmail: "",

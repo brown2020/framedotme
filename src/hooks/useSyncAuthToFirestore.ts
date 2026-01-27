@@ -12,7 +12,6 @@ export function useSyncAuthToFirestore(): void {
   // Use specific selectors instead of entire store to prevent unnecessary re-renders
   const uid = useAuthStore((state) => state.uid);
   const authReady = useAuthStore((state) => state.authReady);
-  const firebaseUid = useAuthStore((state) => state.firebaseUid);
   const authEmail = useAuthStore((state) => state.authEmail);
   const authDisplayName = useAuthStore((state) => state.authDisplayName);
   const authPhotoUrl = useAuthStore((state) => state.authPhotoUrl);
@@ -23,7 +22,6 @@ export function useSyncAuthToFirestore(): void {
   const isInvited = useAuthStore((state) => state.isInvited);
   const lastSignIn = useAuthStore((state) => state.lastSignIn);
   const premium = useAuthStore((state) => state.premium);
-  const credits = useAuthStore((state) => state.credits);
 
   const previousUidRef = useRef<string>("");
 
@@ -31,7 +29,6 @@ export function useSyncAuthToFirestore(): void {
   const authData = useMemo(
     () => ({
       uid,
-      firebaseUid,
       authEmail,
       authDisplayName,
       authPhotoUrl,
@@ -43,11 +40,9 @@ export function useSyncAuthToFirestore(): void {
       isInvited,
       lastSignIn,
       premium,
-      credits,
     }),
     [
       uid,
-      firebaseUid,
       authEmail,
       authDisplayName,
       authPhotoUrl,
@@ -59,7 +54,6 @@ export function useSyncAuthToFirestore(): void {
       isInvited,
       lastSignIn,
       premium,
-      credits,
     ]
   );
 

@@ -114,6 +114,11 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
   }, [lastTokenRefresh, scheduleTokenRefresh, user?.uid]);
 
   useEffect(() => {
+    // Don't do anything until Firebase auth state is determined
+    if (loading) {
+      return;
+    }
+
     if (user?.uid) {
       setAuthDetails({
         uid: user.uid,
@@ -125,12 +130,26 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
         authPending: false,
       });
     } else {
-      clearAuthDetails();
+      // Clear auth but mark as ready (we've confirmed there's no user)
+      setAuthDetails({
+        uid: "",
+        authEmail: "",
+        authDisplayName: "",
+        authPhotoUrl: "",
+        authEmailVerified: false,
+        authReady: true,
+        authPending: false,
+        isAdmin: false,
+        isAllowed: false,
+        isInvited: false,
+        lastSignIn: null,
+        premium: false,
+      });
       deleteCookie(cookieName);
       // Best-effort cleanup of server-side session cookie
       void clearServerSessionCookie();
     }
-  }, [clearAuthDetails, clearServerSessionCookie, cookieName, setAuthDetails, user]);
+  }, [clearServerSessionCookie, cookieName, loading, setAuthDetails, user]);
 
   return { uid: user?.uid, loading, error };
 };

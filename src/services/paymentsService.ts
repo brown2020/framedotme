@@ -8,12 +8,12 @@ import {
   DocumentData,
 } from "firebase/firestore";
 import { db } from "@/firebase/firebaseClient";
-import { PaymentType } from "@/zustand/usePaymentsStore";
+import type { Payment, PaymentInput, PaymentStatus } from "@/types/payment";
 import { validateUserId } from "@/lib/validation";
 import { getUserPaymentsPath } from "@/lib/firestore";
 
 /**
- * Maps Firestore document data to PaymentType
+ * Maps Firestore document data to Payment
  * Uses the id field from the document data (which stores the Stripe payment intent ID)
  * 
  * @param data - The Firestore document data
@@ -21,15 +21,15 @@ import { getUserPaymentsPath } from "@/lib/firestore";
  * 
  * @internal Helper function to maintain consistency in data mapping
  */
-const mapDocumentToPayment = (data: DocumentData): PaymentType => {
+const mapDocumentToPayment = (data: DocumentData): Payment => {
   return {
     id: data.id as string,
     amount: data.amount as number,
-    createdAt: data.createdAt as PaymentType["createdAt"],
-    status: data.status as string,
-    mode: data.mode as string,
+    createdAt: data.createdAt as Payment["createdAt"],
+    status: data.status as PaymentStatus,
+    mode: data.mode as Payment["mode"],
     currency: data.currency as string,
-    platform: data.platform as string,
+    platform: data.platform as Payment["platform"],
     productId: data.productId as string,
   };
 };
@@ -48,17 +48,22 @@ const mapDocumentToPayment = (data: DocumentData): PaymentType => {
  * payments.forEach(p => console.log(p.amount));
  * ```
  */
-export const fetchUserPayments = async (uid: string): Promise<PaymentType[]> => {
+export const fetchUserPayments = async (uid: string): Promise<Payment[]> => {
   const validatedUid = validateUserId(uid);
-  const q = query(collection(db, getUserPaymentsPath(validatedUid)));
-  const querySnapshot = await getDocs(q);
   
-  // Map each Firestore document to PaymentType
-  const payments = querySnapshot.docs.map((doc) => 
-    mapDocumentToPayment(doc.data())
-  );
+  try {
+    const q = query(collection(db, getUserPaymentsPath(validatedUid)));
+    const querySnapshot = await getDocs(q);
+    
+    // Map each Firestore document to Payment
+    const payments = querySnapshot.docs.map((doc) => 
+      mapDocumentToPayment(doc.data())
+    );
 
-  return sortPayments(payments);
+    return sortPayments(payments);
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
@@ -76,14 +81,18 @@ export const checkPaymentExists = async (
 ): Promise<boolean> => {
   const validatedUid = validateUserId(uid);
   
-  // Check if payment exists by querying for the "id" field
-  // (since we use custom IDs, not Firestore document IDs)
-  const q = query(
-    collection(db, getUserPaymentsPath(validatedUid)),
-    where("id", "==", paymentId)
-  );
-  const querySnapshot = await getDocs(q);
-  return !querySnapshot.empty;
+  try {
+    // Check if payment exists by querying for the "id" field
+    // (since we use custom IDs, not Firestore document IDs)
+    const q = query(
+      collection(db, getUserPaymentsPath(validatedUid)),
+      where("id", "==", paymentId)
+    );
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
@@ -96,32 +105,36 @@ export const checkPaymentExists = async (
  */
 export const createPayment = async (
   uid: string,
-  payment: Omit<PaymentType, "createdAt">
-): Promise<PaymentType> => {
+  payment: PaymentInput
+): Promise<Payment> => {
   const validatedUid = validateUserId(uid);
   const createdAt = Timestamp.now();
   
-  await addDoc(collection(db, getUserPaymentsPath(validatedUid)), {
-    id: payment.id,
-    amount: payment.amount,
-    createdAt,
-    status: payment.status,
-    mode: payment.mode,
-    currency: payment.currency,
-    platform: payment.platform,
-    productId: payment.productId,
-  });
+  try {
+    await addDoc(collection(db, getUserPaymentsPath(validatedUid)), {
+      id: payment.id,
+      amount: payment.amount,
+      createdAt,
+      status: payment.status,
+      mode: payment.mode,
+      currency: payment.currency,
+      platform: payment.platform,
+      productId: payment.productId,
+    });
 
-  return {
-    id: payment.id,
-    amount: payment.amount,
-    createdAt,
-    status: payment.status,
-    mode: payment.mode,
-    currency: payment.currency,
-    platform: payment.platform,
-    productId: payment.productId,
-  };
+    return {
+      id: payment.id,
+      amount: payment.amount,
+      createdAt,
+      status: payment.status,
+      mode: payment.mode,
+      currency: payment.currency,
+      platform: payment.platform,
+      productId: payment.productId,
+    };
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
@@ -135,22 +148,27 @@ export const createPayment = async (
 export const findProcessedPayment = async (
   uid: string,
   paymentId: string
-): Promise<PaymentType | null> => {
+): Promise<Payment | null> => {
   const validatedUid = validateUserId(uid);
-  const paymentsRef = collection(db, getUserPaymentsPath(validatedUid));
-  const q = query(
-    paymentsRef,
-    where("id", "==", paymentId),
-    where("status", "==", "succeeded")
-  );
-  const querySnapshot = await getDocs(q);
+  
+  try {
+    const paymentsRef = collection(db, getUserPaymentsPath(validatedUid));
+    const q = query(
+      paymentsRef,
+      where("id", "==", paymentId),
+      where("status", "==", "succeeded")
+    );
+    const querySnapshot = await getDocs(q);
 
-  if (!querySnapshot.empty && querySnapshot.docs[0]) {
-    const doc = querySnapshot.docs[0];
-    return mapDocumentToPayment(doc.data());
+    if (!querySnapshot.empty && querySnapshot.docs[0]) {
+      const doc = querySnapshot.docs[0];
+      return mapDocumentToPayment(doc.data());
+    }
+
+    return null;
+  } catch (error) {
+    throw error;
   }
-
-  return null;
 };
 
 /**
@@ -159,7 +177,7 @@ export const findProcessedPayment = async (
  * @param payments - Array of payments to sort
  * @returns Sorted array with newest payments first
  */
-export const sortPayments = (payments: PaymentType[]): PaymentType[] => {
+export const sortPayments = (payments: Payment[]): Payment[] => {
   return payments.sort(
     (a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
   );

@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import PaymentSuccessPage from "@/components/PaymentSuccessPage";
 import { useSearchParams } from "next/navigation";
 import { logger } from "@/utils/logger";
 
-export default function PaymentSuccess() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const payment_intent = searchParams.get("payment_intent") || "";
 
@@ -12,4 +13,18 @@ export default function PaymentSuccess() {
   logger.debug("payment_intent in calling page", payment_intent);
   
   return <PaymentSuccessPage payment_intent={payment_intent} />;
+}
+
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+
+export default function PaymentSuccess() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-[400px] items-center justify-center">
+        <LoadingSpinner label="Processing payment..." />
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
+  );
 }

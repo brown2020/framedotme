@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect } from "react";
 import logo from "@/app/assets/logo.png";
 import { globalVideoRef } from "@/utils/avFunctions";
+import { DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT } from "@/lib/constants";
 
 type Props = {
   videoSrc?: string;
@@ -82,8 +83,8 @@ export default function VideoComponent({
     return (
       <div className={containerClasses} onClick={handleVideoToggle}>
         <video
-          height={512}
-          width={512}
+          height={DEFAULT_VIDEO_HEIGHT}
+          width={DEFAULT_VIDEO_WIDTH}
           ref={globalVideoRef}
           className={mediaClasses}
           src={videoSrc}

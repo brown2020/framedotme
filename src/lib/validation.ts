@@ -38,10 +38,10 @@ export const VideoMetadataSchema = z.object({
 export const PaymentSchema = z.object({
   id: z.string().min(1),
   amount: z.number().positive(),
-  status: z.string().min(1),
-  mode: z.string().min(1),
+  status: z.enum(["pending", "succeeded", "completed", "failed", "refunded"]),
+  mode: z.enum(["one-time", "subscription", "iap"]),
   currency: z.string().length(3),
-  platform: z.string().min(1),
+  platform: z.enum(["stripe", "apple", "google"]),
   productId: z.string().min(1),
 });
 

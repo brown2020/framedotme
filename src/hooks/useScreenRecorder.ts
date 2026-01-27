@@ -133,7 +133,7 @@ export const useScreenRecorder = () => {
     try {
       const combinedStream = await currentMediaManager.createCombinedStream();
       recordingManager.current.startRecording(combinedStream, () => {});
-      updateStatus("recording");
+      await updateStatus("recording");
     } catch (error) {
       handleError(error);
     }
@@ -142,10 +142,10 @@ export const useScreenRecorder = () => {
   const stopRecording = useCallback(async () => {
     const currentRecordingManager = recordingManager.current;
     try {
-      updateStatus("saving");
+      await updateStatus("saving");
       const finalBlob = await currentRecordingManager.stopRecording();
       await handleRecordingData(finalBlob);
-      updateStatus("ready");
+      await updateStatus("ready");
     } catch (error) {
       handleError(error);
     }
@@ -167,7 +167,7 @@ export const useScreenRecorder = () => {
       const stream = await currentMediaManager.initializeScreenCapture();
       setScreenStream(stream);
       setIsRecordingWindowOpen(true);
-      updateStatus("ready");
+      await updateStatus("ready");
     } catch (error) {
       handleError(error);
     }
@@ -181,25 +181,34 @@ export const useScreenRecorder = () => {
     currentRecordingManager.cleanup();
     setError(null);
     setScreenStream(null);
-    updateStatus("idle");
+    void updateStatus("idle");
     setIsRecordingWindowOpen(false);
   }, [updateStatus]);
 
   // Handle recorder status changes
+  // Use refs to avoid dependency issues with callbacks
+  const startRecordingRef = useRef(startRecording);
+  const stopRecordingRef = useRef(stopRecording);
+  
+  useEffect(() => {
+    startRecordingRef.current = startRecording;
+    stopRecordingRef.current = stopRecording;
+  }, [startRecording, stopRecording]);
+
   useEffect(() => {
     const handleStatus = async () => {
       switch (recorderStatus) {
         case "shouldStart":
-          await startRecording();
+          await startRecordingRef.current();
           break;
         case "shouldStop":
-          await stopRecording();
+          await stopRecordingRef.current();
           break;
       }
     };
 
-    handleStatus();
-  }, [recorderStatus, startRecording, stopRecording]);
+    void handleStatus();
+  }, [recorderStatus]);
 
   // Cleanup on unmount
   useEffect(() => {

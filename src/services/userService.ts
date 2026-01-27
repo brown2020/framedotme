@@ -1,4 +1,4 @@
-import { db } from "@/firebase/firebaseClient";
+import { db, auth } from "@/firebase/firebaseClient";
 import {
   doc,
   setDoc,
@@ -7,8 +7,8 @@ import {
   deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import { deleteUser, getAuth } from "firebase/auth";
-import type { ProfileType } from "@/zustand/useProfileStore";
+import { deleteUser } from "firebase/auth";
+import type { Profile } from "@/types/user";
 import { logger } from "@/utils/logger";
 import { validateUserId } from "@/lib/validation";
 import { getUserPath, getUserProfilePath } from "@/lib/firestore";
@@ -75,7 +75,7 @@ export const updateUserDetailsInFirestore = async (
  * if (profile) logger.debug(profile.displayName);
  * ```
  */
-export const fetchUserProfile = async (uid: string): Promise<ProfileType | null> => {
+export const fetchUserProfile = async (uid: string): Promise<Profile | null> => {
   const validatedUid = validateUserId(uid);
   
   try {
@@ -126,7 +126,7 @@ export const fetchUserProfile = async (uid: string): Promise<ProfileType | null>
  */
 export const saveUserProfile = async (
   uid: string,
-  profileData: ProfileType
+  profileData: Profile
 ): Promise<void> => {
   const validatedUid = validateUserId(uid);
   
@@ -159,7 +159,7 @@ export const saveUserProfile = async (
  */
 export const updateUserProfile = async (
   uid: string,
-  data: Partial<ProfileType>
+  data: Partial<Profile>
 ): Promise<void> => {
   const validatedUid = validateUserId(uid);
   
@@ -195,7 +195,6 @@ export const deleteUserAccount = async (uid: string): Promise<void> => {
   const validatedUid = validateUserId(uid);
   
   try {
-    const auth = getAuth();
     const currentUser = auth.currentUser;
 
     if (!currentUser) {

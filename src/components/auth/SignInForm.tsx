@@ -4,17 +4,18 @@ import { MailIcon, LockIcon } from "lucide-react";
 import googleLogo from "@/app/assets/google.svg";
 
 /**
- * Auth button component for OAuth providers
+ * Auth button props
  */
-function AuthButton({
-  label,
-  logo,
-  onClick,
-}: {
+interface AuthButtonProps {
   label: string;
   logo: string;
   onClick: () => void;
-}) {
+}
+
+/**
+ * Auth button component for OAuth providers
+ */
+function AuthButton({ label, logo, onClick }: AuthButtonProps) {
   return (
     <button
       type="button"
@@ -32,6 +33,45 @@ function AuthButton({
       <span className="grow text-center">{label}</span>
     </button>
   );
+}
+
+/**
+ * Form field values
+ */
+interface FormFields {
+  email: string;
+  password: string;
+  name: string;
+  acceptTerms: boolean;
+  isEmailLinkLogin: boolean;
+}
+
+/**
+ * Form field setters
+ */
+interface FormFieldSetters {
+  setEmail: (value: string) => void;
+  setPassword: (value: string) => void;
+  setName: (value: string) => void;
+  setAcceptTerms: (value: boolean) => void;
+  setIsEmailLinkLogin: (value: boolean) => void;
+}
+
+/**
+ * Form handlers
+ */
+interface FormHandlers {
+  onGoogleSignIn: () => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onPasswordReset: () => void;
+}
+
+/**
+ * Sign-in form props
+ */
+interface SignInFormProps extends FormFields, FormFieldSetters, FormHandlers {
+  formRef: React.RefObject<HTMLFormElement | null>;
+  showGoogleSignIn: boolean;
 }
 
 /**
@@ -53,23 +93,7 @@ export function SignInForm({
   onGoogleSignIn,
   onSubmit,
   onPasswordReset,
-}: {
-  formRef: React.RefObject<HTMLFormElement | null>;
-  email: string;
-  setEmail: (value: string) => void;
-  password: string;
-  setPassword: (value: string) => void;
-  name: string;
-  setName: (value: string) => void;
-  acceptTerms: boolean;
-  setAcceptTerms: (value: boolean) => void;
-  isEmailLinkLogin: boolean;
-  setIsEmailLinkLogin: (value: boolean) => void;
-  showGoogleSignIn: boolean;
-  onGoogleSignIn: () => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
-  onPasswordReset: () => void;
-}) {
+}: SignInFormProps) {
   return (
     <form onSubmit={onSubmit} ref={formRef} className="flex flex-col gap-2">
       <div className="text-3xl text-center pb-3">Sign In</div>

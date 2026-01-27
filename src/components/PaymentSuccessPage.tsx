@@ -4,6 +4,7 @@ import { validatePaymentIntent } from "@/actions/paymentActions";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { usePaymentsStore } from "@/zustand/usePaymentsStore";
 import useProfileStore from "@/zustand/useProfileStore";
+import { BONUS_CREDITS } from "@/lib/constants";
 import Link from "next/link";
 import { useEffect, useReducer } from "react";
 import { logger } from "@/utils/logger";
@@ -92,14 +93,14 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
             id: data.id,
             amount: data.amount,
             status: data.status,
-            mode: "stripe",
-            platform: "web",
+            mode: "one-time",
+            platform: "stripe",
             productId: "payment_gateway",
-            currency: "$",
+            currency: "usd",
           });
 
           // Add credits to profile
-          const creditsToAdd = data.amount + 1;
+          const creditsToAdd = data.amount + BONUS_CREDITS;
           await addCredits(uid, creditsToAdd);
 
           dispatch({

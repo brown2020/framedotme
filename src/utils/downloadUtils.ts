@@ -1,6 +1,7 @@
 import { logger } from "./logger";
+import { DOWNLOAD_LINK_CLEANUP_TIMEOUT_MS } from "@/lib/constants";
 
-export const downloadBlob = (blob: Blob, filename: string) => {
+export const downloadBlob = (blob: Blob, filename: string): void => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -10,10 +11,10 @@ export const downloadBlob = (blob: Blob, filename: string) => {
   setTimeout(() => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, 100);
+  }, DOWNLOAD_LINK_CLEANUP_TIMEOUT_MS);
 };
 
-export const downloadFromUrl = async (url: string, filename: string) => {
+export const downloadFromUrl = async (url: string, filename: string): Promise<void> => {
   try {
     const response = await fetch(url);
     const blob = await response.blob();

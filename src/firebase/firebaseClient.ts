@@ -4,15 +4,50 @@ import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth"
 import { getStorage } from "firebase/storage";
 import { logger } from "@/utils/logger";
 
+/**
+ * Firebase client configuration
+ * These are public keys meant for client-side use
+ */
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_APIKEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTHDOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECTID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGEBUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGINGSENDERID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APPID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_APIKEY || "",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTHDOMAIN || "",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECTID || "",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGEBUCKET || "",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGINGSENDERID || "",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APPID || "",
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENTID,
 };
+
+/**
+ * Validates Firebase config only when actually initializing on the client
+ */
+function validateFirebaseConfig(): void {
+  // Only validate on client-side where these vars are actually used
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const requiredFields = [
+    "apiKey",
+    "authDomain",
+    "projectId",
+    "storageBucket",
+    "messagingSenderId",
+    "appId",
+  ] as const;
+
+  const missing = requiredFields.filter((field) => !firebaseConfig[field]);
+
+  if (missing.length > 0) {
+    logger.error(
+      `Missing required Firebase configuration: ${missing.join(", ")}`,
+      "Check your .env file for NEXT_PUBLIC_FIREBASE_* variables"
+    );
+  }
+}
+
+// Validate config when initializing
+validateFirebaseConfig();
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);

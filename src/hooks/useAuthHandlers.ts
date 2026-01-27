@@ -84,41 +84,54 @@ export function useAuthHandlers(hideModal: () => void) {
   }, [clearAuthDetails, hideModal]);
 
   /**
+   * Helper function to save email to storage after successful auth
+   */
+   const saveEmailToStorage = useCallback(() => {
+    browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
+    const emailName = email.split("@")[0];
+    if (emailName) {
+      browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
+    }
+  }, [email]);
+
+  /**
    * Handles password-based login
    */
   const handlePasswordLogin = useCallback(async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
-      const emailName = email.split("@")[0];
-      if (emailName) {
-        browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
-      }
+      saveEmailToStorage();
       hideModal();
     } catch (error: unknown) {
       if (isFirebaseError(error)) {
         toast.error(error.message);
       }
     }
-  }, [email, password, hideModal]);
+  }, [email, password, hideModal, saveEmailToStorage]);
 
   /**
    * Handles password-based signup (creates new account)
+   * Falls back to login if email already exists
    */
   const handlePasswordSignup = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
-      const emailName = email.split("@")[0];
-      if (emailName) {
-        browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
-      }
+      saveEmailToStorage();
       hideModal();
     } catch (error: unknown) {
       if (error instanceof Error) {
         if ((error as { code?: string }).code === "auth/email-already-in-use") {
-          handlePasswordLogin();
+          // If email exists, attempt login instead
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+            saveEmailToStorage();
+            hideModal();
+          } catch (loginError) {
+            if (isFirebaseError(loginError)) {
+              toast.error(loginError.message);
+            }
+          }
           return;
         }
       }
@@ -126,7 +139,7 @@ export function useAuthHandlers(hideModal: () => void) {
         toast.error(error.message);
       }
     }
-  }, [email, password, hideModal, handlePasswordLogin]);
+  }, [email, password, hideModal, saveEmailToStorage]);
 
   /**
    * Handles email link sign-in (passwordless)

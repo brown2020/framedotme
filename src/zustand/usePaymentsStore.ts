@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import type { Timestamp } from "firebase/firestore";
 import { getErrorMessage, logError } from "@/utils/errorHandling";
 import { logger } from "@/utils/logger";
 import {
@@ -9,25 +8,15 @@ import {
   findProcessedPayment,
   sortPayments,
 } from "@/services/paymentsService";
-
-export type PaymentType = {
-  id: string;
-  amount: number;
-  createdAt: Timestamp | null;
-  status: string;
-  mode: string;
-  platform: string;
-  productId: string;
-  currency: string;
-};
+import type { Payment, PaymentInput } from "@/types/payment";
 
 interface PaymentsStoreState {
-  payments: PaymentType[];
+  payments: Payment[];
   paymentsLoading: boolean;
   paymentsError: string | null;
   fetchPayments: (uid: string) => Promise<void>;
-  addPayment: (uid: string, payment: Omit<PaymentType, "createdAt">) => Promise<void>;
-  checkIfPaymentProcessed: (uid: string, paymentId: string) => Promise<PaymentType | null>;
+  addPayment: (uid: string, payment: PaymentInput) => Promise<void>;
+  checkIfPaymentProcessed: (uid: string, paymentId: string) => Promise<Payment | null>;
 }
 
 export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
@@ -51,7 +40,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
     }
   },
 
-  addPayment: async (uid: string, payment: Omit<PaymentType, "createdAt">) => {
+  addPayment: async (uid: string, payment: PaymentInput) => {
     if (!uid) {
       logger.error("Invalid UID for addPayment");
       return;
