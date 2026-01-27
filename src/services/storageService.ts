@@ -18,9 +18,10 @@ import {
 import { downloadFromUrl } from "@/utils/downloadUtils";
 import type { VideoMetadata } from "@/types/video";
 import type { UploadProgress } from "@/types/recorder";
-import { StorageError } from "@/types/errors";
+import { AppError } from "@/types/errors";
 import { validateUserId, validateFilename } from "@/lib/validation";
 import { getUserBotcastsPath } from "@/lib/firestore";
+import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
 
 /**
  * Fetches all recordings for a specific user from Firestore
@@ -39,30 +40,27 @@ import { getUserBotcastsPath } from "@/lib/firestore";
 export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata[]> => {
   const validatedUserId = validateUserId(userId);
   
-  try {
-    const videosRef = collection(db, getUserBotcastsPath(validatedUserId));
-    const q = query(videosRef, orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map((doc): VideoMetadata => {
-      const data = doc.data();
-      return {
-        id: doc.id || data.id || "",
-        downloadUrl: data.downloadUrl || "",
-        storagePath: data.storagePath || "",
-        createdAt: data.createdAt || Timestamp.now(),
-        filename: data.filename || "",
-        showOnProfile: data.showOnProfile || false,
-      };
-    });
-  } catch (error) {
-    throw new StorageError(
-      'Failed to fetch user recordings',
-      'firestore-read',
-      error as Error,
-      { userId: validatedUserId }
-    );
-  }
+  return firestoreRead(
+    async () => {
+      const videosRef = collection(db, getUserBotcastsPath(validatedUserId));
+      const q = query(videosRef, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map((doc): VideoMetadata => {
+        const data = doc.data();
+        return {
+          id: doc.id || data.id || "",
+          downloadUrl: data.downloadUrl || "",
+          storagePath: data.storagePath || "",
+          createdAt: data.createdAt || Timestamp.now(),
+          filename: data.filename || "",
+          showOnProfile: data.showOnProfile || false,
+        };
+      });
+    },
+    'Failed to fetch user recordings',
+    { userId: validatedUserId }
+  );
 };
 
 /**
@@ -116,11 +114,14 @@ export const uploadRecording = async (
           });
         },
         (error) => {
-          const storageError = new StorageError(
+          const storageError = new AppError(
             'Failed to upload recording to storage',
-            'storage-upload',
-            error as Error,
-            { userId: validatedUserId, filename: validatedFilename }
+            'storage',
+            { 
+              stage: 'storage-upload',
+              originalError: error as Error,
+              context: { userId: validatedUserId, filename: validatedFilename }
+            }
           );
           onProgress?.({
             progress: 0,
@@ -139,11 +140,14 @@ export const uploadRecording = async (
             });
             resolve(downloadURL);
           } catch (error) {
-            const firestoreError = new StorageError(
+            const firestoreError = new AppError(
               'Failed to create Firestore record for upload',
-              'firestore-write',
-              error as Error,
-              { userId: validatedUserId, filename: validatedFilename }
+              'storage',
+              { 
+                stage: 'firestore-write',
+                originalError: error as Error,
+                context: { userId: validatedUserId, filename: validatedFilename }
+              }
             );
             reject(firestoreError);
           }
@@ -151,11 +155,14 @@ export const uploadRecording = async (
       );
     });
   } catch (error) {
-    const initError = new StorageError(
+    const initError = new AppError(
       'Failed to initialize upload',
-      'upload-init',
-      error as Error,
-      { userId: validatedUserId, filename: validatedFilename }
+      'storage',
+      { 
+        stage: 'upload-init',
+        originalError: error as Error,
+        context: { userId: validatedUserId, filename: validatedFilename }
+      }
     );
     onProgress?.({
       progress: 0,
@@ -192,28 +199,23 @@ const createFirestoreRecord = async (
     showOnProfile: false,
   };
 
-  try {
-    // Refresh token before write to ensure auth is valid
-    // This is critical for multi-window scenarios (video controls in popup)
-    // where auth state may not be fully synchronized across windows
-    if (auth.currentUser) {
-      await auth.currentUser.getIdToken(true);
-    }
-    
-    await setDoc(botcastRef, metadata);
-  } catch (error) {
-    throw new StorageError(
-      'Firestore write denied - check authentication and security rules',
-      'firestore-write',
-      error as Error,
-      {
-        path: botcastRef.path,
-        authUid: auth.currentUser?.uid ?? 'null',
-        userId,
-        filename
-      }
-    );
+  // Refresh token before write to ensure auth is valid
+  // This is critical for multi-window scenarios (video controls in popup)
+  // where auth state may not be fully synchronized across windows
+  if (auth.currentUser) {
+    await auth.currentUser.getIdToken(true);
   }
+
+  await firestoreWrite(
+    () => setDoc(botcastRef, metadata),
+    'Failed to write to Firestore: authentication or security rules denied access',
+    {
+      path: botcastRef.path,
+      authUid: auth.currentUser?.uid ?? 'null',
+      userId,
+      filename
+    }
+  );
 };
 
 /**
@@ -236,21 +238,18 @@ export const deleteRecording = async (
 ): Promise<void> => {
   const validatedUserId = validateUserId(userId);
 
-  try {
-    // Delete from storage using the stored storage path
-    const storageRef = ref(storage, video.storagePath);
-    await deleteObject(storageRef);
+  await firestoreWrite(
+    async () => {
+      // Delete from storage using the stored storage path
+      const storageRef = ref(storage, video.storagePath);
+      await deleteObject(storageRef);
 
-    // Delete from Firestore
-    await deleteDoc(doc(db, getUserBotcastsPath(validatedUserId), video.id));
-  } catch (error) {
-    throw new StorageError(
-      'Failed to delete recording',
-      'storage-delete',
-      error as Error,
-      { userId: validatedUserId, videoId: video.id }
-    );
-  }
+      // Delete from Firestore
+      await deleteDoc(doc(db, getUserBotcastsPath(validatedUserId), video.id));
+    },
+    'Failed to delete recording',
+    { userId: validatedUserId, videoId: video.id }
+  );
 };
 
 /**

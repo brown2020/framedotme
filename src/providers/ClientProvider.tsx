@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { ProviderComposer } from "./ProviderComposer";
 import { RecorderStatusProvider } from "./RecorderStatusProvider";
 import { ViewportProvider } from "./ViewportProvider";
 import { AuthProvider } from "./AuthProvider";
@@ -10,10 +11,9 @@ import { CookieConsentProvider } from "./CookieConsentProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 /**
- * Client provider component that composes all necessary providers
- * Provides authentication, viewport management, route guards, and global UI elements
+ * Provider order configuration (outermost to innermost)
+ * Order is critical - changing it will break dependencies:
  * 
- * Provider Order and Dependencies (outermost to innermost):
  * 1. ErrorBoundary - Must wrap everything to catch errors from any provider
  * 2. ViewportProvider - No dependencies, provides viewport state
  * 3. AuthProvider - No dependencies, initializes auth state
@@ -21,6 +21,20 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
  * 5. RecorderStatusProvider - Depends on AuthProvider for user ID
  * 6. ToasterProvider - No dependencies, provides toast notifications
  * 7. CookieConsentProvider - Innermost, shows cookie consent banner
+ */
+const PROVIDER_ORDER = [
+  { component: ErrorBoundary },
+  { component: ViewportProvider },
+  { component: AuthProvider },
+  { component: RouteGuardProvider },
+  { component: RecorderStatusProvider },
+  { component: ToasterProvider },
+  { component: CookieConsentProvider },
+] as const;
+
+/**
+ * Client provider component that composes all necessary providers
+ * Provides authentication, viewport management, route guards, and global UI elements
  * 
  * @param props - Component props
  * @param props.children - Child components to wrap
@@ -28,20 +42,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
  */
 export function ClientProvider({ children }: { children: ReactNode }) {
   return (
-    <ErrorBoundary>
-      <ViewportProvider>
-        <AuthProvider>
-          <RouteGuardProvider>
-            <RecorderStatusProvider>
-              <ToasterProvider>
-                <CookieConsentProvider>
-                  <div className="flex flex-col h-full">{children}</div>
-                </CookieConsentProvider>
-              </ToasterProvider>
-            </RecorderStatusProvider>
-          </RouteGuardProvider>
-        </AuthProvider>
-      </ViewportProvider>
-    </ErrorBoundary>
+    <ProviderComposer providers={PROVIDER_ORDER}>
+      <div className="flex flex-col h-full">{children}</div>
+    </ProviderComposer>
   );
 }

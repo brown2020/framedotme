@@ -13,9 +13,11 @@ import { ClipLoader } from "react-spinners";
 import { createPaymentIntent } from "@/actions/paymentActions";
 import { logger } from "@/utils/logger";
 
-type Props = { amount: number };
+interface Props {
+  amount: number;
+}
 
-export default function PaymentCheckout({ amount }: Props) {
+export function PaymentCheckout({ amount }: Props) {
   const stripe = useStripe();
   const elements = useElements();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

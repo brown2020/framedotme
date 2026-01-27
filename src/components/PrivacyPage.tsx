@@ -1,12 +1,12 @@
-type Props = {
+interface Props {
   companyName: string;
   companyEmail: string;
   companyAddress: string;
   companyLocation: string;
   updatedAt: string;
-};
+}
 
-export default function PrivacyPage({
+export function PrivacyPage({
   companyName,
   companyEmail,
   companyAddress,

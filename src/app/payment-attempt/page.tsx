@@ -1,6 +1,6 @@
 "use client";
 
-import PaymentCheckout from "@/components/PaymentCheckout";
+import { PaymentCheckout } from "@/components/PaymentCheckout";
 import convertToSubcurrency from "@/utils/convertToSubcurrency";
 import { DEFAULT_PAYMENT_AMOUNT, DEFAULT_PAYMENT_CURRENCY } from "@/constants/payment";
 import { ErrorBoundary } from "@/components/ErrorBoundary";

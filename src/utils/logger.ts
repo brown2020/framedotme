@@ -1,59 +1,47 @@
-type LogLevel = "debug" | "info" | "warn" | "error";
+/**
+ * Simple logging utility with environment-based filtering
+ * Checks environment once at module load for optimal performance
+ */
 
-interface LoggerConfig {
-  enableInProduction: boolean;
-  minLevel: LogLevel;
-}
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const ENABLE_DEBUG = !IS_PRODUCTION;
+const ENABLE_INFO = !IS_PRODUCTION;
 
-const defaultConfig: LoggerConfig = {
-  enableInProduction: false,
-  minLevel: process.env.NODE_ENV === "production" ? "warn" : "debug",
-};
-
-const levels: Record<LogLevel, number> = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
-};
-
-class Logger {
-  private config: LoggerConfig;
-
-  constructor(config: LoggerConfig = defaultConfig) {
-    this.config = config;
-  }
-
-  private shouldLog(level: LogLevel): boolean {
-    if (process.env.NODE_ENV === "production" && !this.config.enableInProduction) {
-      return level === "error" || level === "warn";
-    }
-    return levels[level] >= levels[this.config.minLevel];
-  }
-
-  debug(message: string, ...args: unknown[]): void {
-    if (this.shouldLog("debug")) {
-      console.debug(`[DEBUG] ${message}`, ...args);
-    }
-  }
-
-  info(message: string, ...args: unknown[]): void {
-    if (this.shouldLog("info")) {
-      console.info(`[INFO] ${message}`, ...args);
-    }
-  }
-
-  warn(message: string, ...args: unknown[]): void {
-    if (this.shouldLog("warn")) {
-      console.warn(`[WARN] ${message}`, ...args);
-    }
-  }
-
-  error(message: string, ...args: unknown[]): void {
-    if (this.shouldLog("error")) {
-      console.error(`[ERROR] ${message}`, ...args);
-    }
+/**
+ * Logs debug messages (development only)
+ */
+function debug(message: string, ...args: unknown[]): void {
+  if (ENABLE_DEBUG) {
+    console.debug(`[DEBUG] ${message}`, ...args);
   }
 }
 
-export const logger = new Logger();
+/**
+ * Logs info messages (development only)
+ */
+function info(message: string, ...args: unknown[]): void {
+  if (ENABLE_INFO) {
+    console.info(`[INFO] ${message}`, ...args);
+  }
+}
+
+/**
+ * Logs warning messages (all environments)
+ */
+function warn(message: string, ...args: unknown[]): void {
+  console.warn(`[WARN] ${message}`, ...args);
+}
+
+/**
+ * Logs error messages (all environments)
+ */
+function error(message: string, ...args: unknown[]): void {
+  console.error(`[ERROR] ${message}`, ...args);
+}
+
+export const logger = {
+  debug,
+  info,
+  warn,
+  error,
+};

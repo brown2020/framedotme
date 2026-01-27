@@ -3,7 +3,7 @@
 import type { ReactElement } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 
-export default function AuthDataDisplay(): ReactElement {
+export function AuthDataDisplay(): ReactElement {
   const uid = useAuthStore((s) => s.uid);
   const authEmail = useAuthStore((s) => s.authEmail);
 

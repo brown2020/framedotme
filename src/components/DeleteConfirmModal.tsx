@@ -4,13 +4,13 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-type Props = {
+interface Props {
   showDeleteModal: boolean;
   onHideModal: () => void;
   onDeleteConfirm: () => void;
-};
+}
 
-export default function DeleteConfirmModal({
+export function DeleteConfirmModal({
   showDeleteModal,
   onHideModal,
   onDeleteConfirm,

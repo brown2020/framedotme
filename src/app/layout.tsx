@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { ClientProvider } from "@/providers/ClientProvider";
-import { COMPANY_INFO } from "@/constants/company";
+import { COMPANY_INFO } from "@/constants/config";
 import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {

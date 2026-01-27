@@ -5,8 +5,8 @@ import {
   REDIRECT_URL_COOKIE_NAME,
   SESSION_COOKIE_NAME,
 } from "./src/constants/auth";
-import { ROUTES } from "./src/constants/routes";
-import { verifyIdToken, verifySessionToken } from "./src/config/session";
+import { ROUTES } from "./src/constants/config";
+import { verifyIdToken, verifySessionToken } from "./src/services/sessionService";
 import { logger } from "./src/utils/logger";
 
 const COOKIE_PATH = "/";
@@ -49,10 +49,10 @@ const getVerifiedUser = async (request: NextRequest) => {
 };
 
 /**
- * Handles access to auth pages (/, /loginfinish)
- * Strategy: Allow unauthenticated users, redirect authenticated users away
+ * Handles unauthenticated pages (/, /loginfinish)
+ * Allows access for unauthenticated users, redirects authenticated users to app
  */
-const checkAuthPageAccess = async (
+const handleUnauthenticatedPage = async (
   request: NextRequest,
   hasToken: boolean
 ): Promise<NextResponse> => {
@@ -73,10 +73,10 @@ const checkAuthPageAccess = async (
 };
 
 /**
- * Enforces authentication for protected pages
- * Strategy: Require valid authentication, redirect unauthenticated users to login
+ * Handles protected pages that require authentication
+ * Redirects unauthenticated users to login, allows authenticated users to proceed
  */
-const enforceProtectedPageAccess = async (
+const handleProtectedPage = async (
   request: NextRequest,
   hasToken: boolean,
   pathname: string
@@ -118,10 +118,10 @@ export const proxy = async (request: NextRequest) => {
     const hasToken = hasAuthTokens(request);
 
     if (onAuthPage) {
-      return checkAuthPageAccess(request, hasToken);
+      return handleUnauthenticatedPage(request, hasToken);
     }
 
-    return enforceProtectedPageAccess(request, hasToken, pathname);
+    return handleProtectedPage(request, hasToken, pathname);
   } catch (error) {
     return handleProxyError(error, request);
   }

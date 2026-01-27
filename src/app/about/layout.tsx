@@ -1,4 +1,4 @@
-import Footer from "@/components/Footer";
+import { Footer } from "@/components/Footer";
 
 export const metadata = {
   title: "About Frame.me | Screen Capture & Recording Tool",

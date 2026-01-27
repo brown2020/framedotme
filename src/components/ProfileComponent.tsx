@@ -10,11 +10,11 @@ import { auth } from "@/firebase/firebaseClient";
 import { useIAPHandler } from "@/hooks/useIAPHandler";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";
-import DeleteConfirmModal from "./DeleteConfirmModal";
+import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import useProfileStore from "@/zustand/useProfileStore";
 
-export default function ProfileComponent(): ReactElement {
+export function ProfileComponent(): ReactElement {
   const profile = useProfileStore((state) => state.profile);
   const router = useRouter();
 

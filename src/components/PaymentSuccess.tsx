@@ -9,9 +9,9 @@ import Link from "next/link";
 import { useEffect, useReducer } from "react";
 import { logger } from "@/utils/logger";
 
-type Props = {
+interface Props {
   payment_intent: string;
-};
+}
 
 type PaymentState = {
   loading: boolean;
@@ -48,7 +48,7 @@ const initialState: PaymentState = {
   paymentData: null,
 };
 
-export default function PaymentSuccess({ payment_intent }: Props) {
+export function PaymentSuccess({ payment_intent }: Props) {
   const [state, dispatch] = useReducer(paymentReducer, initialState);
 
   const addPayment = usePaymentsStore((state) => state.addPayment);

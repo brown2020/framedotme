@@ -11,7 +11,7 @@ import Link from "next/link";
  * 
  * @returns The footer component with filtered navigation links
  */
-export default function Footer(): ReactElement {
+export function Footer(): ReactElement {
   const uid = useAuthStore((s) => s.uid);
 
   const menuItems = MENU_ITEMS.filter((item) => {

@@ -11,7 +11,8 @@ import { deleteUser } from "firebase/auth";
 import type { Profile } from "@/types/profile.types";
 import { validateUserId } from "@/lib/validation";
 import { getUserPath, getUserProfilePath } from "@/lib/firestore";
-import { StorageError } from "@/types/errors";
+import { AppError } from "@/types/errors";
+import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
 
 /**
  * Updates user authentication details in Firestore
@@ -44,20 +45,15 @@ export const updateUserDetailsInFirestore = async (
     }
   });
 
-  try {
-    await setDoc(
+  await firestoreWrite(
+    () => setDoc(
       userRef,
       { ...sanitizedDetails, lastSignIn: serverTimestamp() },
       { merge: true }
-    );
-  } catch (error) {
-    throw new StorageError(
-      'Failed to update user details',
-      'firestore-write',
-      error as Error,
-      { userId: validatedUid }
-    );
-  }
+    ),
+    'Failed to update user details',
+    { userId: validatedUid }
+  );
 };
 
 /**
@@ -76,32 +72,29 @@ export const updateUserDetailsInFirestore = async (
 export const fetchUserProfile = async (uid: string): Promise<Profile | null> => {
   const validatedUid = validateUserId(uid);
   
-  try {
-    const userRef = doc(db, getUserProfilePath(validatedUid));
-    const docSnap = await getDoc(userRef);
-    
-    if (!docSnap.exists()) return null;
-    
-    const data = docSnap.data();
-    return {
-      email: data.email || "",
-      contactEmail: data.contactEmail || "",
-      displayName: data.displayName || "",
-      photoUrl: data.photoUrl || "",
-      emailVerified: data.emailVerified || false,
-      credits: data.credits || 0,
-      selectedAvatar: data.selectedAvatar || "",
-      selectedTalkingPhoto: data.selectedTalkingPhoto || "",
-      useCredits: data.useCredits !== undefined ? data.useCredits : true,
-    };
-  } catch (error) {
-    throw new StorageError(
-      'Failed to fetch user profile',
-      'firestore-read',
-      error as Error,
-      { userId: validatedUid }
-    );
-  }
+  return firestoreRead(
+    async () => {
+      const userRef = doc(db, getUserProfilePath(validatedUid));
+      const docSnap = await getDoc(userRef);
+      
+      if (!docSnap.exists()) return null;
+      
+      const data = docSnap.data();
+      return {
+        email: data.email || "",
+        contactEmail: data.contactEmail || "",
+        displayName: data.displayName || "",
+        photoUrl: data.photoUrl || "",
+        emailVerified: data.emailVerified || false,
+        credits: data.credits || 0,
+        selectedAvatar: data.selectedAvatar || "",
+        selectedTalkingPhoto: data.selectedTalkingPhoto || "",
+        useCredits: data.useCredits !== undefined ? data.useCredits : true,
+      };
+    },
+    'Failed to fetch user profile',
+    { userId: validatedUid }
+  );
 };
 
 /**
@@ -127,17 +120,14 @@ export const saveUserProfile = async (
 ): Promise<void> => {
   const validatedUid = validateUserId(uid);
   
-  try {
-    const userRef = doc(db, getUserProfilePath(validatedUid));
-    await setDoc(userRef, profileData);
-  } catch (error) {
-    throw new StorageError(
-      'Failed to save user profile',
-      'firestore-write',
-      error as Error,
-      { userId: validatedUid }
-    );
-  }
+  await firestoreWrite(
+    () => {
+      const userRef = doc(db, getUserProfilePath(validatedUid));
+      return setDoc(userRef, profileData);
+    },
+    'Failed to save user profile',
+    { userId: validatedUid }
+  );
 };
 
 /**
@@ -159,17 +149,14 @@ export const updateUserProfile = async (
 ): Promise<void> => {
   const validatedUid = validateUserId(uid);
   
-  try {
-    const userRef = doc(db, getUserProfilePath(validatedUid));
-    await updateDoc(userRef, data);
-  } catch (error) {
-    throw new StorageError(
-      'Failed to update user profile',
-      'firestore-write',
-      error as Error,
-      { userId: validatedUid }
-    );
-  }
+  await firestoreWrite(
+    () => {
+      const userRef = doc(db, getUserProfilePath(validatedUid));
+      return updateDoc(userRef, data);
+    },
+    'Failed to update user profile',
+    { userId: validatedUid }
+  );
 };
 
 /**
@@ -193,11 +180,14 @@ export const deleteUserAccount = async (uid: string): Promise<void> => {
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
-      throw new StorageError(
+      throw new AppError(
         'No current user found',
-        'auth',
-        new Error('Authentication required'),
-        { userId: validatedUid }
+        'storage',
+        { 
+          stage: 'auth',
+          originalError: new Error('Authentication required'),
+          context: { userId: validatedUid }
+        }
       );
     }
 
@@ -209,14 +199,17 @@ export const deleteUserAccount = async (uid: string): Promise<void> => {
     // Delete the user from Firebase Authentication
     await deleteUser(currentUser);
   } catch (error) {
-    if (error instanceof StorageError) {
+    if (error instanceof AppError) {
       throw error;
     }
-    throw new StorageError(
+    throw new AppError(
       'Failed to delete user account',
-      'firestore-write',
-      error as Error,
-      { userId: validatedUid }
+      'storage',
+      { 
+        stage: 'firestore-write',
+        originalError: error as Error,
+        context: { userId: validatedUid }
+      }
     );
   }
 };

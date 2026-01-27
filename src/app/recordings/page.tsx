@@ -1,6 +1,6 @@
 "use client";
 
-import RecordingsSection from "@/components/RecordingsSection";
+import { RecordingsSection } from "@/components/RecordingsSection";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function Recordings() {

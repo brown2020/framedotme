@@ -1,9 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useAuthStateSync } from "@/hooks/useAuthStateSync";
+import { useAuthSync } from "@/hooks/useAuthSync";
 import { useInitializeStores } from "@/zustand/useInitializeStores";
-import { useSyncAuthToFirestore } from "@/hooks/useSyncAuthToFirestore";
 import { CLIENT_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
 
 /**
@@ -15,9 +14,8 @@ import { CLIENT_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
  * @returns The auth provider with authentication context
  */
 export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode => {
-  useAuthStateSync(CLIENT_ID_TOKEN_COOKIE_NAME);
+  useAuthSync(CLIENT_ID_TOKEN_COOKIE_NAME);
   useInitializeStores();
-  useSyncAuthToFirestore();
 
   return children;
 };

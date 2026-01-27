@@ -1,7 +1,14 @@
 import { logger } from "./logger";
 import { DOWNLOAD_LINK_CLEANUP_TIMEOUT_MS } from "@/constants/recording";
 
-export const downloadBlob = (blob: Blob, filename: string): void => {
+/**
+ * Downloads a blob as a file to the user's device
+ * Creates a temporary anchor element to trigger download
+ * 
+ * @param blob - The blob data to download
+ * @param filename - The filename to save as
+ */
+export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -12,9 +19,17 @@ export const downloadBlob = (blob: Blob, filename: string): void => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, DOWNLOAD_LINK_CLEANUP_TIMEOUT_MS);
-};
+}
 
-export const downloadFromUrl = async (url: string, filename: string): Promise<void> => {
+/**
+ * Downloads a file from a URL to the user's device
+ * Fetches the URL content and triggers download
+ * 
+ * @param url - The URL to download from
+ * @param filename - The filename to save as
+ * @throws {Error} If fetch fails
+ */
+export async function downloadFromUrl(url: string, filename: string): Promise<void> {
   try {
     const response = await fetch(url);
     const blob = await response.blob();
@@ -23,7 +38,7 @@ export const downloadFromUrl = async (url: string, filename: string): Promise<vo
     logger.error("Error downloading file", error);
     throw error;
   }
-};
+}
 
 
 

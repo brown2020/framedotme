@@ -1,9 +1,9 @@
 "use client";
 
 import type { ReactElement } from "react";
-import AuthDataDisplay from "@/components/AuthDataDisplay";
-import PaymentsSection from "@/components/PaymentsSection";
-import ProfileComponent from "@/components/ProfileComponent";
+import { AuthDataDisplay } from "@/components/AuthDataDisplay";
+import { PaymentsSection } from "@/components/PaymentsSection";
+import { ProfileComponent } from "@/components/ProfileComponent";
 
 /**
  * Profile page component that displays user information and settings

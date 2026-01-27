@@ -28,6 +28,7 @@ export const useInitializeStores = () => {
     
     lastFetchedUidRef.current = uid;
     
+    // Fire-and-forget: fetchProfile handles its own errors internally
     void fetchProfile(uid, {
       authEmail,
       authDisplayName,

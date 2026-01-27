@@ -23,5 +23,15 @@ export const AUTH_PENDING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 export const AUTH_STORAGE_KEYS = {
   EMAIL: "frameEmail",
   NAME: "frameName",
-  TOKEN_REFRESH: (cookieName: string) => `lastTokenRefresh_${cookieName}`,
 } as const;
+
+/**
+ * Generates a token refresh storage key for a given cookie name
+ * Used for cross-tab token refresh synchronization
+ * 
+ * @param cookieName - The cookie name to generate a key for
+ * @returns The storage key for token refresh tracking
+ */
+export function getTokenRefreshKey(cookieName: string): string {
+  return `lastTokenRefresh_${cookieName}`;
+}

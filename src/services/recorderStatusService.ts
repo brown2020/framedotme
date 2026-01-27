@@ -3,7 +3,7 @@ import { db } from "@/firebase/firebaseClient";
 import type { RecorderStatusType } from "@/types/recorder";
 import { validateUserId } from "@/lib/validation";
 import { getUserRecorderSettingsPath } from "@/lib/firestore";
-import { StorageError } from "@/types/errors";
+import { firestoreWrite } from "@/lib/firestoreOperations";
 
 /**
  * Updates the recorder status in Firestore
@@ -25,22 +25,19 @@ export const updateRecorderStatus = async (
 ): Promise<void> => {
   const validatedUid = validateUserId(uid);
 
-  try {
-    const settings = {
-      recorderStatus: newStatus,
-      lastUpdated: new Date(),
-    };
+  const settings = {
+    recorderStatus: newStatus,
+    lastUpdated: new Date(),
+  };
 
-    const settingsRef = doc(db, getUserRecorderSettingsPath(validatedUid));
-    await setDoc(settingsRef, settings, { merge: true });
-  } catch (error) {
-    throw new StorageError(
-      'Failed to update recorder status',
-      'firestore-write',
-      error as Error,
-      { userId: validatedUid, status: newStatus }
-    );
-  }
+  await firestoreWrite(
+    () => {
+      const settingsRef = doc(db, getUserRecorderSettingsPath(validatedUid));
+      return setDoc(settingsRef, settings, { merge: true });
+    },
+    'Failed to update recorder status',
+    { userId: validatedUid, status: newStatus }
+  );
 };
 
 /**

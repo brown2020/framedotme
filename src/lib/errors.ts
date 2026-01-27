@@ -3,11 +3,9 @@ import {
   isStorageError, 
   isAuthenticationError, 
   isPaymentError, 
-  isValidationError,
-  StorageError,
-  AuthenticationError,
-  PaymentError
-} from "@/types/errors";
+  isValidationError
+} from "@/types/guards";
+import { AppError } from "@/types/errors";
 import { MediaStreamError } from "@/types/mediaStreamTypes";
 import { logger } from "@/utils/logger";
 
@@ -48,7 +46,7 @@ export const getErrorMessage = (
   }
   
   if (isValidationError(error)) {
-    return `Validation failed${error.field ? ` for ${error.field}` : ''}: ${error.message}`;
+    return `Validation failed${error.metadata.field ? ` for ${error.metadata.field}` : ''}: ${error.message}`;
   }
   
   // Handle MediaStreamError
@@ -71,16 +69,16 @@ export const getErrorMessage = (
 /**
  * Gets a user-friendly message for storage errors
  */
-function getStorageErrorMessage(error: StorageError, operation?: string): string {
+function getStorageErrorMessage(error: AppError, operation?: string): string {
   const op = operation || 'complete the operation';
-  const stageMessage = error.stage ? ` (${error.stage})` : '';
+  const stageMessage = error.metadata.stage ? ` (${error.metadata.stage})` : '';
   return `Failed to ${op}${stageMessage}: ${error.message}`;
 }
 
 /**
  * Gets a user-friendly message for authentication errors
  */
-function getAuthErrorMessage(error: AuthenticationError): string {
+function getAuthErrorMessage(error: AppError): string {
   const codeMessages: Record<string, string> = {
     'auth/user-not-found': 'No account found with this email address.',
     'auth/wrong-password': 'Incorrect password. Please try again.',
@@ -92,8 +90,8 @@ function getAuthErrorMessage(error: AuthenticationError): string {
     'auth/network-request-failed': 'Network error. Please check your connection.',
   };
   
-  if (error.code) {
-    const message = codeMessages[error.code];
+  if (error.metadata.code) {
+    const message = codeMessages[error.metadata.code];
     if (message) return message;
   }
   return error.message;
@@ -102,9 +100,9 @@ function getAuthErrorMessage(error: AuthenticationError): string {
 /**
  * Gets a user-friendly message for payment errors
  */
-function getPaymentErrorMessage(error: PaymentError): string {
-  if (error.paymentId) {
-    return `Payment failed (ID: ${error.paymentId}): ${error.message}`;
+function getPaymentErrorMessage(error: AppError): string {
+  if (error.metadata.paymentId) {
+    return `Payment failed (ID: ${error.metadata.paymentId}): ${error.message}`;
   }
   return `Payment failed: ${error.message}`;
 }

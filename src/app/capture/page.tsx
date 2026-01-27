@@ -1,6 +1,6 @@
 "use client";
 
-import VideoControlsLauncher from "@/components/VideoControlsLauncher";
+import { VideoControlsLauncher } from "@/components/VideoControlsLauncher";
 
 export default function Capture() {
   return (

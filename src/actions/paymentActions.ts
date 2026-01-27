@@ -2,7 +2,7 @@
 
 import Stripe from "stripe";
 import { logger } from "@/utils/logger";
-import { PaymentError } from "@/types/errors";
+import { AppError } from "@/types/errors";
 import { MINIMUM_PAYMENT_AMOUNT_CENTS } from "@/constants/payment";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
@@ -27,15 +27,15 @@ export async function createPaymentIntent(amount: number): Promise<string | null
 
   // Validate amount parameter
   if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
-    throw new PaymentError("Amount must be a positive integer (in cents)");
+    throw new AppError("Amount must be a positive integer (in cents)", 'payment');
   }
 
   if (amount < MINIMUM_PAYMENT_AMOUNT_CENTS) {
-    throw new PaymentError(`Amount must be at least ${MINIMUM_PAYMENT_AMOUNT_CENTS} cents`);
+    throw new AppError(`Amount must be at least ${MINIMUM_PAYMENT_AMOUNT_CENTS} cents`, 'payment');
   }
 
   try {
-    if (!product) throw new PaymentError("Stripe product name is not defined");
+    if (!product) throw new AppError("Stripe product name is not defined", 'payment');
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
@@ -47,8 +47,8 @@ export async function createPaymentIntent(amount: number): Promise<string | null
     return paymentIntent.client_secret;
   } catch (error) {
     logger.error("Error creating payment intent", error);
-    if (error instanceof PaymentError) throw error;
-    throw new PaymentError("Failed to create payment intent", undefined, error as Error);
+    if (error instanceof AppError) throw error;
+    throw new AppError("Failed to create payment intent", 'payment', { originalError: error as Error });
   }
 }
 
@@ -68,11 +68,14 @@ export async function validatePaymentIntent(paymentIntentId: string): Promise<Pa
         description: paymentIntent.description,
       };
     } else {
-      throw new PaymentError("Payment was not successful", paymentIntentId);
+      throw new AppError("Payment was not successful", 'payment', { paymentId: paymentIntentId });
     }
   } catch (error) {
     logger.error("Error validating payment intent", error);
-    if (error instanceof PaymentError) throw error;
-    throw new PaymentError("Failed to validate payment intent", paymentIntentId, error as Error);
+    if (error instanceof AppError) throw error;
+    throw new AppError("Failed to validate payment intent", 'payment', { 
+      paymentId: paymentIntentId, 
+      originalError: error as Error 
+    });
   }
 }

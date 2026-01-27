@@ -11,6 +11,11 @@ import { Timestamp } from 'firebase/firestore';
 export const UserIdSchema = z.string().min(1, 'User ID is required');
 
 /**
+ * Allowed file extensions for uploads
+ */
+const ALLOWED_EXTENSIONS = ['.webm'] as const;
+
+/**
  * File name validation schema
  */
 export const FileNameSchema = z.string().min(1, 'Filename is required');
@@ -53,8 +58,8 @@ export const validateUserId = (uid: unknown): string => {
 
 /**
  * Validates and sanitizes a filename
- * Trims whitespace, removes path traversal attempts, and validates format
- * @throws {ValidationError} If the filename is invalid
+ * Trims whitespace, removes path traversal attempts, validates extension, and ensures safe format
+ * @throws {ValidationError} If the filename is invalid or has unsafe extension
  */
 export const validateFilename = (filename: unknown): string => {
   if (typeof filename !== 'string') {
@@ -67,5 +72,24 @@ export const validateFilename = (filename: unknown): string => {
     .replace(/\.\./g, '') // Remove .. path traversal
     .replace(/[/\\]/g, ''); // Remove path separators
   
-  return FileNameSchema.parse(sanitized);
+  // Validate minimum requirements
+  const validated = FileNameSchema.parse(sanitized);
+  
+  // Check for allowed file extensions
+  const hasAllowedExtension = ALLOWED_EXTENSIONS.some(ext => 
+    validated.toLowerCase().endsWith(ext)
+  );
+  
+  if (!hasAllowedExtension) {
+    throw new Error(
+      `Failed to validate filename: only ${ALLOWED_EXTENSIONS.join(', ')} files are allowed`
+    );
+  }
+  
+  // Prevent null bytes and control characters
+  if (/[\x00-\x1f\x7f]/.test(validated)) {
+    throw new Error('Failed to validate filename: contains invalid control characters');
+  }
+  
+  return validated;
 };

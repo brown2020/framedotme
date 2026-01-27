@@ -13,7 +13,7 @@ import {
   VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS,
 } from "@/constants/recording";
 
-export default function VideoControlsLauncher(): ReactElement {
+export function VideoControlsLauncher(): ReactElement {
   const { recorderStatus, updateStatus } = useRecorderStatus();
   const videoControlsWindowRef = useRef<Window | null>(null);
 

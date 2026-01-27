@@ -12,7 +12,7 @@ import { logger } from "@/utils/logger";
 import { VIDEO_DIMENSION_UPDATE_INTERVAL_MS } from "@/constants/recording";
 import { getRecorderButtonClass, getRecorderButtonText } from "@/utils/recorderStyles";
 
-export default function VideoControls(): ReactElement {
+export function VideoControls(): ReactElement {
   const [videoWidth, setVideoWidth] = useState(0);
   const [videoHeight, setVideoHeight] = useState(0);
   const uid = useAuthStore((state) => state.uid);

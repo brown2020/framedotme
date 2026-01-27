@@ -1,11 +1,11 @@
-type Props = {
+interface Props {
   companyName: string;
   companyEmail: string;
   privacyLink: string;
   updatedAt: string;
-};
+}
 
-export default function TermsPage({
+export function TermsPage({
   companyName,
   companyEmail,
   privacyLink,

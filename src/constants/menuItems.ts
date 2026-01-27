@@ -33,11 +33,11 @@ export const MENU_ITEMS: MenuItem[] = [
   },
 ];
 
-type NavItemType = {
+interface NavItemType {
   label: string;
   icon: React.ElementType;
   path: string;
-};
+}
 
 export const navItems: NavItemType[] = [
   {

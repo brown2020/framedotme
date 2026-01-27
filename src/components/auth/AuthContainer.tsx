@@ -14,7 +14,7 @@ import { SignInForm } from "./SignInForm";
 /**
  * Main authentication component that handles all sign-in/sign-up flows
  */
-export default function AuthContainer(): ReactElement {
+export function AuthContainer(): ReactElement {
   const uid = useAuthStore((s) => s.uid);
   const authEmail = useAuthStore((s) => s.authEmail);
   const authDisplayName = useAuthStore((s) => s.authDisplayName);

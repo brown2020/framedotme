@@ -5,7 +5,7 @@ import { useAuthStore } from "@/zustand/useAuthStore";
 import { usePaymentsStore } from "@/zustand/usePaymentsStore";
 import { useEffect } from "react";
 
-export default function PaymentsSection(): ReactElement {
+export function PaymentsSection(): ReactElement {
   const uid = useAuthStore((state) => state.uid);
   const { payments, paymentsLoading, paymentsError, fetchPayments } =
     usePaymentsStore();

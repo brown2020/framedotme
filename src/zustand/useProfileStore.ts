@@ -25,7 +25,7 @@ interface ProfileState {
  * Initializes user credits with validation
  * Returns existing credits if valid, otherwise returns default credits
  */
-function _initializeCredits(credits: number | undefined): number {
+function initializeCredits(credits: number | undefined): number {
   if (credits && credits >= CREDITS_THRESHOLD) {
     return credits;
   }
@@ -46,7 +46,7 @@ const mergeProfileWithDefaults = (
 ): Profile => ({
   ...DEFAULT_PROFILE,
   ...profile,
-  credits: _initializeCredits(profile.credits),
+  credits: initializeCredits(profile.credits),
   email: authState.authEmail || profile.email || "",
   contactEmail: profile.contactEmail || authState.authEmail || "",
   displayName: profile.displayName || authState.authDisplayName || "",
@@ -64,7 +64,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 
       const newProfile = profileData
         ? mergeProfileWithDefaults(profileData, authContext || {})
-        : _createNewProfile(
+        : createNewProfile(
             authContext?.authEmail,
             authContext?.authDisplayName,
             authContext?.authPhotoUrl,
@@ -74,7 +74,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       await saveUserProfile(uid, newProfile);
       set({ profile: newProfile });
     } catch (error) {
-      _handleProfileError("fetching or creating profile", error);
+      handleProfileError("fetching or creating profile", error);
     }
   },
 
@@ -94,7 +94,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     } catch (error) {
       // Rollback on failure
       set({ profile: previousProfile });
-      _handleProfileError("updating profile", error);
+      handleProfileError("updating profile", error);
       throw error;
     }
   },
@@ -106,7 +106,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       await deleteUserAccount(uid);
       set({ profile: DEFAULT_PROFILE });
     } catch (error) {
-      _handleProfileError("deleting account", error);
+      handleProfileError("deleting account", error);
       throw error;
     }
   },
@@ -133,7 +133,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     } catch (error) {
       // Rollback on failure
       set({ profile: previousProfile });
-      _handleProfileError("using credits", error);
+      handleProfileError("using credits", error);
       return false;
     }
   },
@@ -153,14 +153,16 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     } catch (error) {
       // Rollback on failure
       set({ profile: previousProfile });
-      _handleProfileError("adding credits", error);
+      handleProfileError("adding credits", error);
       throw error;
     }
   },
 }));
 
-// Private helper function to create a new profile
-function _createNewProfile(
+/**
+ * Creates a new profile with default values
+ */
+function createNewProfile(
   authEmail?: string,
   authDisplayName?: string,
   authPhotoUrl?: string,
@@ -179,8 +181,10 @@ function _createNewProfile(
   };
 }
 
-// Private helper function to handle errors
-function _handleProfileError(action: string, error: unknown): void {
+/**
+ * Handles profile-related errors with consistent logging
+ */
+function handleProfileError(action: string, error: unknown): void {
   logError(`Profile - ${action}`, error);
 }
 

@@ -141,29 +141,18 @@ export const useScreenRecorder = () => {
   }, [updateStatus]);
 
   // Handle recorder status changes based on status transitions
-  // Use refs to keep processStatusChange stable while using latest callback versions
-  // This prevents infinite loops: processStatusChange depends on recorderStatus,
-  // so it can't also depend on startRecording/stopRecording which change frequently
-  const startRecordingRef = useRef(startRecording);
-  const stopRecordingRef = useRef(stopRecording);
-  
   useEffect(() => {
-    startRecordingRef.current = startRecording;
-    stopRecordingRef.current = stopRecording;
-  }, [startRecording, stopRecording]);
+    // Fire-and-forget: errors are handled within startRecording/stopRecording
+    const processStatusChange = async () => {
+      if (recorderStatus === "shouldStart") {
+        await startRecording();
+      } else if (recorderStatus === "shouldStop") {
+        await stopRecording();
+      }
+    };
 
-  // Process status change requests (stable callback with no dependencies)
-  const processStatusChange = useCallback(async (status: RecorderStatusType) => {
-    if (status === "shouldStart") {
-      await startRecordingRef.current();
-    } else if (status === "shouldStop") {
-      await stopRecordingRef.current();
-    }
-  }, []);
-
-  useEffect(() => {
-    void processStatusChange(recorderStatus);
-  }, [recorderStatus, processStatusChange]);
+    void processStatusChange();
+  }, [recorderStatus, startRecording, stopRecording]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -172,6 +161,7 @@ export const useScreenRecorder = () => {
 
     return () => {
       currentMediaManager.cleanup();
+      // Fire-and-forget: cleanup errors are already logged internally
       void currentRecordingManager.cleanup();
     };
   }, []);

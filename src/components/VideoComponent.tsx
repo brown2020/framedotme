@@ -7,7 +7,7 @@ import { useVideoPlayback } from "@/hooks/useVideoPlayback";
 import { VideoPlayer } from "./video/VideoPlayer";
 import { VideoOverlay } from "./video/VideoOverlay";
 
-type Props = {
+interface Props {
   videoSrc?: string;
   silentGif?: string;
   waitingGif?: string;
@@ -15,7 +15,7 @@ type Props = {
   toggleVideoPlaying: () => void;
   isAnimated: boolean;
   poster?: string;
-};
+}
 
 // Default fallback image
 const DEFAULT_IMAGE = typeof logo === "string" ? logo : logo.src || "";

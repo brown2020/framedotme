@@ -47,7 +47,7 @@ const FAQ_DATA = [
   },
 ] as const;
 
-export default function AboutPage(): ReactElement {
+export function AboutPage(): ReactElement {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
 
   const toggleFAQ = (index: number) => {

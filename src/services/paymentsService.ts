@@ -11,8 +11,8 @@ import { db } from "@/firebase/firebaseClient";
 import type { Payment, PaymentInput, PaymentStatus } from "@/types/payment";
 import { validateUserId } from "@/lib/validation";
 import { getUserPaymentsPath } from "@/lib/firestore";
-import { PaymentError } from "@/types/errors";
 import { PaymentSchema } from "@/lib/validation";
+import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
 
 /**
  * Maps Firestore document data to Payment with runtime validation
@@ -57,23 +57,21 @@ const mapDocumentToPayment = (data: DocumentData): Payment => {
 export const fetchUserPayments = async (uid: string): Promise<Payment[]> => {
   const validatedUid = validateUserId(uid);
   
-  try {
-    const q = query(collection(db, getUserPaymentsPath(validatedUid)));
-    const querySnapshot = await getDocs(q);
-    
-    // Map each Firestore document to Payment
-    const payments = querySnapshot.docs.map((doc) => 
-      mapDocumentToPayment(doc.data())
-    );
+  return firestoreRead(
+    async () => {
+      const q = query(collection(db, getUserPaymentsPath(validatedUid)));
+      const querySnapshot = await getDocs(q);
+      
+      // Map each Firestore document to Payment
+      const payments = querySnapshot.docs.map((doc) => 
+        mapDocumentToPayment(doc.data())
+      );
 
-    return sortPayments(payments);
-  } catch (error) {
-    throw new PaymentError(
-      'Failed to fetch user payments',
-      undefined,
-      error as Error
-    );
-  }
+      return sortPayments(payments);
+    },
+    'Failed to fetch user payments',
+    { userId: validatedUid }
+  );
 };
 
 /**
@@ -91,22 +89,20 @@ export const checkPaymentExists = async (
 ): Promise<boolean> => {
   const validatedUid = validateUserId(uid);
   
-  try {
-    // Check if payment exists by querying for the "id" field
-    // (since we use custom IDs, not Firestore document IDs)
-    const q = query(
-      collection(db, getUserPaymentsPath(validatedUid)),
-      where("id", "==", paymentId)
-    );
-    const querySnapshot = await getDocs(q);
-    return !querySnapshot.empty;
-  } catch (error) {
-    throw new PaymentError(
-      'Failed to check payment existence',
-      paymentId,
-      error as Error
-    );
-  }
+  return firestoreRead(
+    async () => {
+      // Check if payment exists by querying for the "id" field
+      // (since we use custom IDs, not Firestore document IDs)
+      const q = query(
+        collection(db, getUserPaymentsPath(validatedUid)),
+        where("id", "==", paymentId)
+      );
+      const querySnapshot = await getDocs(q);
+      return !querySnapshot.empty;
+    },
+    'Failed to check payment existence',
+    { userId: validatedUid, paymentId }
+  );
 };
 
 /**
@@ -124,8 +120,8 @@ export const createPayment = async (
   const validatedUid = validateUserId(uid);
   const createdAt = Timestamp.now();
   
-  try {
-    await addDoc(collection(db, getUserPaymentsPath(validatedUid)), {
+  await firestoreWrite(
+    () => addDoc(collection(db, getUserPaymentsPath(validatedUid)), {
       id: payment.id,
       amount: payment.amount,
       createdAt,
@@ -134,25 +130,21 @@ export const createPayment = async (
       currency: payment.currency,
       platform: payment.platform,
       productId: payment.productId,
-    });
+    }),
+    'Failed to create payment record',
+    { userId: validatedUid, paymentId: payment.id }
+  );
 
-    return {
-      id: payment.id,
-      amount: payment.amount,
-      createdAt,
-      status: payment.status,
-      mode: payment.mode,
-      currency: payment.currency,
-      platform: payment.platform,
-      productId: payment.productId,
-    };
-  } catch (error) {
-    throw new PaymentError(
-      'Failed to create payment record',
-      payment.id,
-      error as Error
-    );
-  }
+  return {
+    id: payment.id,
+    amount: payment.amount,
+    createdAt,
+    status: payment.status,
+    mode: payment.mode,
+    currency: payment.currency,
+    platform: payment.platform,
+    productId: payment.productId,
+  };
 };
 
 /**
@@ -168,29 +160,27 @@ export const findProcessedPayment = async (
   paymentId: string
 ): Promise<Payment | null> => {
   const validatedUid = validateUserId(uid);
-  
-  try {
-    const paymentsRef = collection(db, getUserPaymentsPath(validatedUid));
-    const q = query(
-      paymentsRef,
-      where("id", "==", paymentId),
-      where("status", "==", "succeeded")
-    );
-    const querySnapshot = await getDocs(q);
 
-    if (!querySnapshot.empty && querySnapshot.docs[0]) {
-      const doc = querySnapshot.docs[0];
-      return mapDocumentToPayment(doc.data());
-    }
+  return firestoreRead(
+    async () => {
+      const paymentsRef = collection(db, getUserPaymentsPath(validatedUid));
+      const q = query(
+        paymentsRef,
+        where("id", "==", paymentId),
+        where("status", "==", "succeeded")
+      );
+      const querySnapshot = await getDocs(q);
 
-    return null;
-  } catch (error) {
-    throw new PaymentError(
-      'Failed to find processed payment',
-      paymentId,
-      error as Error
-    );
-  }
+      if (!querySnapshot.empty && querySnapshot.docs[0]) {
+        const doc = querySnapshot.docs[0];
+        return mapDocumentToPayment(doc.data());
+      }
+
+      return null;
+    },
+    'Failed to find processed payment',
+    { userId: validatedUid, paymentId }
+  );
 };
 
 /**

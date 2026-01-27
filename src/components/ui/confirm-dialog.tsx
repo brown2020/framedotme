@@ -1,6 +1,6 @@
 import { XIcon } from "lucide-react";
 import { Button } from "./button";
-import { Z_INDEX } from "@/constants/ui";
+import { Z_INDEX } from "@/constants/config";
 
 interface ConfirmDialogProps {
   isOpen: boolean;

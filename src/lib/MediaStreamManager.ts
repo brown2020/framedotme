@@ -38,7 +38,7 @@ export class MediaStreamManager {
       const message = error instanceof Error ? error.message : "Unknown error";
       if (message.includes("Permission")) {
         throw new MediaStreamError(
-          "Screen capture permission denied",
+          "Failed to access screen capture: permission denied",
           "permission",
           error as Error
         );
@@ -67,7 +67,7 @@ export class MediaStreamManager {
       const message = error instanceof Error ? error.message : "Unknown error";
       if (message.includes("Permission")) {
         throw new MediaStreamError(
-          "Microphone permission denied",
+          "Failed to access microphone: permission denied",
           "permission",
           error as Error
         );
@@ -116,7 +116,7 @@ export class MediaStreamManager {
    */
   async createCombinedStream(): Promise<MediaStream> {
     if (!this.screenStream) {
-      throw new MediaStreamError("Screen stream not initialized", "stream");
+      throw new MediaStreamError("Failed to create combined stream: screen stream not initialized", "stream");
     }
 
     try {
@@ -153,9 +153,21 @@ export class MediaStreamManager {
   private async createMixedAudioStream(): Promise<MediaStream> {
     // Clean up any existing AudioContext before creating a new one
     if (this.audioContext) {
-      await this.audioContext.close().catch(() => {
-        // Ignore close errors - context may already be closed
+      // Close with timeout to prevent hanging
+      const closeTimeout = new Promise<void>((resolve) => {
+        setTimeout(() => {
+          logger.warn("AudioContext close timed out, proceeding anyway");
+          resolve();
+        }, 1000); // 1 second timeout
       });
+      
+      await Promise.race([
+        this.audioContext.close().catch((error) => {
+          // Context may already be closed - log but continue
+          logger.warn("AudioContext close error (continuing)", error);
+        }),
+        closeTimeout
+      ]);
     }
     
     this.audioContext = new AudioContext();
@@ -216,7 +228,8 @@ export class MediaStreamManager {
     );
 
     if (this.audioContext) {
-      this.audioContext.close().catch((error) => {
+      // Fire-and-forget: AudioContext cleanup errors are non-critical
+      void this.audioContext.close().catch((error) => {
         logger.warn("Failed to close AudioContext", error);
       });
       this.audioContext = null;

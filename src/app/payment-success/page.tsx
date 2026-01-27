@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import PaymentSuccessComponent from "@/components/PaymentSuccess";
+import { PaymentSuccess as PaymentSuccessComponent } from "@/components/PaymentSuccess";
 import { useSearchParams } from "next/navigation";
 import { logger } from "@/utils/logger";
 import { ErrorBoundary } from "@/components/ErrorBoundary";

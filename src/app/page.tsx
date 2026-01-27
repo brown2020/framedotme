@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactElement } from "react";
-import AuthContainer from "@/components/auth/AuthContainer";
-import Footer from "@/components/Footer";
+import { AuthContainer } from "@/components/auth/AuthContainer";
+import { Footer } from "@/components/Footer";
 
 /**
  * Home page component that displays the landing page with authentication

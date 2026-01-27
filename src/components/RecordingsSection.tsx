@@ -1,18 +1,11 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { ClipLoader } from "react-spinners";
-import toast from "react-hot-toast";
 
 import type { VideoMetadata } from "@/types/video";
-import { useAsyncOperation } from "@/hooks/useAsyncOperation";
-import { 
-  fetchUserRecordings, 
-  deleteRecording, 
-  downloadRecording 
-} from "@/services/storageService";
-import { logger } from "@/utils/logger";
+import { useRecordings } from "@/hooks/useRecordings";
 import { ConfirmDialog } from "./ui/confirm-dialog";
 import { FeaturedVideoPlayer } from "./FeaturedVideoPlayer";
 import { VideoGridItem } from "./VideoGridItem";
@@ -25,64 +18,19 @@ import { useAuthStore } from "@/zustand/useAuthStore";
  * 
  * @returns The recordings page component with video grid and featured player
  */
-export default function RecordingsSection(): ReactElement {
+export function RecordingsSection(): ReactElement {
   const uid = useAuthStore((state) => state.uid);
-
-  const { data: videos, loading, execute: fetchVideos } = useAsyncOperation<VideoMetadata[]>();
-  const [featuredVideo, setFeaturedVideo] = useState<VideoMetadata | null>(null);
   const [videoToDelete, setVideoToDelete] = useState<VideoMetadata | null>(null);
 
-  useEffect(() => {
-    if (!uid) return;
-    
-    void fetchVideos(async () => {
-      const videosData = await fetchUserRecordings(uid);
-      if (videosData.length > 0 && videosData[0]) {
-        setFeaturedVideo(videosData[0]);
-      }
-      return videosData;
-    });
-  }, [uid, fetchVideos]);
-
-  const handleFeaturedVideoChange = useCallback((
-    video: VideoMetadata,
-    event: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    event.stopPropagation();
-    setFeaturedVideo(video);
-  }, []);
-
-  const handleDeleteVideo = async (video: VideoMetadata) => {
-    try {
-      await deleteRecording(uid, video);
-      toast.success("Recording deleted successfully");
-      
-      // Refetch videos after deletion
-      void fetchVideos(() => fetchUserRecordings(uid));
-
-      // If the deleted video is the featured video, reset it
-      if (featuredVideo?.id === video.id) {
-        setFeaturedVideo(null);
-      }
-    } catch (error) {
-      logger.error("Error deleting video", error);
-      toast.error("Failed to delete recording. Please try again.");
-    }
-  };
-
-  const clearFeaturedVideo = () => {
-    setFeaturedVideo(null);
-  };
-
-  const handleDownloadVideo = async (video: VideoMetadata) => {
-    try {
-      await downloadRecording(video);
-      toast.success("Recording download started");
-    } catch (error) {
-      logger.error("Error downloading the video", error);
-      toast.error("Failed to download recording. Please try again.");
-    }
-  };
+  const {
+    videos,
+    loading,
+    featuredVideo,
+    handleDeleteVideo,
+    handleDownloadVideo,
+    handleFeaturedVideoChange,
+    clearFeaturedVideo,
+  } = useRecordings(uid);
 
   if (loading) {
     return (
@@ -131,7 +79,10 @@ export default function RecordingsSection(): ReactElement {
             <VideoGridItem
               key={video.id}
               video={video}
-              onSelect={handleFeaturedVideoChange}
+              onSelect={(video, event) => {
+                event.stopPropagation();
+                handleFeaturedVideoChange(video);
+              }}
             />
           ))}
         </div>

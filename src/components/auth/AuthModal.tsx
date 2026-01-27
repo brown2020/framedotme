@@ -1,5 +1,12 @@
 import { XIcon } from "lucide-react";
-import { Z_INDEX } from "@/constants/ui";
+import { Z_INDEX } from "@/constants/config";
+
+interface AuthModalProps {
+  isVisible: boolean;
+  modalRef: React.RefObject<HTMLDivElement | null>;
+  onClose: () => void;
+  children: React.ReactNode;
+}
 
 /**
  * Reusable modal container for authentication flows
@@ -9,12 +16,7 @@ export function AuthModal({
   modalRef,
   onClose,
   children,
-}: {
-  isVisible: boolean;
-  modalRef: React.RefObject<HTMLDivElement | null>;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
+}: AuthModalProps) {
   if (!isVisible) return null;
 
   return (

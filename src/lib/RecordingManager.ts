@@ -47,7 +47,7 @@ export class RecordingManager {
   stopRecording(): Promise<Blob> {
     return new Promise((resolve, reject) => {
       if (!this.mediaRecorder) {
-        reject(new Error("No recording in progress"));
+        reject(new Error("Failed to stop recording: no recording in progress"));
         return;
       }
 

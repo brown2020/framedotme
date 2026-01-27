@@ -3,6 +3,10 @@ import { RecorderStatusType } from "@/types/recorder";
 /**
  * Gets button styling class based on recorder status
  * Centralized to ensure consistent styling across VideoControlsLauncher and VideoControlsPage
+ * 
+ * @param status - The current recorder status
+ * @param variant - The button variant (launcher or controls)
+ * @returns Tailwind CSS classes for button styling
  */
 export function getRecorderButtonClass(
   status: RecorderStatusType,
@@ -36,6 +40,9 @@ export function getRecorderButtonClass(
 
 /**
  * Gets button text based on recorder status
+ * 
+ * @param status - The current recorder status
+ * @returns The button text to display
  */
 export function getRecorderButtonText(status: RecorderStatusType): string {
   switch (status) {

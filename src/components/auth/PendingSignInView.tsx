@@ -1,15 +1,17 @@
 import { PulseLoader } from "react-spinners";
 
+interface PendingSignInViewProps {
+  email: string;
+  onStartOver: () => void;
+}
+
 /**
  * View displayed while waiting for email link sign-in
  */
 export function PendingSignInView({
   email,
   onStartOver,
-}: {
-  email: string;
-  onStartOver: () => void;
-}) {
+}: PendingSignInViewProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="text-2xl text-center">Signing you in</div>

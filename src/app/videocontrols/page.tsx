@@ -1,6 +1,6 @@
 "use client";
 
-import VideoControlsComponent from "@/components/VideoControls";
+import { VideoControls as VideoControlsComponent } from "@/components/VideoControls";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function VideoControls() {
