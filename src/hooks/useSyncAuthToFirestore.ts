@@ -79,6 +79,6 @@ export function useSyncAuthToFirestore(): void {
       }
     };
 
-    syncToFirestore();
+    void syncToFirestore();
   }, [uid, authReady, authData]);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { 
   fetchUserRecordings, 
@@ -9,6 +9,7 @@ import {
   downloadRecording 
 } from "@/services/storageService";
 import type { VideoMetadata } from "@/types/video";
+import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { logger } from "@/utils/logger";
 import { ConfirmDialog } from "./ui/confirm-dialog";
 import { ClipLoader } from "react-spinners";
@@ -23,65 +24,57 @@ import { ClipLoader } from "react-spinners";
 export default function RecordingsPage(): ReactElement {
   const uid = useAuthStore((state) => state.uid);
 
-  const [videos, setVideos] = useState<VideoMetadata[]>([]);
+  const { data: videos, loading, execute: fetchVideos } = useAsyncOperation<VideoMetadata[]>();
   const [featuredVideo, setFeaturedVideo] = useState<VideoMetadata | null>(null);
-  const [loading, setLoading] = useState(true);
   const [videoToDelete, setVideoToDelete] = useState<VideoMetadata | null>(null);
 
   useEffect(() => {
     if (!uid) return;
-    const fetchVideos = async () => {
-      try {
-        setLoading(true);
-        const videosData = await fetchUserRecordings(uid);
-        setVideos(videosData);
-        if (videosData.length > 0 && videosData[0]) {
-          setFeaturedVideo(videosData[0]);
-        }
-      } catch (error) {
-        logger.error("Error fetching videos", error);
-      } finally {
-        setLoading(false);
+    
+    void fetchVideos(async () => {
+      const videosData = await fetchUserRecordings(uid);
+      if (videosData.length > 0 && videosData[0]) {
+        setFeaturedVideo(videosData[0]);
       }
-    };
+      return videosData;
+    });
+  }, [uid, fetchVideos]);
 
-    fetchVideos();
-  }, [uid]);
-
-  const handleFeaturedVideoChange = useCallback((
+  const handleFeaturedVideoChange = (
     video: VideoMetadata,
     event: React.MouseEvent<HTMLButtonElement>
   ) => {
     event.stopPropagation();
     setFeaturedVideo(video);
-  }, []);
+  };
 
-  const handleDeleteVideo = useCallback(async (video: VideoMetadata) => {
+  const handleDeleteVideo = async (video: VideoMetadata) => {
     try {
       await deleteRecording(uid, video);
+      
+      // Refetch videos after deletion
+      void fetchVideos(() => fetchUserRecordings(uid));
 
-      setVideos((prevVideos) => prevVideos.filter((v) => v.id !== video.id));
-
-      // If the deleted video is the featured video, reset the featured video
-      setFeaturedVideo((prevFeatured) => 
-        prevFeatured?.id === video.id ? null : prevFeatured
-      );
+      // If the deleted video is the featured video, reset it
+      if (featuredVideo?.id === video.id) {
+        setFeaturedVideo(null);
+      }
     } catch (error) {
       logger.error("Error deleting video", error);
     }
-  }, [uid]);
+  };
 
-  const clearFeaturedVideo = useCallback(() => {
+  const clearFeaturedVideo = () => {
     setFeaturedVideo(null);
-  }, []);
+  };
 
-  const handleDownloadVideo = useCallback(async (video: VideoMetadata) => {
+  const handleDownloadVideo = async (video: VideoMetadata) => {
     try {
       await downloadRecording(video);
     } catch (error) {
       logger.error("Error downloading the video", error);
     }
-  }, []);
+  };
 
   if (loading) {
     return (
@@ -91,7 +84,7 @@ export default function RecordingsPage(): ReactElement {
     );
   }
 
-  if (videos.length === 0) {
+  if (!videos || videos.length === 0) {
     return (
       <div className="flex flex-col h-full justify-center items-center text-3xl">
         <div>No recordings found.</div>

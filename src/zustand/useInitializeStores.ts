@@ -28,7 +28,7 @@ export const useInitializeStores = () => {
     
     lastFetchedUidRef.current = uid;
     
-    fetchProfile(uid, {
+    void fetchProfile(uid, {
       authEmail,
       authDisplayName,
       authPhotoUrl,

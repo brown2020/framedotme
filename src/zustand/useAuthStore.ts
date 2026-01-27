@@ -35,7 +35,7 @@ export const useAuthDisplayName = () => useAuthStore((state) => state.authDispla
 export const useAuthPhotoUrl = () => useAuthStore((state) => state.authPhotoUrl);
 export const useAuthEmailVerified = () => useAuthStore((state) => state.authEmailVerified);
 
-// Permissions and features
+// Permissions and features (grouped selectors for related data)
 export const useAuthPermissions = () => useAuthStore((state) => ({
   isAdmin: state.isAdmin,
   isAllowed: state.isAllowed,
@@ -45,9 +45,4 @@ export const useAuthPermissions = () => useAuthStore((state) => ({
 export const useAuthFeatures = () => useAuthStore((state) => ({
   premium: state.premium,
 }));
-
-// Backward compatibility - kept for existing code
-export const useIsAdmin = () => useAuthStore((state) => state.isAdmin);
-export const useIsAllowed = () => useAuthStore((state) => state.isAllowed);
-export const useIsPremium = () => useAuthStore((state) => state.premium);
 

@@ -65,41 +65,6 @@ export class RecordingManager {
     });
   }
 
-  pauseRecording() {
-    if (this.mediaRecorder?.state === "recording") {
-      this.mediaRecorder.pause();
-    }
-  }
-
-  resumeRecording() {
-    if (this.mediaRecorder?.state === "paused") {
-      this.mediaRecorder.resume();
-    }
-  }
-
-  /**
-   * Gets the current state of the recording
-   * @returns Current recording state with metrics
-   */
-  getRecordingState(): RecordingState {
-    return {
-      isRecording: this.mediaRecorder?.state === "recording",
-      isPaused: this.mediaRecorder?.state === "paused",
-      duration: this.calculateDuration(),
-      chunks: this.chunks.length,
-      totalSize: this.calculateTotalSize(),
-    };
-  }
-
-  private calculateDuration(): number {
-    // Approximate duration based on chunks (in seconds)
-    return this.chunks.length * (RECORDING_CHUNK_INTERVAL_MS / 1000);
-  }
-
-  private calculateTotalSize(): number {
-    return this.chunks.reduce((total, chunk) => total + chunk.size, 0);
-  }
-
   cleanup() {
     if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
       this.mediaRecorder.stop();
@@ -108,12 +73,4 @@ export class RecordingManager {
     this.chunks = [];
     this.onDataAvailableCallback = null;
   }
-}
-
-interface RecordingState {
-  isRecording: boolean;
-  isPaused: boolean;
-  duration: number;
-  chunks: number;
-  totalSize: number;
 }

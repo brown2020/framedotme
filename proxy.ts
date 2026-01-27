@@ -15,6 +15,13 @@ const isAuthPage = (pathname: string): boolean => {
   return pathname === ROUTES.home || pathname.startsWith(ROUTES.loginFinish);
 };
 
+const hasAuthTokens = (request: NextRequest): boolean => {
+  return Boolean(
+    request.cookies.get(SESSION_COOKIE_NAME)?.value ||
+      request.cookies.get(LEGACY_ID_TOKEN_COOKIE_NAME)?.value
+  );
+};
+
 const clearAuthCookies = (response: NextResponse): NextResponse => {
   response.cookies.delete({ name: SESSION_COOKIE_NAME, path: COOKIE_PATH });
   response.cookies.delete({
@@ -22,6 +29,13 @@ const clearAuthCookies = (response: NextResponse): NextResponse => {
     path: COOKIE_PATH,
   });
   return response;
+};
+
+const setRedirectCookie = (response: NextResponse, pathname: string): void => {
+  response.cookies.set(REDIRECT_URL_COOKIE_NAME, pathname, {
+    sameSite: "lax",
+    path: COOKIE_PATH,
+  });
 };
 
 const getVerifiedUser = async (request: NextRequest) => {
@@ -34,61 +48,68 @@ const getVerifiedUser = async (request: NextRequest) => {
   return null;
 };
 
+const handleAuthPage = async (
+  request: NextRequest,
+  hasToken: boolean
+): Promise<NextResponse> => {
+  if (!hasToken) {
+    return NextResponse.next();
+  }
+
+  const session = await getVerifiedUser(request);
+  if (session?.uid) {
+    return NextResponse.redirect(new URL(ROUTES.capture, request.url));
+  }
+
+  // Invalid token: allow access but clear stale cookies
+  return clearAuthCookies(NextResponse.next());
+};
+
+const handleProtectedPage = async (
+  request: NextRequest,
+  hasToken: boolean,
+  pathname: string
+): Promise<NextResponse> => {
+  if (!hasToken) {
+    const response = NextResponse.redirect(new URL(ROUTES.home, request.url));
+    setRedirectCookie(response, pathname);
+    return response;
+  }
+
+  const session = await getVerifiedUser(request);
+  if (session?.uid) {
+    const response = NextResponse.next();
+    response.headers.set("x-user-id", session.uid);
+    return response;
+  }
+
+  // Invalid token: redirect to auth
+  const response = NextResponse.redirect(new URL(ROUTES.home, request.url));
+  clearAuthCookies(response);
+  setRedirectCookie(response, pathname);
+  return response;
+};
+
+const handleProxyError = (error: unknown, request: NextRequest): NextResponse => {
+  logger.error("Proxy error:", error);
+  return clearAuthCookies(
+    NextResponse.redirect(new URL(ROUTES.home, request.url))
+  );
+};
+
 export const proxy = async (request: NextRequest) => {
   try {
     const { pathname } = request.nextUrl;
     const onAuthPage = isAuthPage(pathname);
+    const hasToken = hasAuthTokens(request);
 
-    const hasAnyToken = Boolean(
-      request.cookies.get(SESSION_COOKIE_NAME)?.value ||
-        request.cookies.get(LEGACY_ID_TOKEN_COOKIE_NAME)?.value
-    );
-
-    // If on auth page and user looks authenticated, verify and redirect into the app
-    if (onAuthPage && hasAnyToken) {
-      const session = await getVerifiedUser(request);
-      if (session?.uid) {
-        return NextResponse.redirect(new URL(ROUTES.capture, request.url));
-      }
-
-      // Invalid token on auth page: allow but clear cookies
-      return clearAuthCookies(NextResponse.next());
+    if (onAuthPage) {
+      return handleAuthPage(request, hasToken);
     }
 
-    // If on protected page and no token at all, redirect to auth
-    if (!onAuthPage && !hasAnyToken) {
-      const response = NextResponse.redirect(new URL(ROUTES.home, request.url));
-      response.cookies.set(REDIRECT_URL_COOKIE_NAME, pathname, {
-        sameSite: "lax",
-        path: COOKIE_PATH,
-      });
-      return response;
-    }
-
-    // If on protected page with token, verify it
-    if (!onAuthPage && hasAnyToken) {
-      const session = await getVerifiedUser(request);
-      if (session?.uid) {
-        const response = NextResponse.next();
-        response.headers.set("x-user-id", session.uid);
-        return response;
-      }
-
-      const response = NextResponse.redirect(new URL(ROUTES.home, request.url));
-      clearAuthCookies(response);
-      response.cookies.set(REDIRECT_URL_COOKIE_NAME, pathname, {
-        sameSite: "lax",
-        path: COOKIE_PATH,
-      });
-      return response;
-    }
-
-    return NextResponse.next();
+    return handleProtectedPage(request, hasToken, pathname);
   } catch (error) {
-    logger.error("Proxy error:", error);
-    return clearAuthCookies(
-      NextResponse.redirect(new URL(ROUTES.home, request.url))
-    );
+    return handleProxyError(error, request);
   }
 };
 
