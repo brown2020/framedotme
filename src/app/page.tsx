@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
-import AuthComponent from "@/components/AuthComponent";
+import AuthContainer from "@/components/auth/AuthContainer";
 import Footer from "@/components/Footer";
 
 /**
@@ -10,7 +10,7 @@ import Footer from "@/components/Footer";
  * 
  * @returns The home page component with centered layout and auth controls
  */
-export default function HomePage(): ReactElement {
+export default function Home(): ReactElement {
   return (
     <div className="relative flex flex-col h-full w-full justify-center items-center text-white overflow-hidden">
       <div className="flex-1 flex items-center">
@@ -23,7 +23,7 @@ export default function HomePage(): ReactElement {
             Sign in to create, save and browse screen recordings.
           </h2>
 
-          <AuthComponent />
+          <AuthContainer />
         </div>
       </div>
       <Footer />

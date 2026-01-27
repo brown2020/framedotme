@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import PaymentSuccess from "@/components/PaymentSuccess";
+import PaymentSuccessComponent from "@/components/PaymentSuccess";
 import { useSearchParams } from "next/navigation";
 import { logger } from "@/utils/logger";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -13,12 +13,12 @@ function PaymentSuccessContent() {
   logger.debug("searchParams in calling page", searchParams);
   logger.debug("payment_intent in calling page", payment_intent);
   
-  return <PaymentSuccess payment_intent={payment_intent} />;
+  return <PaymentSuccessComponent payment_intent={payment_intent} />;
 }
 
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-export default function PaymentSuccessPage() {
+export default function PaymentSuccess() {
   return (
     <ErrorBoundary featureName="Payment Success">
       <Suspense fallback={

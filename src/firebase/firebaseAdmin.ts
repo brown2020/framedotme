@@ -1,25 +1,37 @@
 import admin from "firebase-admin";
 import { getApps } from "firebase-admin/app";
+import { logger } from "@/utils/logger";
 
-// Validate required Firebase Admin credentials
-const requiredEnvVars = [
-  'FIREBASE_TYPE',
-  'FIREBASE_PROJECT_ID',
-  'FIREBASE_PRIVATE_KEY_ID',
-  'FIREBASE_PRIVATE_KEY',
-  'FIREBASE_CLIENT_EMAIL',
-  'FIREBASE_CLIENT_ID',
-  'FIREBASE_AUTH_URI',
-  'FIREBASE_TOKEN_URI',
-  'FIREBASE_AUTH_PROVIDER_X509_CERT_URL',
-  'FIREBASE_CLIENT_CERTS_URL',
-  'NEXT_PUBLIC_FIREBASE_STORAGEBUCKET',
-] as const;
+/**
+ * Validates Firebase Admin configuration
+ * Throws error if required environment variables are missing to fail fast
+ */
+function validateFirebaseAdminConfig(): void {
+  const requiredEnvVars = [
+    'FIREBASE_TYPE',
+    'FIREBASE_PROJECT_ID',
+    'FIREBASE_PRIVATE_KEY_ID',
+    'FIREBASE_PRIVATE_KEY',
+    'FIREBASE_CLIENT_EMAIL',
+    'FIREBASE_CLIENT_ID',
+    'FIREBASE_AUTH_URI',
+    'FIREBASE_TOKEN_URI',
+    'FIREBASE_AUTH_PROVIDER_X509_CERT_URL',
+    'FIREBASE_CLIENT_CERTS_URL',
+    'NEXT_PUBLIC_FIREBASE_STORAGEBUCKET',
+  ] as const;
 
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-if (missingVars.length > 0) {
-  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    const error = `Missing required Firebase Admin configuration: ${missingVars.join(', ')}. Check your .env file for FIREBASE_* variables`;
+    logger.error(error);
+    throw new Error(error);
+  }
 }
+
+// Validate config before initializing Firebase
+validateFirebaseAdminConfig();
 
 // Extract and process Firebase Admin credentials
 const processedCredentials = {

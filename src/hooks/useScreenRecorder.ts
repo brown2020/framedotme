@@ -1,14 +1,14 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
-import { MediaStreamManager } from "../utils/MediaStreamManager";
+import { MediaStreamManager } from "@/lib/MediaStreamManager";
 import { uploadRecording } from "@/services/storageService";
 import { downloadBlob } from "@/utils/downloadUtils";
-import { RecordingManager } from "../utils/RecordingManager";
+import { RecordingManager } from "@/lib/RecordingManager";
 import { MediaStreamError } from "../types/mediaStreamTypes";
 import type { RecorderStatusType } from "../types/recorder";
 import { logger } from "@/utils/logger";
-import { getErrorMessage } from "@/utils/errorFormatters";
+import { getErrorMessage } from "@/lib/errors";
 
 export const useScreenRecorder = () => {
   const { recorderStatus, setRecorderStatus } = useRecorderStatusStore();
@@ -136,12 +136,14 @@ export const useScreenRecorder = () => {
     await currentRecordingManager.cleanup();
     setError(null);
     setScreenStream(null);
-    void updateStatus("idle");
+    updateStatus("idle");
     setIsRecordingWindowOpen(false);
   }, [updateStatus]);
 
   // Handle recorder status changes based on status transitions
-  // Use refs to avoid dependency issues with callbacks
+  // Use refs to keep processStatusChange stable while using latest callback versions
+  // This prevents infinite loops: processStatusChange depends on recorderStatus,
+  // so it can't also depend on startRecording/stopRecording which change frequently
   const startRecordingRef = useRef(startRecording);
   const stopRecordingRef = useRef(stopRecording);
   
@@ -150,7 +152,7 @@ export const useScreenRecorder = () => {
     stopRecordingRef.current = stopRecording;
   }, [startRecording, stopRecording]);
 
-  // Process status change requests
+  // Process status change requests (stable callback with no dependencies)
   const processStatusChange = useCallback(async (status: RecorderStatusType) => {
     if (status === "shouldStart") {
       await startRecordingRef.current();

@@ -11,7 +11,7 @@ import {
 import toast from "react-hot-toast";
 import { auth } from "@/firebase/firebaseClient";
 import { useAuthStore } from "@/zustand/useAuthStore";
-import { handleError } from "@/utils/errorNotifications";
+import { handleError } from "@/lib/errors";
 import { browserStorage } from "@/services/browserStorageService";
 import { isFirebaseError } from "@/types/guards";
 import { AUTH_PENDING_TIMEOUT_MS, AUTH_STORAGE_KEYS } from "@/constants/auth";
@@ -81,21 +81,6 @@ export function useAuthHandlers(hideModal: () => void) {
       browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
     }
   }, [email]);
-
-  /**
-   * Handles password-based login
-   */
-  const handlePasswordLogin = useCallback(async () => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      saveEmailToStorage();
-      hideModal();
-    } catch (error: unknown) {
-      if (isFirebaseError(error)) {
-        toast.error(error.message);
-      }
-    }
-  }, [email, password, hideModal, saveEmailToStorage]);
 
   /**
    * Handles password-based signup (creates new account)

@@ -1,5 +1,5 @@
 import { RECORDING_CHUNK_INTERVAL_MS, RECORDING_MIME_TYPE } from "@/constants/recording";
-import { logger } from "./logger";
+import { logger } from "@/utils/logger";
 
 /**
  * Manages media recording with chunk-based storage to prevent memory issues

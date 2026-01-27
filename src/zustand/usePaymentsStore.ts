@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getErrorMessage, logError } from "@/utils/errorFormatters";
+import { getErrorMessage, logError } from "@/lib/errors";
 import { logger } from "@/utils/logger";
 import {
   fetchUserPayments,

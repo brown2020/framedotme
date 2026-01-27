@@ -66,7 +66,7 @@ export function Header() {
               <div className="h-9 aspect-square" aria-hidden="true">
                 <item.icon size={30} className="h-full w-full object-cover" />
               </div>
-              <span className="text-lx font-bold">{item.label}</span>
+              <span className="text-xl font-bold">{item.label}</span>
             </button>
           );
         })}

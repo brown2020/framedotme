@@ -6,7 +6,7 @@ import {
   deleteUserAccount 
 } from "@/services/userService";
 import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/constants/payment";
-import { logError } from "@/utils/errorFormatters";
+import { logError } from "@/lib/errors";
 import { DEFAULT_PROFILE } from "@/constants/defaults";
 import type { Profile } from "@/types/profile.types";
 import type { AuthContext } from "@/types/auth.types";

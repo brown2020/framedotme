@@ -42,6 +42,13 @@ function validateFirebaseConfig(): void {
     logger.error(error);
     throw new Error(error);
   }
+
+  // Validate auth-specific env vars
+  if (!process.env.NEXT_PUBLIC_COOKIE_NAME) {
+    const error = "Missing required NEXT_PUBLIC_COOKIE_NAME environment variable. Check your .env file";
+    logger.error(error);
+    throw new Error(error);
+  }
 }
 
 // Validate config before initializing Firebase

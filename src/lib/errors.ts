@@ -1,3 +1,4 @@
+import toast from "react-hot-toast";
 import { 
   isStorageError, 
   isAuthenticationError, 
@@ -8,12 +9,18 @@ import {
   PaymentError
 } from "@/types/errors";
 import { MediaStreamError } from "@/types/mediaStreamTypes";
-import { logger } from "./logger";
+import { logger } from "@/utils/logger";
 
 /**
- * Pure error formatting utilities
- * Converts error objects to user-friendly messages without side effects
+ * Error handling utilities
+ * 
+ * Pure formatters: Convert errors to user-friendly messages without side effects
+ * Side-effect functions: Display errors to users and log them
  */
+
+// ============================================================================
+// PURE FORMATTERS (no side effects)
+// ============================================================================
 
 /**
  * Extracts a user-friendly error message from an unknown error with context awareness
@@ -146,10 +153,46 @@ function getContextualErrorMessage(error: Error, operation?: string): string {
   return error.message;
 }
 
+// ============================================================================
+// SIDE-EFFECT FUNCTIONS (logging, notifications)
+// ============================================================================
+
 /**
  * Logs an error with context
  */
 export const logError = (context: string, error: unknown): void => {
   const message = getErrorMessage(error);
   logger.error(`[${context}]`, message, error);
+};
+
+/**
+ * Displays an error toast notification with context
+ */
+export const showErrorToast = (error: unknown, defaultMessage?: string, operation?: string): void => {
+  const message = getErrorMessage(error, defaultMessage, operation);
+  toast.error(message);
+};
+
+/**
+ * Handles an error by logging it and optionally showing a toast
+ */
+export const handleError = (
+  context: string,
+  error: unknown,
+  options?: {
+    showToast?: boolean;
+    defaultMessage?: string;
+    operation?: string;
+  }
+): string => {
+  const { showToast = false, defaultMessage, operation } = options || {};
+  const message = getErrorMessage(error, defaultMessage, operation);
+  
+  logger.error(`[${context}]`, message, error);
+  
+  if (showToast) {
+    toast.error(message);
+  }
+  
+  return message;
 };

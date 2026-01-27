@@ -6,15 +6,15 @@ import { useAuthStore } from "@/zustand/useAuthStore";
 import { isReactNativeWebView } from "@/utils/platform";
 import { useAuthModal } from "@/hooks/useAuthModal";
 import { useAuthHandlers } from "@/hooks/useAuthHandlers";
-import { AuthModal } from "./auth/AuthModal";
-import { SignedInView } from "./auth/SignedInView";
-import { PendingSignInView } from "./auth/PendingSignInView";
-import { SignInForm } from "./auth/SignInForm";
+import { AuthModal } from "./AuthModal";
+import { SignedInView } from "./SignedInView";
+import { PendingSignInView } from "./PendingSignInView";
+import { SignInForm } from "./SignInForm";
 
 /**
  * Main authentication component that handles all sign-in/sign-up flows
  */
-export default function AuthComponent(): ReactElement {
+export default function AuthContainer(): ReactElement {
   const uid = useAuthStore((s) => s.uid);
   const authEmail = useAuthStore((s) => s.authEmail);
   const authDisplayName = useAuthStore((s) => s.authDisplayName);

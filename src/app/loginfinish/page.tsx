@@ -14,7 +14,7 @@ import { ClipLoader } from "react-spinners";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
-export default function LoginFinishPage() {
+export default function LoginFinish() {
   const router = useRouter();
   const setAuthDetails = useAuthStore((s) => s.setAuthDetails);
   const updateProfile = useProfileStore((s) => s.updateProfile);

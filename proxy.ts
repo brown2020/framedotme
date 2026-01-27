@@ -48,28 +48,40 @@ const getVerifiedUser = async (request: NextRequest) => {
   return null;
 };
 
+/**
+ * Handles access to auth pages (/, /loginfinish)
+ * Strategy: Allow unauthenticated users, redirect authenticated users away
+ */
 const checkAuthPageAccess = async (
   request: NextRequest,
   hasToken: boolean
 ): Promise<NextResponse> => {
+  // No token: Allow access (user can sign in)
   if (!hasToken) {
     return NextResponse.next();
   }
 
   const session = await getVerifiedUser(request);
+  
+  // Valid token: Redirect authenticated users to app
   if (session?.uid) {
-    return NextResponse.redirect(new URL(ROUTES.capture, request.url));
+    return NextResponse.redirect(new URL(ROUTES.recordings, request.url));
   }
 
-  // Invalid token: allow access but clear stale cookies
+  // Invalid/expired token: Clear stale cookies and allow access
   return clearAuthCookies(NextResponse.next());
 };
 
+/**
+ * Enforces authentication for protected pages
+ * Strategy: Require valid authentication, redirect unauthenticated users to login
+ */
 const enforceProtectedPageAccess = async (
   request: NextRequest,
   hasToken: boolean,
   pathname: string
 ): Promise<NextResponse> => {
+  // No token: Redirect to login and save intended destination
   if (!hasToken) {
     const response = NextResponse.redirect(new URL(ROUTES.home, request.url));
     setRedirectCookie(response, pathname);
@@ -77,13 +89,15 @@ const enforceProtectedPageAccess = async (
   }
 
   const session = await getVerifiedUser(request);
+  
+  // Valid token: Allow access and pass user ID to app
   if (session?.uid) {
     const response = NextResponse.next();
     response.headers.set("x-user-id", session.uid);
     return response;
   }
 
-  // Invalid token: redirect to auth
+  // Invalid/expired token: Clear cookies, redirect to login
   const response = NextResponse.redirect(new URL(ROUTES.home, request.url));
   clearAuthCookies(response);
   setRedirectCookie(response, pathname);

@@ -11,7 +11,7 @@ import ProfileComponent from "@/components/ProfileComponent";
  * 
  * @returns The profile page with user information sections
  */
-export default function ProfilePage(): ReactElement {
+export default function Profile(): ReactElement {
   return (
     <div className="flex flex-col h-full w-full max-w-4xl mx-auto gap-4">
       <div className="text-3xl font-bold mt-5">User Profile</div>

@@ -1,6 +1,6 @@
 import { MediaStreamError } from "../types/mediaStreamTypes";
 import type { RecorderStatusType } from "../types/recorder";
-import { logger } from "./logger";
+import { logger } from "@/utils/logger";
 import { RECORDING_FRAME_RATE } from "@/constants/recording";
 
 export class MediaStreamManager {

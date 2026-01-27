@@ -71,7 +71,11 @@ export const useTokenRefresh = (
     activityTimeoutRef.current = timeoutId;
   }, [refreshAuthToken]);
 
-  // Create debounced handler once and store in ref
+  // Create debounced handler once and store in ref for cross-tab synchronization
+  // Ref storage is necessary because:
+  // 1. Debounced function must be stable (not recreated on each render)
+  // 2. Function must be cancellable on unmount to prevent memory leaks
+  // 3. Storage events can fire rapidly when multiple tabs update simultaneously
   const debouncedHandlerRef = useRef(
     debounce((e: StorageEvent, tokenRefreshKey: string, refresh: () => void) => {
       if (e.key === tokenRefreshKey) {

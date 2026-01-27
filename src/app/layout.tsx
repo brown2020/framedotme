@@ -46,6 +46,8 @@ export default function RootLayout({
         <ClientProvider>
           <div className="flex flex-col h-full">
             <Header />
+            {/* Custom height utilities: h-container-small (calc(100vh - 8rem)) on mobile, 
+                h-container-custom (calc(100vh - 4rem)) on desktop - defined in globals.css */}
             <div className="flex flex-col h-container-small md:h-container-custom overflow-y-scroll flex-1">
               {children}
             </div>

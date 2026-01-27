@@ -53,12 +53,6 @@ export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata
         createdAt: data.createdAt || Timestamp.now(),
         filename: data.filename || "",
         showOnProfile: data.showOnProfile || false,
-        botId: data.botId,
-        botName: data.botName,
-        modelId: data.modelId,
-        modelName: data.modelName,
-        language: data.language,
-        languageCode: data.languageCode,
       };
     });
   } catch (error) {

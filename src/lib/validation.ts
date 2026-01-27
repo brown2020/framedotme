@@ -21,15 +21,10 @@ export const FileNameSchema = z.string().min(1, 'Filename is required');
 export const VideoMetadataSchema = z.object({
   id: z.string().min(1),
   downloadUrl: z.string().url(),
+  storagePath: z.string().min(1),
   filename: z.string().min(1),
   createdAt: z.instanceof(Timestamp),
   showOnProfile: z.boolean().optional(),
-  botId: z.string().optional(),
-  botName: z.string().optional(),
-  modelId: z.string().optional(),
-  modelName: z.string().optional(),
-  language: z.string().optional(),
-  languageCode: z.string().optional(),
 });
 
 /**
@@ -47,17 +42,30 @@ export const PaymentSchema = z.object({
 });
 
 /**
- * Validates and returns a user ID
+ * Validates and sanitizes a user ID
+ * Trims whitespace and validates format
  * @throws {ValidationError} If the user ID is invalid
  */
 export const validateUserId = (uid: unknown): string => {
-  return UserIdSchema.parse(uid);
+  const sanitized = typeof uid === 'string' ? uid.trim() : uid;
+  return UserIdSchema.parse(sanitized);
 };
 
 /**
- * Validates and returns a filename
+ * Validates and sanitizes a filename
+ * Trims whitespace, removes path traversal attempts, and validates format
  * @throws {ValidationError} If the filename is invalid
  */
 export const validateFilename = (filename: unknown): string => {
-  return FileNameSchema.parse(filename);
+  if (typeof filename !== 'string') {
+    return FileNameSchema.parse(filename);
+  }
+  
+  // Sanitize: trim and remove path traversal attempts
+  const sanitized = filename
+    .trim()
+    .replace(/\.\./g, '') // Remove .. path traversal
+    .replace(/[/\\]/g, ''); // Remove path separators
+  
+  return FileNameSchema.parse(sanitized);
 };

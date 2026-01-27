@@ -2,17 +2,13 @@
  * Authentication and session constants
  */
 
-// Validate required environment variables at module load
-if (!process.env.NEXT_PUBLIC_COOKIE_NAME) {
-  throw new Error("NEXT_PUBLIC_COOKIE_NAME environment variable is required");
-}
-
 // Cookies
 // Two-cookie auth strategy:
 // - SESSION_COOKIE_NAME: httpOnly cookie for server-side auth (middleware/API routes)
 // - CLIENT_ID_TOKEN_COOKIE_NAME: JavaScript-readable cookie for Firebase client SDK
+// Note: NEXT_PUBLIC_COOKIE_NAME is validated in firebaseClient.ts at startup
 export const SESSION_COOKIE_NAME = "frame_session";
-export const CLIENT_ID_TOKEN_COOKIE_NAME = process.env.NEXT_PUBLIC_COOKIE_NAME;
+export const CLIENT_ID_TOKEN_COOKIE_NAME = process.env.NEXT_PUBLIC_COOKIE_NAME!;
 export const REDIRECT_URL_COOKIE_NAME = "redirect_url";
 export const SESSION_EXPIRES_IN_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 
