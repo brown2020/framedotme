@@ -20,7 +20,10 @@ export const useRecorderStatusStore = create<RecorderStatusState>((set) => ({
 
 /**
  * Optimized selectors for recorder state
+ * Use these instead of directly accessing the store to prevent unnecessary re-renders
  */
+
+// Individual recorder properties
 export const useRecorderStatus = () => useRecorderStatusStore((state) => state.recorderStatus);
 export const useRecorderError = () => useRecorderStatusStore((state) => state.lastError);
 

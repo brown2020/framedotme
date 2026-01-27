@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode, ReactElement } from "react";
+import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { isReactNativeWebView } from "@/utils/platform";
 
@@ -12,7 +12,7 @@ import { isReactNativeWebView } from "@/utils/platform";
  * @param props.children - Child components to wrap
  * @returns The viewport provider with adjusted styles
  */
-export const ViewportProvider = ({ children }: { children: ReactNode }): ReactElement => {
+export const ViewportProvider = ({ children }: { children: ReactNode }): ReactNode => {
   // Handle viewport height calculation for mobile devices
   useEffect(() => {
     const adjustHeight = () => {

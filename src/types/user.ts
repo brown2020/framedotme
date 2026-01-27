@@ -1,77 +1,26 @@
-import type { Timestamp } from "firebase/firestore";
-
 /**
- * User profile type definition
+ * User type definitions
+ * Re-exports from domain-specific type files for backward compatibility
+ * 
+ * Prefer importing from domain-specific files (e.g., @/types/auth.types)
+ * when possible for better code organization
  */
-export interface Profile {
-  email: string;
-  contactEmail: string;
-  displayName: string;
-  photoUrl: string;
-  emailVerified: boolean;
-  credits: number;
-  selectedAvatar: string;
-  selectedTalkingPhoto: string;
-  useCredits: boolean;
-}
 
-/**
- * Auth context for profile initialization
- */
-export interface AuthContext {
-  authEmail?: string;
-  authDisplayName?: string;
-  authPhotoUrl?: string;
-  authEmailVerified?: boolean;
-}
+// Auth types
+export type {
+  AuthContext,
+  AuthState,
+} from "./auth.types";
 
-/**
- * Auth state type definition
- */
-export interface AuthState {
-  uid: string;
-  authEmail: string;
-  authDisplayName: string;
-  authPhotoUrl: string;
-  authEmailVerified: boolean;
-  authReady: boolean;
-  authPending: boolean;
-  isAdmin: boolean;
-  isAllowed: boolean;
-  isInvited: boolean;
-  lastSignIn: Timestamp | null;
-  premium: boolean;
-}
+export {
+  DEFAULT_AUTH_STATE,
+} from "./auth.types";
 
-/**
- * Default profile values
- */
-export const DEFAULT_PROFILE: Profile = {
-  email: "",
-  contactEmail: "",
-  displayName: "",
-  photoUrl: "",
-  emailVerified: false,
-  credits: 0,
-  selectedAvatar: "",
-  selectedTalkingPhoto: "",
-  useCredits: true,
-};
+// Profile types
+export type {
+  Profile,
+} from "./profile.types";
 
-/**
- * Default auth state values
- */
-export const DEFAULT_AUTH_STATE: AuthState = {
-  uid: "",
-  authEmail: "",
-  authDisplayName: "",
-  authPhotoUrl: "",
-  authEmailVerified: false,
-  authReady: false,
-  authPending: false,
-  isAdmin: false,
-  isAllowed: false,
-  isInvited: false,
-  lastSignIn: null,
-  premium: false,
-};
+export {
+  DEFAULT_PROFILE,
+} from "./profile.types";

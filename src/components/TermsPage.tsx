@@ -5,7 +5,7 @@ type Props = {
   updatedAt: string;
 };
 
-export default function Terms({
+export default function TermsPage({
   companyName,
   companyEmail,
   privacyLink,

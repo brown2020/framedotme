@@ -87,7 +87,10 @@ function handleError(
 
 /**
  * Optimized selectors for payment state
+ * Use these instead of directly accessing the store to prevent unnecessary re-renders
  */
+
+// Individual payment data
 export const usePayments = () => usePaymentsStore((state) => state.payments);
 export const usePaymentsLoading = () => usePaymentsStore((state) => state.paymentsLoading);
 export const usePaymentsError = () => usePaymentsStore((state) => state.paymentsError);

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import useProfileStore from "@/zustand/useProfileStore";
 import { useCallback, useEffect, useState } from "react";
 import { isReactNativeWebView } from "@/utils/platform";
@@ -12,7 +13,7 @@ import DeleteConfirmModal from "./DeleteConfirmModal";
 import { logger } from "@/utils/logger";
 import { useIAPHandler } from "@/hooks/useIAPHandler";
 
-export default function ProfileComponent() {
+export default function ProfileComponent(): ReactElement {
   const profile = useProfileStore((state) => state.profile);
   const router = useRouter();
 

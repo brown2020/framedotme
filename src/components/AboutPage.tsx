@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -46,7 +47,7 @@ const FAQ_DATA = [
   },
 ] as const;
 
-export default function AboutPage() {
+export default function AboutPage(): ReactElement {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
 
   const toggleFAQ = (index: number) => {

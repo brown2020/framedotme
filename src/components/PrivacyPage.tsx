@@ -6,7 +6,7 @@ type Props = {
   updatedAt: string;
 };
 
-export default function Privacy({
+export default function PrivacyPage({
   companyName,
   companyEmail,
   companyAddress,

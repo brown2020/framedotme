@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { AuthState, DEFAULT_AUTH_STATE } from "@/types/user";
+import { AuthState, DEFAULT_AUTH_STATE } from "@/types/auth.types";
 
 interface AuthActions {
   setAuthDetails: (details: Partial<AuthState>) => void;

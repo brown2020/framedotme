@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { MENU_ITEMS } from "@/constants/menuItems";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import Link from "next/link";
@@ -10,7 +11,7 @@ import Link from "next/link";
  * 
  * @returns The footer component with filtered navigation links
  */
-export default function Footer() {
+export default function Footer(): ReactElement {
   const uid = useAuthStore((s) => s.uid);
 
   const menuItems = MENU_ITEMS.filter((item) => {

@@ -8,7 +8,7 @@ type Props = {
   updatedAt: string;
 };
 
-export default function Support({
+export default function SupportPage({
   companyName,
   companyEmail,
   companyAddress,

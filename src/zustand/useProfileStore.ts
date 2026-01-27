@@ -7,8 +7,9 @@ import {
 } from "@/services/userService";
 import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/constants/payment";
 import { logError } from "@/utils/errorHandling";
-import { DEFAULT_PROFILE } from "@/types/user";
-import type { Profile, AuthContext } from "@/types/user";
+import { DEFAULT_PROFILE } from "@/types/profile.types";
+import type { Profile } from "@/types/profile.types";
+import type { AuthContext } from "@/types/auth.types";
 
 interface ProfileState {
   profile: Profile;
@@ -170,7 +171,10 @@ function _handleProfileError(action: string, error: unknown): void {
 
 /**
  * Optimized selectors for profile state
+ * Use these instead of directly accessing the store to prevent unnecessary re-renders
  */
+
+// Individual profile properties
 export const useProfile = () => useProfileStore((state) => state.profile);
 export const useProfileEmail = () => useProfileStore((state) => state.profile.email);
 export const useProfileCredits = () => useProfileStore((state) => state.profile.credits);

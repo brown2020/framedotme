@@ -8,7 +8,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { deleteUser } from "firebase/auth";
-import type { Profile } from "@/types/user";
+import type { Profile } from "@/types/profile.types";
 import { validateUserId } from "@/lib/validation";
 import { getUserPath, getUserProfilePath } from "@/lib/firestore";
 import { StorageError } from "@/types/errors";
