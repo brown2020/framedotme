@@ -8,7 +8,7 @@ import { logger } from "@/utils/logger";
  * Handles the side effect of persisting auth details separately from state management
  * Optimized to only trigger on actual auth state changes, not action updates
  */
-export function useSyncAuthToFirestore() {
+export function useSyncAuthToFirestore(): void {
   // Use specific selectors instead of entire store to prevent unnecessary re-renders
   const uid = useAuthStore((state) => state.uid);
   const authReady = useAuthStore((state) => state.authReady);

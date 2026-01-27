@@ -100,7 +100,7 @@ export const fetchUserProfile = async (uid: string): Promise<ProfileType | null>
     logger.error("Error fetching user profile", error);
     throw new StorageError(
       'Failed to fetch user profile',
-      'firestore-write',
+      'firestore-read',
       error as Error,
       { userId: validatedUid }
     );
@@ -201,7 +201,7 @@ export const deleteUserAccount = async (uid: string): Promise<void> => {
     if (!currentUser) {
       throw new StorageError(
         'No current user found',
-        'firestore-write',
+        'auth',
         new Error('Authentication required'),
         { userId: validatedUid }
       );

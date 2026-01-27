@@ -14,22 +14,16 @@ import { getUserPaymentsPath } from "@/lib/firestore";
 
 /**
  * Maps Firestore document data to PaymentType
- * Uses the Firestore document ID if provided, otherwise falls back to the id field in the data
+ * Uses the id field from the document data (which stores the Stripe payment intent ID)
  * 
  * @param data - The Firestore document data
- * @param firestoreDocId - Optional Firestore document ID to use as payment ID
  * @returns Mapped payment object
  * 
  * @internal Helper function to maintain consistency in data mapping
  */
-const mapDocumentToPayment = (
-  data: DocumentData, 
-  firestoreDocId?: string
-): PaymentType => {
+const mapDocumentToPayment = (data: DocumentData): PaymentType => {
   return {
-    // Prefer Firestore document ID when available (for documents fetched from Firestore)
-    // Fall back to data.id for custom ID fields
-    id: firestoreDocId ?? data.id,
+    id: data.id as string,
     amount: data.amount as number,
     createdAt: data.createdAt as PaymentType["createdAt"],
     status: data.status as string,
@@ -59,9 +53,9 @@ export const fetchUserPayments = async (uid: string): Promise<PaymentType[]> => 
   const q = query(collection(db, getUserPaymentsPath(validatedUid)));
   const querySnapshot = await getDocs(q);
   
-  // Map each Firestore document to PaymentType, using the document ID
+  // Map each Firestore document to PaymentType
   const payments = querySnapshot.docs.map((doc) => 
-    mapDocumentToPayment(doc.data(), doc.id)
+    mapDocumentToPayment(doc.data())
   );
 
   return sortPayments(payments);
@@ -107,7 +101,7 @@ export const createPayment = async (
   const validatedUid = validateUserId(uid);
   const createdAt = Timestamp.now();
   
-  const newPaymentDoc = await addDoc(collection(db, getUserPaymentsPath(validatedUid)), {
+  await addDoc(collection(db, getUserPaymentsPath(validatedUid)), {
     id: payment.id,
     amount: payment.amount,
     createdAt,
@@ -119,7 +113,7 @@ export const createPayment = async (
   });
 
   return {
-    id: newPaymentDoc.id,
+    id: payment.id,
     amount: payment.amount,
     createdAt,
     status: payment.status,
@@ -153,8 +147,7 @@ export const findProcessedPayment = async (
 
   if (!querySnapshot.empty && querySnapshot.docs[0]) {
     const doc = querySnapshot.docs[0];
-    // Use Firestore document ID for consistency
-    return mapDocumentToPayment(doc.data(), doc.id);
+    return mapDocumentToPayment(doc.data());
   }
 
   return null;

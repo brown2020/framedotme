@@ -50,6 +50,7 @@ export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata
       return {
         id: doc.id || data.id || "",
         downloadUrl: data.downloadUrl || "",
+        storagePath: data.storagePath || "",
         createdAt: data.createdAt || Timestamp.now(),
         filename: data.filename || "",
         showOnProfile: data.showOnProfile || false,
@@ -64,7 +65,7 @@ export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata
   } catch (error) {
     throw new StorageError(
       'Failed to fetch user recordings',
-      'firestore-write',
+      'firestore-read',
       error as Error,
       { userId: validatedUserId }
     );
@@ -192,10 +193,12 @@ const createFirestoreRecord = async (
   downloadUrl: string
 ): Promise<void> => {
   const botcastRef = doc(db, `${getUserBotcastsPath(userId)}/${filename}`);
+  const storagePath = `${userId}/botcasts/${filename}`;
 
   const metadata: VideoMetadata = {
     id: botcastRef.id,
     downloadUrl,
+    storagePath,
     createdAt: Timestamp.now(),
     filename,
     showOnProfile: false,
@@ -241,15 +244,9 @@ export const deleteRecording = async (
   const validatedUserId = validateUserId(userId);
 
   try {
-    // Delete from storage using filename path if available, otherwise use download URL
-    if (video.filename) {
-      const filePath = `${validatedUserId}/botcasts/${video.filename}`;
-      const storageRef = ref(storage, filePath);
-      await deleteObject(storageRef);
-    } else {
-      const storageRef = ref(storage, video.downloadUrl);
-      await deleteObject(storageRef);
-    }
+    // Delete from storage using the stored storage path
+    const storageRef = ref(storage, video.storagePath);
+    await deleteObject(storageRef);
 
     // Delete from Firestore
     await deleteDoc(doc(db, getUserBotcastsPath(validatedUserId), video.id));

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { VideoIcon } from "lucide-react";
 import { useRecorderStatus } from "@/hooks/useRecorderStatus";
 import { Button } from "@/components/ui/button";

@@ -52,6 +52,7 @@ export function useAuthHandlers(hideModal: () => void) {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
+      hideModal();
     } catch (error) {
       if (isFirebaseError(error)) {
         if (error.code === "auth/account-exists-with-different-credential") {
@@ -64,8 +65,6 @@ export function useAuthHandlers(hideModal: () => void) {
           );
         }
       }
-    } finally {
-      hideModal();
     }
   }, [acceptTerms, hideModal]);
 
@@ -78,10 +77,9 @@ export function useAuthHandlers(hideModal: () => void) {
       await fetch("/api/session", { method: "DELETE" });
       await signOut(auth);
       clearAuthDetails();
+      hideModal();
     } catch (error) {
       handleError("Sign out", error, { showToast: true });
-    } finally {
-      hideModal();
     }
   }, [clearAuthDetails, hideModal]);
 
@@ -96,12 +94,11 @@ export function useAuthHandlers(hideModal: () => void) {
       if (emailName) {
         browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
       }
+      hideModal();
     } catch (error: unknown) {
       if (isFirebaseError(error)) {
         toast.error(error.message);
       }
-    } finally {
-      hideModal();
     }
   }, [email, password, hideModal]);
 
@@ -117,6 +114,7 @@ export function useAuthHandlers(hideModal: () => void) {
       if (emailName) {
         browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
       }
+      hideModal();
     } catch (error: unknown) {
       if (error instanceof Error) {
         if ((error as { code?: string }).code === "auth/email-already-in-use") {
@@ -124,7 +122,6 @@ export function useAuthHandlers(hideModal: () => void) {
           return;
         }
       }
-      hideModal();
       if (isFirebaseError(error)) {
         toast.error(error.message);
       }
@@ -149,9 +146,8 @@ export function useAuthHandlers(hideModal: () => void) {
       setAuthDetails({ authPending: true });
     } catch (error) {
       handleError("Send sign-in link", error, { showToast: true });
-      hideModal();
     }
-  }, [email, name, setAuthDetails, hideModal]);
+  }, [email, name, setAuthDetails]);
 
   /**
    * Handles password reset email

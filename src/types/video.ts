@@ -3,6 +3,7 @@ import { Timestamp } from "firebase/firestore";
 export interface VideoMetadata {
   id: string;
   downloadUrl: string;
+  storagePath: string;
   createdAt: Timestamp;
   filename: string;
   showOnProfile?: boolean;

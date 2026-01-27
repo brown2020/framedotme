@@ -1,7 +1,7 @@
 // components/VideoControlsPage.tsx
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import useScreenRecorder from "@/hooks/useScreenRecorder";

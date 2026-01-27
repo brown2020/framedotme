@@ -8,6 +8,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 export async function createPaymentIntent(amount: number) {
   const product = process.env.NEXT_PUBLIC_STRIPE_PRODUCT_NAME;
 
+  // Validate amount parameter
+  if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
+    throw new Error("Amount must be a positive integer (in cents)");
+  }
+
+  if (amount < 50) {
+    throw new Error("Amount must be at least 50 cents");
+  }
+
   try {
     if (!product) throw new Error("Stripe product name is not defined");
 

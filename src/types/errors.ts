@@ -8,7 +8,7 @@
 export class StorageError extends Error {
   constructor(
     message: string,
-    public readonly stage: 'storage-upload' | 'firestore-write' | 'upload-init' | 'storage-delete',
+    public readonly stage: 'storage-upload' | 'firestore-write' | 'firestore-read' | 'upload-init' | 'storage-delete' | 'auth',
     public readonly originalError?: Error,
     public readonly context?: Record<string, unknown>
   ) {

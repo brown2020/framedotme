@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 type Props = {
   showDeleteModal: boolean;
@@ -15,13 +15,13 @@ export default function DeleteConfirmModal({
 }: Props) {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
-  const handleDeleteConfirm = useCallback(() => {
+  const handleDeleteConfirm = () => {
     if (deleteConfirmation === "DELETE ACCOUNT") {
       onDeleteConfirm();
     } else {
       alert("Please type 'DELETE ACCOUNT' to confirm.");
     }
-  }, [deleteConfirmation, onDeleteConfirm]);
+  };
 
   if (!showDeleteModal) {
     return null;

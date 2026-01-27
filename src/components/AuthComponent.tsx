@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { isReactNativeWebView } from "@/utils/platform";
 import { useAuthModal } from "@/hooks/useAuthModal";
@@ -20,9 +20,7 @@ export default function AuthComponent() {
   const authPending = useAuthStore((s) => s.authPending);
   
   const formRef = useRef<HTMLFormElement>(null);
-  
-  // Calculate once during render - this value never changes during component lifecycle
-  const showGoogleSignIn = useMemo(() => !isReactNativeWebView(), []);
+  const showGoogleSignIn = !isReactNativeWebView();
 
   const { isVisible, showModal, hideModal, modalRef } = useAuthModal();
   

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import logo from "@/app/assets/logo.png";
 import { globalVideoRef } from "@/utils/avFunctions";
 
@@ -69,17 +69,8 @@ export default function VideoComponent({
     toggleVideoPlaying();
   };
 
-  // Memoize computed values
-  const showVideo = useMemo(
-    () => videoSrc && !isAnimated && isVideoPlaying,
-    [videoSrc, isAnimated, isVideoPlaying]
-  );
-
-  const showImageOverlay = useMemo(
-    () => Boolean(poster || (isAnimated && silentGif) || (!isAnimated && waitingGif)),
-    [poster, isAnimated, silentGif, waitingGif]
-  );
-
+  const showVideo = videoSrc && !isAnimated && isVideoPlaying;
+  const showImageOverlay = Boolean(poster || (isAnimated && silentGif) || (!isAnimated && waitingGif));
   const waitingImageSrc = waitingGif || poster || DEFAULT_IMAGE;
   const silentImageSrc = silentGif || DEFAULT_IMAGE;
 

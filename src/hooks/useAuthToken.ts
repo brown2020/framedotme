@@ -80,17 +80,20 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
     }
   }, [refreshAuthToken]);
 
-  const handleStorageChange = useMemo(
-    () =>
-      debounce((e: StorageEvent) => {
-        if (e.key === lastTokenRefresh) {
-          scheduleTokenRefresh();
-        }
-      }, TOKEN_REFRESH_DEBOUNCE_MS),
-    [lastTokenRefresh, scheduleTokenRefresh]
+  // Create debounced handler once and store in ref
+  const debouncedHandlerRef = useRef(
+    debounce((e: StorageEvent, tokenRefreshKey: string, refresh: () => void) => {
+      if (e.key === tokenRefreshKey) {
+        refresh();
+      }
+    }, TOKEN_REFRESH_DEBOUNCE_MS)
   );
 
   useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      debouncedHandlerRef.current(e, lastTokenRefresh, scheduleTokenRefresh);
+    };
+
     if (!isReactNativeWebView()) {
       window.addEventListener("storage", handleStorageChange);
     }
@@ -106,9 +109,9 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
         clearTimeout(activityTimeoutRef.current);
         activityTimeoutRef.current = null;
       }
-      handleStorageChange.cancel();
+      debouncedHandlerRef.current.cancel();
     };
-  }, [handleStorageChange, scheduleTokenRefresh, user?.uid]);
+  }, [lastTokenRefresh, scheduleTokenRefresh, user?.uid]);
 
   useEffect(() => {
     if (user?.uid) {
