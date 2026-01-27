@@ -12,11 +12,3 @@ export const isReactNativeWebView = (): boolean => {
   }
   return typeof window.ReactNativeWebView !== "undefined";
 };
-
-/**
- * Legacy alias for backwards compatibility
- * @deprecated Use isReactNativeWebView instead
- */
-export const isIOSReactNativeWebView = (): boolean => {
-  return isReactNativeWebView();
-};

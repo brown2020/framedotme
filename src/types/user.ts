@@ -12,15 +12,13 @@ export type {
   AuthState,
 } from "./auth.types";
 
-export {
-  DEFAULT_AUTH_STATE,
-} from "./auth.types";
-
 // Profile types
 export type {
   Profile,
 } from "./profile.types";
 
+// Default values
 export {
+  DEFAULT_AUTH_STATE,
   DEFAULT_PROFILE,
-} from "./profile.types";
+} from "@/constants/defaults";

@@ -15,7 +15,7 @@ import { logger } from "@/utils/logger";
 
 type Props = { amount: number };
 
-export default function PaymentCheckoutPage({ amount }: Props) {
+export default function PaymentCheckout({ amount }: Props) {
   const stripe = useStripe();
   const elements = useElements();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

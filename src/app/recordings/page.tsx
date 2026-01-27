@@ -1,12 +1,12 @@
 "use client";
 
-import RecordingsPage from "@/components/RecordingsPage";
+import RecordingsSection from "@/components/RecordingsSection";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function Recordings() {
   return (
     <ErrorBoundary featureName="Recordings">
-      <RecordingsPage />
+      <RecordingsSection />
     </ErrorBoundary>
   );
 }

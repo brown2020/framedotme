@@ -7,6 +7,8 @@ import {
   AuthenticationError,
   PaymentError
 } from "@/types/errors";
+import { MediaStreamError } from "@/types/mediaStreamTypes";
+import { logger } from "./logger";
 
 /**
  * Pure error formatting utilities
@@ -40,6 +42,11 @@ export const getErrorMessage = (
   
   if (isValidationError(error)) {
     return `Validation failed${error.field ? ` for ${error.field}` : ''}: ${error.message}`;
+  }
+  
+  // Handle MediaStreamError
+  if (error instanceof MediaStreamError) {
+    return getMediaStreamErrorMessage(error);
   }
   
   // Handle standard Error objects
@@ -96,6 +103,20 @@ function getPaymentErrorMessage(error: PaymentError): string {
 }
 
 /**
+ * Gets a user-friendly message for media stream errors
+ */
+function getMediaStreamErrorMessage(error: MediaStreamError): string {
+  const typeMessages: Record<string, string> = {
+    'permission': 'Permission denied. Please allow access to continue.',
+    'device': 'Failed to access recording device. Please check your settings.',
+    'stream': 'Failed to process media stream. Please try again.',
+    'unknown': 'An unexpected error occurred. Please try again.',
+  };
+  
+  return typeMessages[error.type] || error.message;
+}
+
+/**
  * Gets context-aware error message for standard errors
  */
 function getContextualErrorMessage(error: Error, operation?: string): string {
@@ -126,9 +147,9 @@ function getContextualErrorMessage(error: Error, operation?: string): string {
 }
 
 /**
- * Logs an error to the console with context
+ * Logs an error with context
  */
 export const logError = (context: string, error: unknown): void => {
   const message = getErrorMessage(error);
-  console.error(`[${context}]`, message, error);
+  logger.error(`[${context}]`, message, error);
 };

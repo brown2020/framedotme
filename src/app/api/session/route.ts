@@ -5,9 +5,10 @@ import { logger } from "@/utils/logger";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch(() => null)) as
-      | { idToken?: unknown }
-      | null;
+    const body = (await request.json().catch((err) => {
+      logger.warn("Failed to parse request body", err);
+      return null;
+    })) as { idToken?: unknown } | null;
 
     const idToken = typeof body?.idToken === "string" ? body.idToken : "";
     if (!idToken) {

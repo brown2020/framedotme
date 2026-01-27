@@ -33,13 +33,13 @@ export const MENU_ITEMS: MenuItem[] = [
   },
 ];
 
-type navItemType = {
+type NavItemType = {
   label: string;
   icon: React.ElementType;
   path: string;
 };
 
-export const navItems: navItemType[] = [
+export const navItems: NavItemType[] = [
   {
     label: "Capture",
     icon: ScanIcon,

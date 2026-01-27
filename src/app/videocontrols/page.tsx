@@ -1,12 +1,12 @@
 "use client";
 
-import VideoControlsPage from "@/components/VideoControlsPage";
+import VideoControls from "@/components/VideoControls";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-export default function VideoControls() {
+export default function VideoControlsPage() {
   return (
     <ErrorBoundary featureName="Video Controls">
-      <VideoControlsPage />
+      <VideoControls />
     </ErrorBoundary>
   );
 }

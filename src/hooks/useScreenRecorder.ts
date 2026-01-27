@@ -8,31 +8,7 @@ import { RecordingManager } from "../utils/RecordingManager";
 import { MediaStreamError } from "../types/mediaStreamTypes";
 import { RecorderStatusType } from "../types/recorder";
 import { logger } from "@/utils/logger";
-
-function getErrorDetails(err: unknown): { code?: string; message: string } {
-  if (err && typeof err === "object") {
-    const anyErr = err as {
-      code?: unknown;
-      message?: unknown;
-      name?: unknown;
-      stage?: unknown;
-      debug?: unknown;
-    };
-    const code = typeof anyErr.code === "string" ? anyErr.code : undefined;
-    const message =
-      typeof anyErr.message === "string"
-        ? anyErr.message
-        : typeof anyErr.name === "string"
-          ? anyErr.name
-          : "Unknown error";
-    const stage = typeof anyErr.stage === "string" ? anyErr.stage : undefined;
-    const debug = typeof anyErr.debug === "string" ? anyErr.debug : undefined;
-    const stitchedCode = stage ? `${stage}${code ? ` | ${code}` : ""}` : code;
-    const stitchedMessage = debug ? `${message} (${debug})` : message;
-    return { code: stitchedCode, message: stitchedMessage };
-  }
-  return { message: typeof err === "string" ? err : "Unknown error" };
-}
+import { getErrorMessage } from "@/utils/errorFormatters";
 
 export const useScreenRecorder = () => {
   const { recorderStatus, setRecorderStatus } = useRecorderStatusStore();
@@ -63,29 +39,9 @@ export const useScreenRecorder = () => {
 
   const handleError = useCallback(
     (error: unknown) => {
-      if (error instanceof MediaStreamError) {
-        switch (error.type) {
-          case "permission":
-            setError("Permission denied. Please allow access to continue.");
-            break;
-          case "device":
-            setError(
-              "Failed to access recording device. Please check your settings."
-            );
-            break;
-          case "stream":
-            setError("Failed to process media stream. Please try again.");
-            break;
-          default:
-            setError("An unexpected error occurred. Please try again.");
-        }
-      } else {
-        const details = getErrorDetails(error);
-        // Surface the real Firebase error so debugging isn't guesswork.
-        // Example codes: "storage/unauthorized", "permission-denied"
-        setError(details.code ? `${details.code}: ${details.message}` : details.message);
-        logger.error("Recording save failed", error);
-      }
+      const message = getErrorMessage(error, "An unexpected error occurred", "save recording");
+      setError(message);
+      logger.error("Recording error", error);
       updateStatus("error");
     },
     [updateStatus]

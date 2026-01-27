@@ -1,6 +1,6 @@
 "use client";
 
-import PaymentCheckoutPage from "@/components/PaymentCheckoutPage";
+import PaymentCheckout from "@/components/PaymentCheckout";
 import convertToSubcurrency from "@/utils/convertToSubcurrency";
 import { DEFAULT_PAYMENT_AMOUNT, DEFAULT_PAYMENT_CURRENCY } from "@/constants/payment";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -25,7 +25,7 @@ export default function PaymentAttempt() {
           currency: DEFAULT_PAYMENT_CURRENCY,
         }}
       >
-        <PaymentCheckoutPage amount={DEFAULT_PAYMENT_AMOUNT} />
+        <PaymentCheckout amount={DEFAULT_PAYMENT_AMOUNT} />
       </Elements>
     </ErrorBoundary>
   );

@@ -61,17 +61,3 @@ export const validateUserId = (uid: unknown): string => {
 export const validateFilename = (filename: unknown): string => {
   return FileNameSchema.parse(filename);
 };
-
-/**
- * Type guard to check if a value is a valid VideoMetadata object
- */
-export const isVideoMetadata = (value: unknown): value is z.infer<typeof VideoMetadataSchema> => {
-  return VideoMetadataSchema.safeParse(value).success;
-};
-
-/**
- * Type guard to check if a value is a valid Payment object
- */
-export const isPayment = (value: unknown): value is z.infer<typeof PaymentSchema> => {
-  return PaymentSchema.safeParse(value).success;
-};

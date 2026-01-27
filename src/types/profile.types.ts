@@ -12,18 +12,3 @@ export interface Profile {
   selectedTalkingPhoto: string;
   useCredits: boolean;
 }
-
-/**
- * Default profile values
- */
-export const DEFAULT_PROFILE: Profile = {
-  email: "",
-  contactEmail: "",
-  displayName: "",
-  photoUrl: "",
-  emailVerified: false,
-  credits: 0,
-  selectedAvatar: "",
-  selectedTalkingPhoto: "",
-  useCredits: true,
-};

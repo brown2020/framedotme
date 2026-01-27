@@ -48,7 +48,7 @@ const initialState: PaymentState = {
   paymentData: null,
 };
 
-export default function PaymentSuccessPage({ payment_intent }: Props) {
+export default function PaymentSuccess({ payment_intent }: Props) {
   const [state, dispatch] = useReducer(paymentReducer, initialState);
 
   const addPayment = usePaymentsStore((state) => state.addPayment);

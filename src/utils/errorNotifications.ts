@@ -1,5 +1,6 @@
 import toast from "react-hot-toast";
 import { getErrorMessage } from "./errorFormatters";
+import { logger } from "./logger";
 
 /**
  * Error notification utilities
@@ -29,7 +30,7 @@ export const handleError = (
   const { showToast = false, defaultMessage, operation } = options || {};
   const message = getErrorMessage(error, defaultMessage, operation);
   
-  console.error(`[${context}]`, message, error);
+  logger.error(`[${context}]`, message, error);
   
   if (showToast) {
     toast.error(message);

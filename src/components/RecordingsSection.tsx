@@ -25,7 +25,7 @@ import { useAuthStore } from "@/zustand/useAuthStore";
  * 
  * @returns The recordings page component with video grid and featured player
  */
-export default function RecordingsPage(): ReactElement {
+export default function RecordingsSection(): ReactElement {
   const uid = useAuthStore((state) => state.uid);
 
   const { data: videos, loading, execute: fetchVideos } = useAsyncOperation<VideoMetadata[]>();
