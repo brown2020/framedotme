@@ -1,12 +1,13 @@
 import { MediaStreamError } from "../types/mediaStreamTypes";
 import { RecorderStatusType } from "../types/recorder";
 import { logger } from "./logger";
-import { RECORDING_FRAME_RATE } from "@/lib/constants";
+import { RECORDING_FRAME_RATE } from "@/constants/recording";
 
 export class MediaStreamManager {
   private screenStream: MediaStream | null = null;
   private micStream: MediaStream | null = null;
   private combinedStream: MediaStream | null = null;
+  private audioContext: AudioContext | null = null;
   private statusCallback?: (status: RecorderStatusType) => void;
 
   constructor(statusCallback?: (status: RecorderStatusType) => void) {
@@ -109,8 +110,8 @@ export class MediaStreamManager {
       }
 
       // If no screen audio, create combined stream with optional mic
-      const audioContext = new AudioContext();
-      const destination = audioContext.createMediaStreamDestination();
+      this.audioContext = new AudioContext();
+      const destination = this.audioContext.createMediaStreamDestination();
       const streams: MediaStream[] = [this.screenStream];
 
       // Only try to add mic if screen has no audio (avoid double permission prompt)
@@ -127,7 +128,7 @@ export class MediaStreamManager {
 
       streams.forEach((stream) => {
         if (stream.getAudioTracks().length > 0) {
-          const source = audioContext.createMediaStreamSource(stream);
+          const source = this.audioContext!.createMediaStreamSource(stream);
           source.connect(destination);
         }
       });
@@ -166,6 +167,13 @@ export class MediaStreamManager {
         }
       }
     );
+
+    if (this.audioContext) {
+      this.audioContext.close().catch((error) => {
+        logger.warn("Failed to close AudioContext", error);
+      });
+      this.audioContext = null;
+    }
 
     this.screenStream = null;
     this.micStream = null;

@@ -7,7 +7,7 @@ import { navItems } from "@/constants/menuItems";
 import { ScanIcon } from "lucide-react";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";
-import { Z_INDEX } from "@/lib/constants";
+import { Z_INDEX } from "@/constants/ui";
 
 /**
  * Header component that displays the app logo and navigation menu
@@ -16,7 +16,7 @@ import { Z_INDEX } from "@/lib/constants";
  * 
  * @returns The header component with logo and navigation
  */
-export default function Header() {
+export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 

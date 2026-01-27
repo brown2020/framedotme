@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import {
   LEGACY_ID_TOKEN_COOKIE_NAME,
   REDIRECT_URL_COOKIE_NAME,
-  ROUTES,
   SESSION_COOKIE_NAME,
-} from "./src/lib/constants";
+} from "./src/constants/auth";
+import { ROUTES } from "./src/constants/routes";
 import { verifyIdToken, verifySessionToken } from "./src/lib/session";
 import { logger } from "./src/utils/logger";
 

@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { FirebaseError } from "firebase/app";
 import useProfileStore from "@/zustand/useProfileStore";
 import { deleteCookie, getCookie } from "cookies-next";
-import { REDIRECT_URL_COOKIE_NAME } from "@/lib/constants";
+import { REDIRECT_URL_COOKIE_NAME } from "@/constants/auth";
 import { logger } from "@/utils/logger";
 import { ClipLoader } from "react-spinners";
 import { Alert, AlertDescription } from "@/components/ui/alert";

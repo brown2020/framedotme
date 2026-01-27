@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { ClientProvider } from "@/providers/ClientProvider";
-import { COMPANY_INFO } from "@/lib/constants";
-
-import Header from "@/components/Header";
+import { COMPANY_INFO } from "@/constants/company";
+import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
   title: {

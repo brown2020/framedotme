@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import { DOWNLOAD_LINK_CLEANUP_TIMEOUT_MS } from "@/lib/constants";
+import { DOWNLOAD_LINK_CLEANUP_TIMEOUT_MS } from "@/constants/recording";
 
 export const downloadBlob = (blob: Blob, filename: string): void => {
   const url = URL.createObjectURL(blob);

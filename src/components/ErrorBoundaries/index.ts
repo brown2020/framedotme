@@ -1,8 +1,6 @@
 /**
- * Error boundary components for feature-specific error handling
- * Provides better error isolation and user experience
+ * Re-export of ErrorBoundary component for convenience
+ * The main ErrorBoundary now supports both global and feature-specific error handling
  */
 
-export { FeatureErrorBoundary } from "./FeatureErrorBoundary";
-export { RecordingsErrorBoundary } from "./RecordingsErrorBoundary";
-export { PaymentErrorBoundary } from "./PaymentErrorBoundary";
+export { ErrorBoundary } from "../ErrorBoundary";

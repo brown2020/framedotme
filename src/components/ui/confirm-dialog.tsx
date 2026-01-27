@@ -1,5 +1,6 @@
 import { XIcon } from "lucide-react";
 import { Button } from "./button";
+import { Z_INDEX } from "@/constants/ui";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export function ConfirmDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[1000]">
+    <div className="fixed inset-0 bg-black/60 flex justify-center items-center" style={{ zIndex: Z_INDEX.dialog }}>
       <div className="relative bg-white text-black p-6 rounded-lg shadow-lg w-full max-w-md mx-4">
         <button
           onClick={onCancel}

@@ -1,4 +1,4 @@
-import { RECORDING_CHUNK_INTERVAL_MS, RECORDING_MIME_TYPE } from "@/lib/constants";
+import { RECORDING_CHUNK_INTERVAL_MS, RECORDING_MIME_TYPE } from "@/constants/recording";
 import { logger } from "./logger";
 
 /**

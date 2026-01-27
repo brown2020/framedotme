@@ -5,11 +5,11 @@ import type { ReactElement } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import useScreenRecorder from "@/hooks/useScreenRecorder";
+import { useScreenRecorder } from "@/hooks/useScreenRecorder";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { logger } from "@/utils/logger";
-import { VIDEO_DIMENSION_UPDATE_INTERVAL_MS } from "@/lib/constants";
+import { VIDEO_DIMENSION_UPDATE_INTERVAL_MS } from "@/constants/recording";
 import { getRecorderButtonClass, getRecorderButtonText } from "@/utils/recorderStyles";
 
 export default function VideoControlsPage(): ReactElement {

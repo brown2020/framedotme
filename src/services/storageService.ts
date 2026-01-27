@@ -18,7 +18,6 @@ import {
 import { downloadFromUrl } from "@/utils/downloadUtils";
 import { VideoMetadata } from "@/types/video";
 import { UploadProgress } from "@/types/recorder";
-import { logger } from "@/utils/logger";
 import { StorageError } from "@/types/errors";
 import { validateUserId, validateFilename } from "@/lib/validation";
 import { getUserBotcastsPath } from "@/lib/firestore";
@@ -105,8 +104,6 @@ export const uploadRecording = async (
   onProgress?.({ progress: 0, status: "starting" });
 
   try {
-    logger.debug(`uploadRecording: auth.currentUser.uid = ${auth.currentUser?.uid}`);
-
     const filePath = `${validatedUserId}/botcasts/${validatedFilename}`;
     const storageRef = ref(storage, filePath);
     const uploadTask = uploadBytesResumable(storageRef, videoBlob, {
@@ -131,7 +128,6 @@ export const uploadRecording = async (
             error as Error,
             { userId: validatedUserId, filename: validatedFilename }
           );
-          logger.error("uploadRecording: Storage upload failed", storageError);
           onProgress?.({
             progress: 0,
             status: "error",
@@ -155,7 +151,6 @@ export const uploadRecording = async (
               error as Error,
               { userId: validatedUserId, filename: validatedFilename }
             );
-            logger.error("uploadRecording: Firestore record creation failed", firestoreError);
             reject(firestoreError);
           }
         }
@@ -168,7 +163,6 @@ export const uploadRecording = async (
       error as Error,
       { userId: validatedUserId, filename: validatedFilename }
     );
-    logger.error("uploadRecording: Failed to initialize upload", initError);
     onProgress?.({
       progress: 0,
       status: "error",

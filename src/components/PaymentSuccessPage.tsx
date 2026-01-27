@@ -4,7 +4,7 @@ import { validatePaymentIntent } from "@/actions/paymentActions";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { usePaymentsStore } from "@/zustand/usePaymentsStore";
 import useProfileStore from "@/zustand/useProfileStore";
-import { BONUS_CREDITS } from "@/lib/constants";
+import { BONUS_CREDITS } from "@/constants/payment";
 import Link from "next/link";
 import { useEffect, useReducer } from "react";
 import { logger } from "@/utils/logger";

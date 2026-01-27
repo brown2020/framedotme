@@ -3,7 +3,7 @@ import { deleteCookie } from "cookies-next";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
-import { LEGACY_ID_TOKEN_COOKIE_NAME } from "@/lib/constants";
+import { LEGACY_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
 import { logger } from "@/utils/logger";
 import { useTokenRefresh } from "./useTokenRefresh";
 
@@ -11,10 +11,13 @@ import { useTokenRefresh } from "./useTokenRefresh";
  * Hook to manage Firebase authentication state and token synchronization
  * Handles user authentication state, session cookies, and automatic token refresh
  * 
- * @param cookieName - Name of the cookie to store the auth token
+ * @param cookieName - Name of the cookie to store the auth token (required)
  * @returns User authentication state (uid, loading, error)
  */
-const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
+export const useAuthToken = (cookieName: string) => {
+  if (!cookieName) {
+    throw new Error("useAuthToken: cookieName is required");
+  }
   const [user, loading, error] = useAuthState(auth);
   const setAuthDetails = useAuthStore((state) => state.setAuthDetails);
 
@@ -81,5 +84,3 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
 
   return { uid: user?.uid, loading, error };
 };
-
-export default useAuthToken;

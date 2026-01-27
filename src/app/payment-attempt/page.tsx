@@ -2,7 +2,7 @@
 
 import PaymentCheckoutPage from "@/components/PaymentCheckoutPage";
 import convertToSubcurrency from "@/utils/convertToSubcurrency";
-import { DEFAULT_PAYMENT_AMOUNT, DEFAULT_PAYMENT_CURRENCY } from "@/lib/constants";
+import { DEFAULT_PAYMENT_AMOUNT, DEFAULT_PAYMENT_CURRENCY } from "@/constants/payment";
 
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";

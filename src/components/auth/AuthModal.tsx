@@ -1,5 +1,5 @@
 import { XIcon } from "lucide-react";
-import { Z_INDEX } from "@/lib/constants";
+import { Z_INDEX } from "@/constants/ui";
 
 /**
  * Reusable modal container for authentication flows

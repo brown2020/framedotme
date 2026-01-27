@@ -6,7 +6,7 @@ import {
   LEGACY_ID_TOKEN_COOKIE_NAME, 
   TOKEN_REFRESH_INTERVAL_MS, 
   TOKEN_REFRESH_DEBOUNCE_MS 
-} from "@/lib/constants";
+} from "@/constants/auth";
 import { browserStorage, AUTH_STORAGE_KEYS } from "@/services/browserStorageService";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";

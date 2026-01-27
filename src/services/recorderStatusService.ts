@@ -1,7 +1,6 @@
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "@/firebase/firebaseClient";
 import type { RecorderStatusType } from "@/types/recorder";
-import { logger } from "@/utils/logger";
 import { validateUserId } from "@/lib/validation";
 import { getUserRecorderSettingsPath } from "@/lib/firestore";
 import { StorageError } from "@/types/errors";
@@ -34,9 +33,7 @@ export const updateRecorderStatus = async (
 
     const settingsRef = doc(db, getUserRecorderSettingsPath(validatedUid));
     await setDoc(settingsRef, settings, { merge: true });
-    logger.debug(`Recorder status updated to: ${newStatus}`);
   } catch (error) {
-    logger.error("Failed to update recorder status", error);
     throw new StorageError(
       'Failed to update recorder status',
       'firestore-write',
@@ -86,7 +83,6 @@ export const subscribeToRecorderStatus = (
         }
       },
       (error) => {
-        logger.error("Firestore subscription error", error);
         onError(error as Error);
       }
     );

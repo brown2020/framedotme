@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { globalVideoRef } from "@/utils/avFunctions";
-import { DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT } from "@/lib/constants";
+import { DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT } from "@/constants/recording";
 
 interface VideoPlayerProps {
   videoSrc: string;

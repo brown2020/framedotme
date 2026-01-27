@@ -5,7 +5,7 @@ import {
   updateUserProfile, 
   deleteUserAccount 
 } from "@/services/userService";
-import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/lib/constants";
+import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/constants/payment";
 import { logError } from "@/utils/errorHandling";
 import { DEFAULT_PROFILE } from "@/types/user";
 import type { Profile, AuthContext } from "@/types/user";
@@ -48,7 +48,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 
       const newProfile = profileData
         ? mergeProfileWithDefaults(profileData, authContext || {})
-        : createNewProfile(
+        : _createNewProfile(
             authContext?.authEmail,
             authContext?.authDisplayName,
             authContext?.authPhotoUrl,
@@ -58,7 +58,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       await saveUserProfile(uid, newProfile);
       set({ profile: newProfile });
     } catch (error) {
-      handleProfileError("fetching or creating profile", error);
+      _handleProfileError("fetching or creating profile", error);
     }
   },
 
@@ -78,7 +78,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     } catch (error) {
       // Rollback on failure
       set({ profile: previousProfile });
-      handleProfileError("updating profile", error);
+      _handleProfileError("updating profile", error);
       throw error;
     }
   },
@@ -90,7 +90,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       await deleteUserAccount(uid);
       set({ profile: DEFAULT_PROFILE });
     } catch (error) {
-      handleProfileError("deleting account", error);
+      _handleProfileError("deleting account", error);
       throw error;
     }
   },
@@ -117,7 +117,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     } catch (error) {
       // Rollback on failure
       set({ profile: previousProfile });
-      handleProfileError("using credits", error);
+      _handleProfileError("using credits", error);
       return false;
     }
   },
@@ -137,14 +137,14 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     } catch (error) {
       // Rollback on failure
       set({ profile: previousProfile });
-      handleProfileError("adding credits", error);
+      _handleProfileError("adding credits", error);
       throw error;
     }
   },
 }));
 
-// Helper function to create a new profile
-function createNewProfile(
+// Private helper function to create a new profile
+function _createNewProfile(
   authEmail?: string,
   authDisplayName?: string,
   authPhotoUrl?: string,
@@ -163,8 +163,8 @@ function createNewProfile(
   };
 }
 
-// Helper function to handle errors
-function handleProfileError(action: string, error: unknown): void {
+// Private helper function to handle errors
+function _handleProfileError(action: string, error: unknown): void {
   logError(`Profile - ${action}`, error);
 }
 

@@ -153,15 +153,15 @@ export const useScreenRecorder = () => {
 
   const initializeRecorder = useCallback(async () => {
     if (isRecordingWindowOpen) return;
+    
+    if (!uid) {
+      // Not an exceptional condition during initial render / redirect.
+      // Show a friendly message and bail without triggering the Next.js error overlay.
+      setError("Please sign in to start recording");
+      return;
+    }
 
     try {
-      if (!uid) {
-        // Not an exceptional condition during initial render / redirect.
-        // Show a friendly message and bail without triggering the Next.js error overlay.
-        setError("Please sign in to start recording");
-        return;
-      }
-
       setError(null);
       const currentMediaManager = mediaManager.current;
       const stream = await currentMediaManager.initializeScreenCapture();
@@ -233,5 +233,3 @@ export const useScreenRecorder = () => {
     screenStream,
   };
 };
-
-export default useScreenRecorder;

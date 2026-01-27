@@ -9,7 +9,6 @@ import {
 } from "firebase/firestore";
 import { deleteUser } from "firebase/auth";
 import type { Profile } from "@/types/user";
-import { logger } from "@/utils/logger";
 import { validateUserId } from "@/lib/validation";
 import { getUserPath, getUserProfilePath } from "@/lib/firestore";
 import { StorageError } from "@/types/errors";
@@ -52,7 +51,6 @@ export const updateUserDetailsInFirestore = async (
       { merge: true }
     );
   } catch (error) {
-    logger.error("Error updating auth details in Firestore", error);
     throw new StorageError(
       'Failed to update user details',
       'firestore-write',
@@ -97,7 +95,6 @@ export const fetchUserProfile = async (uid: string): Promise<Profile | null> => 
       useCredits: data.useCredits !== undefined ? data.useCredits : true,
     };
   } catch (error) {
-    logger.error("Error fetching user profile", error);
     throw new StorageError(
       'Failed to fetch user profile',
       'firestore-read',
@@ -134,7 +131,6 @@ export const saveUserProfile = async (
     const userRef = doc(db, getUserProfilePath(validatedUid));
     await setDoc(userRef, profileData);
   } catch (error) {
-    logger.error("Error saving user profile", error);
     throw new StorageError(
       'Failed to save user profile',
       'firestore-write',
@@ -167,7 +163,6 @@ export const updateUserProfile = async (
     const userRef = doc(db, getUserProfilePath(validatedUid));
     await updateDoc(userRef, data);
   } catch (error) {
-    logger.error("Error updating user profile", error);
     throw new StorageError(
       'Failed to update user profile',
       'firestore-write',
@@ -214,7 +209,6 @@ export const deleteUserAccount = async (uid: string): Promise<void> => {
     // Delete the user from Firebase Authentication
     await deleteUser(currentUser);
   } catch (error) {
-    logger.error("Error deleting user account", error);
     if (error instanceof StorageError) {
       throw error;
     }

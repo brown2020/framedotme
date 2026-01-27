@@ -11,7 +11,7 @@ import {
   VIDEO_CONTROLS_WINDOW_WIDTH,
   VIDEO_CONTROLS_WINDOW_HEIGHT,
   VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS,
-} from "@/lib/constants";
+} from "@/constants/recording";
 
 export default function VideoControlsLauncher(): ReactElement {
   const { recorderStatus, updateStatus } = useRecorderStatus();

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/firebase/firebaseAdmin";
-import { SESSION_COOKIE_NAME, SESSION_EXPIRES_IN_MS } from "@/lib/constants";
+import { SESSION_COOKIE_NAME, SESSION_EXPIRES_IN_MS } from "@/constants/auth";
 import { logger } from "@/utils/logger";
 
 export async function POST(request: Request) {
