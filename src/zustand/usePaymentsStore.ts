@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getErrorMessage, logError } from "@/utils/errorHandling";
+import { getErrorMessage, logError } from "@/utils/errorFormatters";
 import { logger } from "@/utils/logger";
 import {
   fetchUserPayments,
@@ -36,7 +36,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
       const payments = await fetchUserPayments(uid);
       set({ payments, paymentsLoading: false, paymentsError: null });
     } catch (error) {
-      handleError(set, error, "fetch payments");
+      handlePaymentError(set, error, "fetch payments");
     }
   },
 
@@ -51,7 +51,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
     try {
       const paymentExists = await checkPaymentExists(uid, payment.id);
       if (paymentExists) {
-        set({ paymentsLoading: false, paymentsError: "Payment with this ID already exists." });
+        set({ paymentsLoading: false, paymentsError: "Payment with this ID already exists" });
         return;
       }
 
@@ -61,7 +61,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
         return { payments: updatedPayments, paymentsLoading: false, paymentsError: null };
       });
     } catch (error) {
-      handleError(set, error, "add payment");
+      handlePaymentError(set, error, "add payment");
     }
   },
 
@@ -71,7 +71,7 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
   },
 }));
 
-function handleError(
+function handlePaymentError(
   set: (
     partial:
       | Partial<PaymentsStoreState>

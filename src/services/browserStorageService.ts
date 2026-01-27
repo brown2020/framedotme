@@ -6,6 +6,11 @@ import { logger } from "@/utils/logger";
 class BrowserStorageService {
   private _isAvailable: boolean | null = null;
 
+  /**
+   * Checks if localStorage is available in the current environment
+   * Result is cached after first check for performance
+   * @returns True if localStorage is available, false otherwise
+   */
   private isAvailable(): boolean {
     // Cache the availability check
     if (this._isAvailable !== null) {
@@ -24,6 +29,12 @@ class BrowserStorageService {
     }
   }
 
+  /**
+   * Sets an item in localStorage
+   * @param key - Storage key
+   * @param value - String value to store
+   * @returns True if successful, false otherwise
+   */
   setItem(key: string, value: string): boolean {
     if (!this.isAvailable()) {
       logger.warn("localStorage is not available");
@@ -39,6 +50,11 @@ class BrowserStorageService {
     }
   }
 
+  /**
+   * Gets an item from localStorage
+   * @param key - Storage key
+   * @returns The stored value, or null if not found or unavailable
+   */
   getItem(key: string): string | null {
     if (!this.isAvailable()) {
       return null;
@@ -52,6 +68,11 @@ class BrowserStorageService {
     }
   }
 
+  /**
+   * Removes an item from localStorage
+   * @param key - Storage key
+   * @returns True if successful, false otherwise
+   */
   removeItem(key: string): boolean {
     if (!this.isAvailable()) {
       return false;
@@ -66,6 +87,10 @@ class BrowserStorageService {
     }
   }
 
+  /**
+   * Clears all items from localStorage
+   * @returns True if successful, false otherwise
+   */
   clear(): boolean {
     if (!this.isAvailable()) {
       return false;
@@ -82,10 +107,3 @@ class BrowserStorageService {
 }
 
 export const browserStorage = new BrowserStorageService();
-
-// Auth-specific storage keys
-export const AUTH_STORAGE_KEYS = {
-  EMAIL: "frameEmail",
-  NAME: "frameName",
-  TOKEN_REFRESH: (cookieName: string) => `lastTokenRefresh_${cookieName}`,
-} as const;

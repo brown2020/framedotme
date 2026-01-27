@@ -16,8 +16,8 @@ import {
   getDocs
 } from "firebase/firestore";
 import { downloadFromUrl } from "@/utils/downloadUtils";
-import { VideoMetadata } from "@/types/video";
-import { UploadProgress } from "@/types/recorder";
+import type { VideoMetadata } from "@/types/video";
+import type { UploadProgress } from "@/types/recorder";
 import { StorageError } from "@/types/errors";
 import { validateUserId, validateFilename } from "@/lib/validation";
 import { getUserBotcastsPath } from "@/lib/firestore";

@@ -2,8 +2,15 @@
 
 import Stripe from "stripe";
 import { logger } from "@/utils/logger";
+import { PaymentError } from "@/types/errors";
+import { MINIMUM_PAYMENT_AMOUNT_CENTS } from "@/constants/payment";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_SECRET_KEY) {
+  throw new Error("STRIPE_SECRET_KEY environment variable is required");
+}
+
+const stripe = new Stripe(STRIPE_SECRET_KEY);
 
 interface PaymentIntentResult {
   id: string;
@@ -20,15 +27,15 @@ export async function createPaymentIntent(amount: number): Promise<string | null
 
   // Validate amount parameter
   if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
-    throw new Error("Amount must be a positive integer (in cents)");
+    throw new PaymentError("Amount must be a positive integer (in cents)");
   }
 
-  if (amount < 50) {
-    throw new Error("Amount must be at least 50 cents");
+  if (amount < MINIMUM_PAYMENT_AMOUNT_CENTS) {
+    throw new PaymentError(`Amount must be at least ${MINIMUM_PAYMENT_AMOUNT_CENTS} cents`);
   }
 
   try {
-    if (!product) throw new Error("Stripe product name is not defined");
+    if (!product) throw new PaymentError("Stripe product name is not defined");
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
@@ -40,7 +47,8 @@ export async function createPaymentIntent(amount: number): Promise<string | null
     return paymentIntent.client_secret;
   } catch (error) {
     logger.error("Error creating payment intent", error);
-    throw new Error("Failed to create payment intent");
+    if (error instanceof PaymentError) throw error;
+    throw new PaymentError("Failed to create payment intent", undefined, error as Error);
   }
 }
 
@@ -60,10 +68,11 @@ export async function validatePaymentIntent(paymentIntentId: string): Promise<Pa
         description: paymentIntent.description,
       };
     } else {
-      throw new Error("Payment was not successful");
+      throw new PaymentError("Payment was not successful", paymentIntentId);
     }
   } catch (error) {
     logger.error("Error validating payment intent", error);
-    throw new Error("Failed to validate payment intent");
+    if (error instanceof PaymentError) throw error;
+    throw new PaymentError("Failed to validate payment intent", paymentIntentId, error as Error);
   }
 }

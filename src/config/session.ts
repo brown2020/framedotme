@@ -1,10 +1,8 @@
 import { adminAuth } from "@/firebase/firebaseAdmin";
 
-type VerifiedSession =
-  | { uid: string; email?: string | null }
-  | null;
-
-export const verifySessionToken = async (sessionCookie: string): Promise<VerifiedSession> => {
+export const verifySessionToken = async (
+  sessionCookie: string
+): Promise<{ uid: string; email?: string | null } | null> => {
   if (!sessionCookie) return null;
   try {
     const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
@@ -14,7 +12,9 @@ export const verifySessionToken = async (sessionCookie: string): Promise<Verifie
   }
 };
 
-export const verifyIdToken = async (idToken: string): Promise<VerifiedSession> => {
+export const verifyIdToken = async (
+  idToken: string
+): Promise<{ uid: string; email?: string | null } | null> => {
   if (!idToken) return null;
   try {
     const decoded = await adminAuth.verifyIdToken(idToken, true);

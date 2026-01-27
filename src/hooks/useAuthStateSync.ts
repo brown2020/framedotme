@@ -36,7 +36,7 @@ export const useAuthStateSync = (cookieName: string) => {
     try {
       await fetch("/api/session", { method: "DELETE" });
     } catch {
-      // ignore
+      // Session cleanup is non-critical; user is already signed out locally
     }
   }, []);
 

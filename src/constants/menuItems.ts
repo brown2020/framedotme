@@ -1,5 +1,5 @@
 import { CircleUserIcon, FileVideoIcon, ScanIcon } from "lucide-react";
-import { MenuItem } from "@/types/menu";
+import type { MenuItem } from "@/types/menu";
 
 export const MENU_ITEMS: MenuItem[] = [
   {

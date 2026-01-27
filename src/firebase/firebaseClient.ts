@@ -7,6 +7,9 @@ import { logger } from "@/utils/logger";
 /**
  * Firebase client configuration
  * These are public keys meant for client-side use
+ * 
+ * Note: NEXT_PUBLIC_* variables must be accessed directly (not via dynamic property access)
+ * for Next.js build-time static replacement to work correctly
  */
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_APIKEY || "",
@@ -52,7 +55,7 @@ const storage = getStorage(app);
 // Make auth persistence explicit so secondary windows/popups reliably share the session.
 // Best-effort: if it fails, Firebase falls back to its default behavior.
 if (typeof window !== "undefined") {
-  void setPersistence(auth, browserLocalPersistence).catch((error) => {
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
     logger.error("firebaseClient: Failed to set auth persistence", error);
   });
 }

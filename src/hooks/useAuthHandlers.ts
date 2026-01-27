@@ -11,22 +11,10 @@ import {
 import toast from "react-hot-toast";
 import { auth } from "@/firebase/firebaseClient";
 import { useAuthStore } from "@/zustand/useAuthStore";
-import { handleError } from "@/utils/errorHandling";
-import { browserStorage, AUTH_STORAGE_KEYS } from "@/services/browserStorageService";
-
-/**
- * Type guard to check if an error is a Firebase error
- */
-export function isFirebaseError(
-  error: unknown
-): error is { code: string; message: string } {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    "message" in error
-  );
-}
+import { handleError } from "@/utils/errorNotifications";
+import { browserStorage } from "@/services/browserStorageService";
+import { isFirebaseError } from "@/types/guards";
+import { AUTH_PENDING_TIMEOUT_MS, AUTH_STORAGE_KEYS } from "@/constants/auth";
 
 /**
  * Custom hook that provides all authentication handlers
@@ -73,7 +61,7 @@ export function useAuthHandlers(hideModal: () => void) {
    */
   const handleSignOut = useCallback(async () => {
     try {
-      // Best-effort: clear server-side session cookie first
+      // Clear server-side session cookie before client sign out for security
       await fetch("/api/session", { method: "DELETE" });
       await signOut(auth);
       clearAuthDetails();
@@ -158,10 +146,10 @@ export function useAuthHandlers(hideModal: () => void) {
       browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, name);
       setAuthDetails({ authPending: true });
       
-      // Clear pending state after 5 minutes if user doesn't complete sign-in
+      // Clear pending state if user doesn't complete sign-in
       setTimeout(() => {
         setAuthDetails({ authPending: false });
-      }, 5 * 60 * 1000);
+      }, AUTH_PENDING_TIMEOUT_MS);
     } catch (error) {
       handleError("Send sign-in link", error, { showToast: true });
     }

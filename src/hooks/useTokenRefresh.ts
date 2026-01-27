@@ -5,9 +5,10 @@ import { auth } from "@/firebase/firebaseClient";
 import { 
   CLIENT_ID_TOKEN_COOKIE_NAME, 
   TOKEN_REFRESH_INTERVAL_MS, 
-  TOKEN_REFRESH_DEBOUNCE_MS 
+  TOKEN_REFRESH_DEBOUNCE_MS,
+  AUTH_STORAGE_KEYS
 } from "@/constants/auth";
-import { browserStorage, AUTH_STORAGE_KEYS } from "@/services/browserStorageService";
+import { browserStorage } from "@/services/browserStorageService";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";
 import { debounce } from "@/utils/debounce";

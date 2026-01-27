@@ -33,7 +33,7 @@ export default function PaymentCheckout({ amount }: Props) {
             error.message || "Failed to initialize payment. Please try again."
           );
         } else {
-          setErrorMessage("An unknown error occurred.");
+          setErrorMessage("An unknown error occurred");
         }
       }
     }

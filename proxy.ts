@@ -12,7 +12,7 @@ import { logger } from "./src/utils/logger";
 const COOKIE_PATH = "/";
 
 const isAuthPage = (pathname: string): boolean => {
-  return pathname === ROUTES.home || pathname.startsWith(ROUTES.loginFinish);
+  return pathname === ROUTES.home || pathname === ROUTES.loginFinish || pathname.startsWith(`${ROUTES.loginFinish}/`);
 };
 
 const hasAuthTokens = (request: NextRequest): boolean => {
@@ -48,7 +48,7 @@ const getVerifiedUser = async (request: NextRequest) => {
   return null;
 };
 
-const handleAuthPage = async (
+const checkAuthPageAccess = async (
   request: NextRequest,
   hasToken: boolean
 ): Promise<NextResponse> => {
@@ -65,7 +65,7 @@ const handleAuthPage = async (
   return clearAuthCookies(NextResponse.next());
 };
 
-const handleProtectedPage = async (
+const enforceProtectedPageAccess = async (
   request: NextRequest,
   hasToken: boolean,
   pathname: string
@@ -104,10 +104,10 @@ export const proxy = async (request: NextRequest) => {
     const hasToken = hasAuthTokens(request);
 
     if (onAuthPage) {
-      return handleAuthPage(request, hasToken);
+      return checkAuthPageAccess(request, hasToken);
     }
 
-    return handleProtectedPage(request, hasToken, pathname);
+    return enforceProtectedPageAccess(request, hasToken, pathname);
   } catch (error) {
     return handleProxyError(error, request);
   }
@@ -117,7 +117,7 @@ export const config = {
   matcher: [
     // Auth routes
     "/",
-    "/loginfinish",
+    "/loginfinish/:path*",
     // Protected routes
     "/capture/:path*",
     "/recordings/:path*",

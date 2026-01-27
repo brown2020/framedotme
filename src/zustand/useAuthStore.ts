@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { AuthState } from "@/types/auth.types";
+import type { AuthState } from "@/types/auth.types";
 import { DEFAULT_AUTH_STATE } from "@/constants/defaults";
 
 interface AuthActions {
@@ -35,15 +35,4 @@ export const useAuthEmail = () => useAuthStore((state) => state.authEmail);
 export const useAuthDisplayName = () => useAuthStore((state) => state.authDisplayName);
 export const useAuthPhotoUrl = () => useAuthStore((state) => state.authPhotoUrl);
 export const useAuthEmailVerified = () => useAuthStore((state) => state.authEmailVerified);
-
-// Permissions and features (grouped selectors for related data)
-export const useAuthPermissions = () => useAuthStore((state) => ({
-  isAdmin: state.isAdmin,
-  isAllowed: state.isAllowed,
-  isInvited: state.isInvited,
-}));
-
-export const useAuthFeatures = () => useAuthStore((state) => ({
-  premium: state.premium,
-}));
 

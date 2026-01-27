@@ -3,7 +3,7 @@
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 import logo from "@/app/assets/logo.png";
-import { useVideoPlayback, useVideoOverlaySync } from "@/hooks/useVideoPlayback";
+import { useVideoPlayback } from "@/hooks/useVideoPlayback";
 import { VideoPlayer } from "./video/VideoPlayer";
 import { VideoOverlay } from "./video/VideoOverlay";
 
@@ -33,11 +33,8 @@ export default function VideoComponent({
   isAnimated,
   poster,
 }: Props): ReactElement | null {
-  // Handle video playback state
-  useVideoPlayback(isAnimated, isVideoPlaying, toggleVideoPlaying);
-  
-  // Sync video state with overlay display
-  useVideoOverlaySync(poster, isAnimated, silentGif, waitingGif, isVideoPlaying, toggleVideoPlaying);
+  // Handle video playback and overlay synchronization
+  useVideoPlayback(isAnimated, isVideoPlaying, toggleVideoPlaying, poster, silentGif, waitingGif);
 
   // Memoize computed values to prevent unnecessary recalculations
   const displayState = useMemo(() => ({
