@@ -9,6 +9,8 @@ import {
   TOKEN_REFRESH_INTERVAL_MS, 
   TOKEN_REFRESH_DEBOUNCE_MS 
 } from "@/lib/constants";
+import { browserStorage, AUTH_STORAGE_KEYS } from "@/services/browserStorageService";
+import { logger } from "@/utils/logger";
 
 // Custom debounce implementation
 function debounce<T extends (...args: any[]) => any>(
@@ -35,7 +37,7 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
   const setAuthDetails = useAuthStore((state) => state.setAuthDetails);
   const clearAuthDetails = useAuthStore((state) => state.clearAuthDetails);
 
-  const lastTokenRefresh = `lastTokenRefresh_${cookieName}`;
+  const lastTokenRefresh = AUTH_STORAGE_KEYS.TOKEN_REFRESH(cookieName);
 
   const activityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -47,11 +49,7 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
         body: JSON.stringify({ idToken }),
       });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("Failed to set session cookie:", error.message);
-      } else {
-        console.error("Failed to set session cookie");
-      }
+      logger.error("Failed to set session cookie", error);
     }
   }, []);
 
@@ -78,14 +76,10 @@ const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
       await setServerSessionCookie(idTokenResult);
 
       if (!window.ReactNativeWebView) {
-        window.localStorage.setItem(lastTokenRefresh, Date.now().toString());
+        browserStorage.setItem(lastTokenRefresh, Date.now().toString());
       }
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error(error.message);
-      } else {
-        console.error("Error refreshing token");
-      }
+      logger.error("Error refreshing token", error);
       deleteCookie(cookieName);
 
       // Best-effort cleanup of server-side session cookie

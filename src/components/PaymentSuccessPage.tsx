@@ -6,6 +6,7 @@ import { usePaymentsStore } from "@/zustand/usePaymentsStore";
 import useProfileStore from "@/zustand/useProfileStore";
 import Link from "next/link";
 import { useEffect, useReducer } from "react";
+import { logger } from "@/utils/logger";
 
 type Props = {
   payment_intent: string;
@@ -112,11 +113,11 @@ export default function PaymentSuccessPage({ payment_intent }: Props) {
             },
           });
         } else {
-          console.error("Payment validation failed:", data.status);
+          logger.error(`Payment validation failed: ${data.status}`);
           dispatch({ type: "SET_ERROR", message: "Payment validation failed" });
         }
       } catch (error) {
-        console.error("Error handling payment success:", error);
+        logger.error("Error handling payment success", error);
         dispatch({ type: "SET_ERROR", message: "Error handling payment success" });
       }
     };

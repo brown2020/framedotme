@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { deleteUser, getAuth } from "firebase/auth";
 import { ProfileType } from "@/zustand/useProfileStore";
+import { logger } from "@/utils/logger";
 
 // Auth/User related operations
 export const updateUserDetailsInFirestore = async (
@@ -36,7 +37,7 @@ export const updateUserDetailsInFirestore = async (
       { merge: true }
     );
   } catch (error) {
-    console.error("Error updating auth details in Firestore:", error);
+    logger.error("Error updating auth details in Firestore", error);
     throw error;
   }
 };

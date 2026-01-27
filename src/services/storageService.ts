@@ -18,6 +18,7 @@ import {
 import { downloadFromUrl } from "@/utils/downloadUtils";
 import { VideoMetadata } from "@/types/video";
 import { UploadProgress } from "@/types/recorder";
+import { logger } from "@/utils/logger";
 
 /**
  * Fetches all recordings for a specific user from Firestore
@@ -66,7 +67,7 @@ export const uploadRecording = async (
 
   try {
     // Helpful when debugging popups / multi-window auth issues
-    console.debug("[uploadRecording] auth.currentUser?.uid =", auth.currentUser?.uid);
+    logger.debug(`uploadRecording: auth.currentUser.uid = ${auth.currentUser?.uid}`);
 
     const filePath = `${userId}/botcasts/${filename}`;
     const storageRef = ref(storage, filePath);
@@ -88,7 +89,7 @@ export const uploadRecording = async (
           });
         },
         (error) => {
-          console.error("[uploadRecording] Storage upload failed:", error);
+          logger.error("uploadRecording: Storage upload failed", error);
           try {
             (error as unknown as { stage?: string }).stage = "storage-upload";
           } catch {
@@ -111,7 +112,7 @@ export const uploadRecording = async (
             });
             resolve(downloadURL);
           } catch (error) {
-            console.error("[uploadRecording] Firestore record creation failed:", error);
+            logger.error("uploadRecording: Firestore record creation failed", error);
             try {
               (error as unknown as { stage?: string }).stage = "firestore-botcasts-setDoc";
             } catch {
@@ -123,7 +124,7 @@ export const uploadRecording = async (
       );
     });
   } catch (error) {
-    console.error("[uploadRecording] Failed to initialize upload:", error);
+    logger.error("uploadRecording: Failed to initialize upload", error);
     try {
       (error as unknown as { stage?: string }).stage = "upload-init";
     } catch {
@@ -166,13 +167,7 @@ const createFirestoreRecord = async (
     } catch {
       // ignore
     }
-    console.error("[createFirestoreRecord] setDoc denied", {
-      path: botcastRef.path,
-      authUid: auth.currentUser?.uid,
-      userId,
-      filename,
-      error,
-    });
+    logger.error(`createFirestoreRecord: setDoc denied - path=${botcastRef.path} authUid=${auth.currentUser?.uid ?? "null"} userId=${userId} filename=${filename}`, error);
     throw error;
   }
 };
@@ -204,7 +199,7 @@ export const deleteRecording = async (
     // Delete from Firestore
     await deleteDoc(doc(db, `users/${userId}/botcasts`, video.id));
   } catch (error) {
-    console.error("Error deleting recording:", error);
+    logger.error("Error deleting recording", error);
     throw error;
   }
 };

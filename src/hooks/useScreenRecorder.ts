@@ -1,4 +1,3 @@
-// hooks/useScreenRecorder.ts
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
@@ -7,6 +6,9 @@ import { uploadRecording } from "@/services/storageService";
 import { downloadBlob } from "@/utils/downloadUtils";
 import { RecordingManager } from "../utils/RecordingManager";
 import { MediaStreamError } from "../types/mediaStreamTypes";
+import { RecorderStatusType } from "../types/recorder";
+import { updateRecorderStatus } from "@/services/recorderStatusService";
+import { logger } from "@/utils/logger";
 
 function getErrorDetails(err: unknown): { code?: string; message: string } {
   if (err && typeof err === "object") {
@@ -34,13 +36,29 @@ function getErrorDetails(err: unknown): { code?: string; message: string } {
 }
 
 export const useScreenRecorder = () => {
-  const { recorderStatus, updateStatus } = useRecorderStatusStore();
+  const { recorderStatus, setRecorderStatus } = useRecorderStatusStore();
   const { uid } = useAuthStore();
   const [isRecordingWindowOpen, setIsRecordingWindowOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const updateStatus = useCallback(
+    async (status: RecorderStatusType) => {
+      setRecorderStatus(status);
+      if (uid) {
+        try {
+          await updateRecorderStatus(uid, status);
+        } catch (error) {
+          logger.error("Failed to sync recorder status", error);
+        }
+      }
+    },
+    [uid, setRecorderStatus]
+  );
+
   const mediaManager = useRef<MediaStreamManager>(
-    new MediaStreamManager((status) => updateStatus(status))
+    new MediaStreamManager((status) => {
+      void updateStatus(status);
+    })
   );
   const recordingManager = useRef<RecordingManager>(new RecordingManager());
 
@@ -67,8 +85,7 @@ export const useScreenRecorder = () => {
         // Surface the real Firebase error so debugging isn't guesswork.
         // Example codes: "storage/unauthorized", "permission-denied"
         setError(details.code ? `${details.code}: ${details.message}` : details.message);
-        // Also log full object for devtools (includes serverResponse sometimes)
-        console.error("Recording save failed:", error);
+        logger.error("Recording save failed", error);
       }
       updateStatus("error");
     },
@@ -95,7 +112,7 @@ export const useScreenRecorder = () => {
             if (progress.status === "error") {
               handleError(progress.error);
             } else {
-              console.log(`Upload progress: ${progress.progress}%`);
+              logger.debug(`Upload progress: ${progress.progress}%`);
             }
           }
         );

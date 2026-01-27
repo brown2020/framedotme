@@ -1,30 +1,31 @@
-// components/providers/RecorderStatusProvider.tsx
 import { useEffect } from "react";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
 import { useAuthStore } from "@/zustand/useAuthStore";
+import { subscribeToRecorderStatus } from "@/services/recorderStatusService";
 
 export function RecorderStatusProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { subscribeToFirestore } = useRecorderStatusStore();
+  const { setRecorderStatus, setError } = useRecorderStatusStore();
   const { uid, authReady } = useAuthStore();
 
   useEffect(() => {
-    let unsubscribe: (() => void) | void;
-
-    if (authReady && uid) {
-      unsubscribe = subscribeToFirestore();
+    if (!authReady || !uid) {
+      return;
     }
 
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [uid, authReady, subscribeToFirestore]);
+    const unsubscribe = subscribeToRecorderStatus(
+      uid,
+      (status) => setRecorderStatus(status),
+      (error) => setError(error)
+    );
 
-  // You could add loading states or error handling here if needed
+    return () => {
+      unsubscribe();
+    };
+  }, [uid, authReady, setRecorderStatus, setError]);
+
   return <>{children}</>;
 }

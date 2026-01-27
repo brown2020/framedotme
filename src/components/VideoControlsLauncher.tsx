@@ -1,14 +1,13 @@
-// components/VideoControlsLauncher.tsx
 "use client";
 
 import React, { useEffect, useRef } from "react";
 import { VideoIcon } from "lucide-react";
-import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
+import { useRecorderStatus } from "@/hooks/useRecorderStatus";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default function VideoControlsLauncher() {
-  const { recorderStatus, updateStatus } = useRecorderStatusStore();
+  const { recorderStatus, updateStatus } = useRecorderStatus();
   const videoControlsWindowRef = useRef<Window | null>(null);
 
   const openVideoControls = () => {

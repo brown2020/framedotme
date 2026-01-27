@@ -1,3 +1,4 @@
+import { logger } from "./logger";
 
 export const downloadBlob = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);
@@ -18,7 +19,7 @@ export const downloadFromUrl = async (url: string, filename: string) => {
     const blob = await response.blob();
     downloadBlob(blob, filename);
   } catch (error) {
-    console.error("Error downloading file:", error);
+    logger.error("Error downloading file", error);
     throw error;
   }
 };

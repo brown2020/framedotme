@@ -2,6 +2,7 @@ import { getApp, getApps, initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+import { logger } from "@/utils/logger";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_APIKEY,
@@ -22,7 +23,7 @@ const storage = getStorage(app);
 // Best-effort: if it fails, Firebase falls back to its default behavior.
 if (typeof window !== "undefined") {
   void setPersistence(auth, browserLocalPersistence).catch((error) => {
-    console.error("[firebaseClient] Failed to set auth persistence:", error);
+    logger.error("firebaseClient: Failed to set auth persistence", error);
   });
 }
 

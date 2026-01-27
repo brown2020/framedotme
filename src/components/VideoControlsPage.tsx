@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import useScreenRecorder from "@/hooks/useScreenRecorder";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/zustand/useAuthStore";
+import { logger } from "@/utils/logger";
+import { VIDEO_DIMENSION_UPDATE_INTERVAL_MS } from "@/lib/constants";
 
 export default function VideoControlsPage() {
   const [videoWidth, setVideoWidth] = useState(0);
@@ -47,14 +49,14 @@ export default function VideoControlsPage() {
 
     if (currentScreenVideoElem && screenStream) {
       currentScreenVideoElem.srcObject = screenStream;
-      currentScreenVideoElem.play().catch(console.error);
+      currentScreenVideoElem.play().catch((error) => logger.error("Error playing video", error));
       currentScreenVideoElem.addEventListener(
         "loadedmetadata",
         handleLoadedMetadata
       );
     }
 
-    const intervalId = setInterval(updateVideoDimensions, 500);
+    const intervalId = setInterval(updateVideoDimensions, VIDEO_DIMENSION_UPDATE_INTERVAL_MS);
 
     return () => {
       if (currentScreenVideoElem) {

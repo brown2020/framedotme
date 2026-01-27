@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { navItems } from "@/constants/menuItems";
 import { ScanIcon } from "lucide-react";
+import { logger } from "@/utils/logger";
 
 export default function Header() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function Header() {
           if (window.ReactNativeWebView) {
             window.ReactNativeWebView.postMessage("refresh");
           } else {
-            console.log("Not React Native WebView environment");
+            logger.debug("Not React Native WebView environment");
           }
           setTimeout(() => router.push("/"), 100);
         }}

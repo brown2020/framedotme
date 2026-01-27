@@ -17,11 +17,10 @@ export function AuthModal({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[1000]">
       <div
         ref={modalRef}
         className="relative bg-white text-black p-4 rounded-lg shadow-lg w-full max-w-md mx-auto"
-        style={{ zIndex: 1000 }}
       >
         <button
           onClick={onClose}

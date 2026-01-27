@@ -7,16 +7,19 @@ import CookieConsent from "react-cookie-consent";
 
 import useAuthToken from "@/hooks/useAuthToken";
 import { useInitializeStores } from "@/zustand/useInitializeStores";
+import { useSyncAuthToFirestore } from "@/hooks/useSyncAuthToFirestore";
 
 import { usePathname, useRouter } from "next/navigation";
 import { RecorderStatusProvider } from "./RecorderStatusProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { shouldRedirectToHome } from "@/utils/routing";
 
 export function ClientProvider({ children }: { children: React.ReactNode }) {
   const { loading, uid } = useAuthToken(process.env.NEXT_PUBLIC_COOKIE_NAME!);
   const router = useRouter();
   const pathname = usePathname();
   useInitializeStores();
+  useSyncAuthToFirestore();
 
   useEffect(() => {
     function adjustHeight() {
@@ -50,16 +53,7 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (
-      !loading &&
-      !uid &&
-      pathname != "/" &&
-      !pathname.includes("images/") &&
-      !pathname.includes("/about") &&
-      !pathname.includes("/terms") &&
-      !pathname.includes("/privacy") &&
-      !pathname.includes("/support")
-    ) {
+    if (shouldRedirectToHome(loading, uid, pathname)) {
       router.push("/");
     }
   }, [loading, pathname, router, uid]);

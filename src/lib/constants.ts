@@ -22,3 +22,6 @@ export const MAX_RECORDING_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
 // Authentication
 export const TOKEN_REFRESH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes
 export const TOKEN_REFRESH_DEBOUNCE_MS = 1000;
+
+// UI Constants
+export const VIDEO_DIMENSION_UPDATE_INTERVAL_MS = 500;

@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import convertToSubcurrency from "@/utils/convertToSubcurrency";
 import { ClipLoader } from "react-spinners";
 import { createPaymentIntent } from "@/actions/paymentActions";
+import { logger } from "@/utils/logger";
 
 type Props = { amount: number };
 
@@ -67,19 +68,19 @@ export default function PaymentCheckoutPage({ amount }: Props) {
 
       if (error) {
         setErrorMessage(error.message || "Payment failed");
-        console.log("Payment failed:", error.message);
+        logger.error("Payment failed", error);
       } else {
-        console.log("Payment successful!");
+        logger.info("Payment successful");
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
         setErrorMessage(
           error.message || "Payment validation failed. Please try again."
         );
-        console.error("Payment validation error:", error.message);
+        logger.error("Payment validation error", error);
       } else {
         setErrorMessage("An unknown error occurred.");
-        console.error("Unknown error occurred during payment validation.");
+        logger.error("Unknown error occurred during payment validation");
       }
     }
 

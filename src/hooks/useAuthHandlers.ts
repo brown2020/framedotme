@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import { auth } from "@/firebase/firebaseClient";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { handleError } from "@/utils/errorHandling";
+import { browserStorage, AUTH_STORAGE_KEYS } from "@/services/browserStorageService";
 
 /**
  * Type guard to check if an error is a Firebase error
@@ -90,8 +91,8 @@ export function useAuthHandlers(hideModal: () => void) {
   const handlePasswordLogin = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      window.localStorage.setItem("frameEmail", email);
-      window.localStorage.setItem("frameName", email.split("@")[0]);
+      browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
+      browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, email.split("@")[0]);
     } catch (error: unknown) {
       if (isFirebaseError(error)) {
         toast.error(error.message);
@@ -108,8 +109,8 @@ export function useAuthHandlers(hideModal: () => void) {
     e.preventDefault();
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      window.localStorage.setItem("frameEmail", email);
-      window.localStorage.setItem("frameName", email.split("@")[0]);
+      browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
+      browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, email.split("@")[0]);
     } catch (error: unknown) {
       if (error instanceof Error) {
         if ((error as { code?: string }).code === "auth/email-already-in-use") {
@@ -137,8 +138,8 @@ export function useAuthHandlers(hideModal: () => void) {
 
     try {
       await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      window.localStorage.setItem("frameEmail", email);
-      window.localStorage.setItem("frameName", name);
+      browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
+      browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, name);
       setAuthDetails({ authPending: true });
     } catch (error) {
       handleError("Send sign-in link", error, { showToast: true });

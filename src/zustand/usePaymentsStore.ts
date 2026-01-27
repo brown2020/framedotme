@@ -1,15 +1,14 @@
 import { create } from "zustand";
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-  Timestamp,
-} from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 import toast from "react-hot-toast";
-import { db } from "@/firebase/firebaseClient";
 import { getErrorMessage, logError } from "@/utils/errorHandling";
+import {
+  fetchUserPayments,
+  checkPaymentExists,
+  createPayment,
+  findProcessedPayment,
+  sortPayments,
+} from "@/services/paymentsService";
 
 export type PaymentType = {
   id: string;
@@ -86,93 +85,6 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
   },
 }));
 
-// Helper function to fetch user payments
-async function fetchUserPayments(uid: string): Promise<PaymentType[]> {
-  const q = query(collection(db, "users", uid, "payments"));
-  const querySnapshot = await getDocs(q);
-  const payments = querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    amount: doc.data().amount,
-    createdAt: doc.data().createdAt,
-    status: doc.data().status,
-    mode: doc.data().mode,
-    currency: doc.data().currency,
-    platform: doc.data().platform,
-    productId: doc.data().productId,
-  }));
-
-  return sortPayments(payments);
-}
-
-// Helper function to check if payment exists
-async function checkPaymentExists(
-  uid: string,
-  paymentId: string
-): Promise<boolean> {
-  const q = query(
-    collection(db, "users", uid, "payments"),
-    where("id", "==", paymentId)
-  );
-  const querySnapshot = await getDocs(q);
-  return !querySnapshot.empty;
-}
-
-// Helper function to create a new payment
-async function createPayment(
-  uid: string,
-  payment: Omit<PaymentType, "createdAt">
-): Promise<PaymentType> {
-  const newPaymentDoc = await addDoc(collection(db, "users", uid, "payments"), {
-    id: payment.id,
-    amount: payment.amount,
-    createdAt: Timestamp.now(),
-    status: payment.status,
-    mode: payment.mode,
-    currency: payment.currency,
-    platform: payment.platform,
-    productId: payment.productId,
-  });
-
-  return {
-    id: newPaymentDoc.id,
-    amount: payment.amount,
-    createdAt: Timestamp.now(),
-    status: payment.status,
-    mode: payment.mode,
-    currency: payment.currency,
-    platform: payment.platform,
-    productId: payment.productId,
-  };
-}
-
-// Helper function to find a processed payment
-async function findProcessedPayment(
-  uid: string,
-  paymentId: string
-): Promise<PaymentType | null> {
-  const paymentsRef = collection(db, "users", uid, "payments");
-  const q = query(
-    paymentsRef,
-    where("id", "==", paymentId),
-    where("status", "==", "succeeded")
-  );
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    return querySnapshot.docs[0].data() as PaymentType;
-  }
-
-  return null;
-}
-
-// Helper function to sort payments by createdAt
-function sortPayments(payments: PaymentType[]): PaymentType[] {
-  return payments.sort(
-    (a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
-  );
-}
-
-// Helper function to handle errors with correct typing for Zustand set function
 function handleError(
   set: (
     partial:

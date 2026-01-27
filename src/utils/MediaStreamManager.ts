@@ -1,6 +1,6 @@
-// utils/MediaStreamManager.ts
 import { MediaStreamError } from "../types/mediaStreamTypes";
 import { RecorderStatusType } from "../types/recorder";
+import { logger } from "./logger";
 
 export class MediaStreamManager {
   private screenStream: MediaStream | null = null;
@@ -82,11 +82,11 @@ export class MediaStreamManager {
       };
 
       track.onmute = () => {
-        console.warn("Track muted:", track.kind);
+        logger.warn(`Track muted: ${track.kind}`);
       };
 
       track.onunmute = () => {
-        console.info("Track unmuted:", track.kind);
+        logger.info(`Track unmuted: ${track.kind}`);
       };
     });
   }
@@ -108,7 +108,7 @@ export class MediaStreamManager {
         const micStream = await this.initializeMicrophoneCapture();
         streams.push(micStream);
       } catch (error) {
-        console.warn("Microphone not available:", error);
+        logger.warn("Microphone not available", error);
         // Continue without mic
       }
 

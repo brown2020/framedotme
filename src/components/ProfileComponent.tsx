@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import DeleteConfirmModal from "./DeleteConfirmModal";
+import { logger } from "@/utils/logger";
 
 export default function ProfileComponent() {
   const profile = useProfileStore((state) => state.profile);
@@ -78,7 +79,7 @@ export default function ProfileComponent() {
       toast.success("Account deleted successfully.");
       router.replace("/");
     } catch (error) {
-      console.error("Error on deletion of account:", error);
+      logger.error("Error on deletion of account", error);
     }
   }, [deleteAccount, clearAuthDetails, router, uid]);
 

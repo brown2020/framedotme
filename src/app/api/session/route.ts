@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/firebase/firebaseAdmin";
 import { SESSION_COOKIE_NAME } from "@/lib/constants";
+import { logger } from "@/utils/logger";
 
 const SESSION_EXPIRES_IN_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
     });
     return response;
   } catch (error) {
-    console.error("Failed to create session cookie:", error);
+    logger.error("Failed to create session cookie", error);
     return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
   }
 }

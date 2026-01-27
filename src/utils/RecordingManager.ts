@@ -1,4 +1,5 @@
 import { RECORDING_CHUNK_INTERVAL_MS } from "@/lib/constants";
+import { logger } from "./logger";
 
 /**
  * Manages media recording with chunk-based storage to prevent memory issues
@@ -34,7 +35,7 @@ export class RecordingManager {
       this.mediaRecorder.start(RECORDING_CHUNK_INTERVAL_MS);
       return this.mediaRecorder;
     } catch (error) {
-      console.error("Failed to start recording:", error);
+      logger.error("Failed to start recording", error);
       throw error;
     }
   }

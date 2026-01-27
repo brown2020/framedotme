@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Timestamp } from "@firebase/firestore";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { 
   fetchUserRecordings, 
@@ -9,27 +8,32 @@ import {
   downloadRecording 
 } from "@/services/storageService";
 import { VideoMetadata } from "@/types/video";
+import { logger } from "@/utils/logger";
+import { ConfirmDialog } from "./ui/confirm-dialog";
+import { ClipLoader } from "react-spinners";
 
 export default function RecordingsPage() {
   const uid = useAuthStore((state) => state.uid);
 
   const [videos, setVideos] = useState<VideoMetadata[]>([]);
   const [featuredVideo, setFeaturedVideo] = useState<VideoMetadata | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [videoToDelete, setVideoToDelete] = useState<VideoMetadata | null>(null);
 
   useEffect(() => {
     if (!uid) return;
     const fetchVideos = async () => {
       try {
+        setLoading(true);
         const videosData = await fetchUserRecordings(uid);
         setVideos(videosData);
         if (videosData.length > 0) {
           setFeaturedVideo(videosData[0]);
         }
       } catch (error) {
-        console.error(
-          "Error fetching videos: ",
-          (error as Error)?.message || "Unknown"
-        );
+        logger.error("Error fetching videos", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -45,8 +49,6 @@ export default function RecordingsPage() {
   };
 
   const handleDeleteVideo = async (video: VideoMetadata) => {
-    if (!confirm("Are you sure you want to delete this video?")) return;
-
     try {
       await deleteRecording(uid, video);
 
@@ -57,7 +59,7 @@ export default function RecordingsPage() {
         setFeaturedVideo(null);
       }
     } catch (error) {
-      console.error("Error deleting video: ", (error as Error).message);
+      logger.error("Error deleting video", error);
     }
   };
 
@@ -69,19 +71,43 @@ export default function RecordingsPage() {
     try {
       await downloadRecording(video);
     } catch (error) {
-      console.error("Error downloading the video:", error);
+      logger.error("Error downloading the video", error);
     }
   };
 
-  if (videos.length === 0)
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full justify-center items-center">
+        <ClipLoader color="#3b82f6" size={60} />
+      </div>
+    );
+  }
+
+  if (videos.length === 0) {
     return (
       <div className="flex flex-col h-full justify-center items-center text-3xl">
         <div>No recordings found.</div>
       </div>
     );
+  }
 
   return (
-    <div className="p-4">
+    <>
+      <ConfirmDialog
+        isOpen={videoToDelete !== null}
+        title="Delete Recording"
+        message="Are you sure you want to delete this recording? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={() => {
+          if (videoToDelete) {
+            handleDeleteVideo(videoToDelete);
+          }
+        }}
+        onCancel={() => setVideoToDelete(null)}
+      />
+      <div className="p-4">
       {featuredVideo && (
         <div className="flex flex-col mb-4">
           <div className="flex gap-2 flex-wrap text-xs">
@@ -119,7 +145,7 @@ export default function RecordingsPage() {
             </button>
             <button
               className="text-white bg-red-500 p-2 rounded-md w-max my-2"
-              onClick={() => handleDeleteVideo(featuredVideo)}
+              onClick={() => setVideoToDelete(featuredVideo)}
             >
               Delete
             </button>
@@ -145,5 +171,6 @@ export default function RecordingsPage() {
         ))}
       </div>
     </div>
+    </>
   );
 }
