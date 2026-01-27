@@ -199,8 +199,13 @@ const createFirestoreRecord = async (
   };
 
   try {
-    // Force token retrieval right before the write (helps in popup/multi-window situations)
-    await auth.currentUser?.getIdToken();
+    // Refresh token before write to ensure auth is valid
+    // This is critical for multi-window scenarios (video controls in popup)
+    // where auth state may not be fully synchronized across windows
+    if (auth.currentUser) {
+      await auth.currentUser.getIdToken(true);
+    }
+    
     await setDoc(botcastRef, metadata);
   } catch (error) {
     throw new StorageError(

@@ -2,20 +2,21 @@
 
 import type { ReactElement } from "react";
 import { useState, useEffect, useCallback } from "react";
-import { useAuthStore } from "@/zustand/useAuthStore";
+import { ClipLoader } from "react-spinners";
+import toast from "react-hot-toast";
+
+import type { VideoMetadata } from "@/types/video";
+import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { 
   fetchUserRecordings, 
   deleteRecording, 
   downloadRecording 
 } from "@/services/storageService";
-import type { VideoMetadata } from "@/types/video";
-import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { logger } from "@/utils/logger";
 import { ConfirmDialog } from "./ui/confirm-dialog";
-import { ClipLoader } from "react-spinners";
 import { FeaturedVideoPlayer } from "./FeaturedVideoPlayer";
 import { VideoGridItem } from "./VideoGridItem";
-import toast from "react-hot-toast";
+import { useAuthStore } from "@/zustand/useAuthStore";
 
 /**
  * Recordings page component that displays all user recordings

@@ -1,12 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import {
-  LEGACY_ID_TOKEN_COOKIE_NAME,
+  CLIENT_ID_TOKEN_COOKIE_NAME,
   REDIRECT_URL_COOKIE_NAME,
   SESSION_COOKIE_NAME,
 } from "./src/constants/auth";
 import { ROUTES } from "./src/constants/routes";
-import { verifyIdToken, verifySessionToken } from "./src/lib/session";
+import { verifyIdToken, verifySessionToken } from "./src/config/session";
 import { logger } from "./src/utils/logger";
 
 const COOKIE_PATH = "/";
@@ -18,14 +18,14 @@ const isAuthPage = (pathname: string): boolean => {
 const hasAuthTokens = (request: NextRequest): boolean => {
   return Boolean(
     request.cookies.get(SESSION_COOKIE_NAME)?.value ||
-      request.cookies.get(LEGACY_ID_TOKEN_COOKIE_NAME)?.value
+      request.cookies.get(CLIENT_ID_TOKEN_COOKIE_NAME)?.value
   );
 };
 
 const clearAuthCookies = (response: NextResponse): NextResponse => {
   response.cookies.delete({ name: SESSION_COOKIE_NAME, path: COOKIE_PATH });
   response.cookies.delete({
-    name: LEGACY_ID_TOKEN_COOKIE_NAME,
+    name: CLIENT_ID_TOKEN_COOKIE_NAME,
     path: COOKIE_PATH,
   });
   return response;
@@ -42,8 +42,8 @@ const getVerifiedUser = async (request: NextRequest) => {
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (sessionCookie) return verifySessionToken(sessionCookie);
 
-  const legacyIdToken = request.cookies.get(LEGACY_ID_TOKEN_COOKIE_NAME)?.value;
-  if (legacyIdToken) return verifyIdToken(legacyIdToken);
+  const clientIdToken = request.cookies.get(CLIENT_ID_TOKEN_COOKIE_NAME)?.value;
+  if (clientIdToken) return verifyIdToken(clientIdToken);
 
   return null;
 };

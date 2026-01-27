@@ -19,14 +19,10 @@ const firebaseConfig = {
 };
 
 /**
- * Validates Firebase config only when actually initializing on the client
+ * Validates Firebase client configuration
+ * Throws error if required fields are missing to fail fast
  */
 function validateFirebaseConfig(): void {
-  // Only validate on client-side where these vars are actually used
-  if (typeof window === "undefined") {
-    return;
-  }
-
   const requiredFields = [
     "apiKey",
     "authDomain",
@@ -39,14 +35,13 @@ function validateFirebaseConfig(): void {
   const missing = requiredFields.filter((field) => !firebaseConfig[field]);
 
   if (missing.length > 0) {
-    logger.error(
-      `Missing required Firebase configuration: ${missing.join(", ")}`,
-      "Check your .env file for NEXT_PUBLIC_FIREBASE_* variables"
-    );
+    const error = `Missing required Firebase configuration: ${missing.join(", ")}. Check your .env file for NEXT_PUBLIC_FIREBASE_* variables`;
+    logger.error(error);
+    throw new Error(error);
   }
 }
 
-// Validate config when initializing
+// Validate config before initializing Firebase
 validateFirebaseConfig();
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);

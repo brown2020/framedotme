@@ -12,27 +12,32 @@ import type { Payment, PaymentInput, PaymentStatus } from "@/types/payment";
 import { validateUserId } from "@/lib/validation";
 import { getUserPaymentsPath } from "@/lib/firestore";
 import { PaymentError } from "@/types/errors";
+import { PaymentSchema } from "@/lib/validation";
 
 /**
- * Maps Firestore document data to Payment
+ * Maps Firestore document data to Payment with runtime validation
  * Uses the id field from the document data (which stores the Stripe payment intent ID)
  * 
  * @param data - The Firestore document data
- * @returns Mapped payment object
+ * @returns Validated and mapped payment object
+ * @throws {ValidationError} If the document data doesn't match Payment schema
  * 
  * @internal Helper function to maintain consistency in data mapping
  */
 const mapDocumentToPayment = (data: DocumentData): Payment => {
-  return {
-    id: data.id as string,
-    amount: data.amount as number,
-    createdAt: data.createdAt as Payment["createdAt"],
-    status: data.status as PaymentStatus,
-    mode: data.mode as Payment["mode"],
-    currency: data.currency as string,
-    platform: data.platform as Payment["platform"],
-    productId: data.productId as string,
+  const payment = {
+    id: data.id,
+    amount: data.amount,
+    createdAt: data.createdAt,
+    status: data.status,
+    mode: data.mode,
+    currency: data.currency,
+    platform: data.platform,
+    productId: data.productId,
   };
+  
+  // Validate with Zod schema to ensure data integrity
+  return PaymentSchema.parse(payment);
 };
 
 /**

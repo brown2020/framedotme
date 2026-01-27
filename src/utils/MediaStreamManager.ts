@@ -110,6 +110,11 @@ export class MediaStreamManager {
       }
 
       // If no screen audio, create combined stream with optional mic
+      // Clean up any existing AudioContext before creating a new one
+      if (this.audioContext) {
+        await this.audioContext.close().catch(() => {});
+      }
+      
       this.audioContext = new AudioContext();
       const destination = this.audioContext.createMediaStreamDestination();
       const streams: MediaStream[] = [this.screenStream];

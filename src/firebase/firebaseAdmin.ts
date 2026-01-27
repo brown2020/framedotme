@@ -1,6 +1,6 @@
 import admin from "firebase-admin";
 import { getApps } from "firebase-admin/app";
-import { buildConfig } from "@/lib/env";
+import { buildConfig } from "@/config/env";
 
 // Validate and extract Firebase Admin credentials
 const adminCredentials = buildConfig({

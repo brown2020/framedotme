@@ -21,6 +21,21 @@ interface ProfileState {
   resetProfile: () => void;
 }
 
+/**
+ * Initializes user credits with validation
+ * Returns existing credits if valid, otherwise returns default credits
+ */
+function _initializeCredits(credits: number | undefined): number {
+  if (credits && credits >= CREDITS_THRESHOLD) {
+    return credits;
+  }
+  return DEFAULT_CREDITS;
+}
+
+/**
+ * Merges partial profile data with defaults and auth context
+ * Ensures all required fields have valid values
+ */
 const mergeProfileWithDefaults = (
   profile: Partial<Profile>,
   authState: {
@@ -31,7 +46,7 @@ const mergeProfileWithDefaults = (
 ): Profile => ({
   ...DEFAULT_PROFILE,
   ...profile,
-  credits: profile.credits && profile.credits >= CREDITS_THRESHOLD ? profile.credits : DEFAULT_CREDITS,
+  credits: _initializeCredits(profile.credits),
   email: authState.authEmail || profile.email || "",
   contactEmail: profile.contactEmail || authState.authEmail || "",
   displayName: profile.displayName || authState.authDisplayName || "",

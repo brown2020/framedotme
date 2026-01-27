@@ -1,17 +1,18 @@
 "use client";
 
 import type { ReactElement } from "react";
-import useProfileStore from "@/zustand/useProfileStore";
 import { useCallback, useEffect, useState } from "react";
-import { isReactNativeWebView } from "@/utils/platform";
-import { signOut } from "firebase/auth";
-import { auth } from "@/firebase/firebaseClient";
 import { useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
 import toast from "react-hot-toast";
-import { useAuthStore } from "@/zustand/useAuthStore";
-import DeleteConfirmModal from "./DeleteConfirmModal";
-import { logger } from "@/utils/logger";
+
+import { auth } from "@/firebase/firebaseClient";
 import { useIAPHandler } from "@/hooks/useIAPHandler";
+import { logger } from "@/utils/logger";
+import { isReactNativeWebView } from "@/utils/platform";
+import DeleteConfirmModal from "./DeleteConfirmModal";
+import { useAuthStore } from "@/zustand/useAuthStore";
+import useProfileStore from "@/zustand/useProfileStore";
 
 export default function ProfileComponent(): ReactElement {
   const profile = useProfileStore((state) => state.profile);

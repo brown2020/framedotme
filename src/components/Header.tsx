@@ -50,12 +50,12 @@ export function Header() {
         role="navigation"
         aria-label="Main navigation"
       >
-        {navItems.map((item, index) => {
+        {navItems.map((item) => {
           const isActive = pathname.startsWith(item.path) && pathname !== "/";
           
           return (
             <button
-              key={index}
+              key={item.path}
               className={`flex items-center gap-1 px-3 h-full transition duration-300 text-white hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
                 isActive ? "opacity-100 bg-white/30" : "opacity-50"
               }`}

@@ -3,7 +3,7 @@ import { getIdToken } from "firebase/auth";
 import { deleteCookie, setCookie } from "cookies-next";
 import { auth } from "@/firebase/firebaseClient";
 import { 
-  LEGACY_ID_TOKEN_COOKIE_NAME, 
+  CLIENT_ID_TOKEN_COOKIE_NAME, 
   TOKEN_REFRESH_INTERVAL_MS, 
   TOKEN_REFRESH_DEBOUNCE_MS 
 } from "@/constants/auth";
@@ -16,13 +16,18 @@ import { debounce } from "@/utils/debounce";
  * Hook to manage automatic token refresh and session cookie synchronization
  * Handles periodic token refresh, cross-tab synchronization, and session cookie management
  * 
+ * Cross-tab sync is critical for this app because:
+ * - Video controls open in a separate window (window.open)
+ * - Both windows need synchronized auth state
+ * - Token refresh in one window must propagate to others
+ * 
  * @param cookieName - Name of the cookie to store the auth token
  * @param uid - The authenticated user's unique identifier
  * @param setServerSessionCookie - Function to set the server-side session cookie
  * @param clearServerSessionCookie - Function to clear the server-side session cookie
  */
 export const useTokenRefresh = (
-  cookieName: string = LEGACY_ID_TOKEN_COOKIE_NAME,
+  cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME,
   uid: string | undefined,
   setServerSessionCookie: (idToken: string) => Promise<void>,
   clearServerSessionCookie: () => Promise<void>

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useAuthToken } from "@/hooks/useAuthToken";
+import { useAuthStateSync } from "@/hooks/useAuthStateSync";
 import { useInitializeStores } from "@/zustand/useInitializeStores";
 import { useSyncAuthToFirestore } from "@/hooks/useSyncAuthToFirestore";
 
@@ -12,7 +12,7 @@ if (!COOKIE_NAME) {
 }
 
 /**
- * Authentication provider that manages auth token, store initialization, and Firestore sync
+ * Authentication provider that manages auth state synchronization and store initialization
  * Centralizes all authentication-related hooks and state management
  * 
  * @param props - Component props
@@ -20,7 +20,7 @@ if (!COOKIE_NAME) {
  * @returns The auth provider with authentication context
  */
 export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode => {
-  useAuthToken(COOKIE_NAME);
+  useAuthStateSync(COOKIE_NAME);
   useInitializeStores();
   useSyncAuthToFirestore();
 
