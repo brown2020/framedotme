@@ -4,7 +4,7 @@ type VerifiedSession =
   | { uid: string; email?: string | null }
   | null;
 
-export async function verifySessionToken(sessionCookie: string): Promise<VerifiedSession> {
+export const verifySessionToken = async (sessionCookie: string): Promise<VerifiedSession> => {
   if (!sessionCookie) return null;
   try {
     const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
@@ -12,9 +12,9 @@ export async function verifySessionToken(sessionCookie: string): Promise<Verifie
   } catch {
     return null;
   }
-}
+};
 
-export async function verifyIdToken(idToken: string): Promise<VerifiedSession> {
+export const verifyIdToken = async (idToken: string): Promise<VerifiedSession> => {
   if (!idToken) return null;
   try {
     const decoded = await adminAuth.verifyIdToken(idToken, true);
@@ -22,6 +22,6 @@ export async function verifyIdToken(idToken: string): Promise<VerifiedSession> {
   } catch {
     return null;
   }
-}
+};
 
 

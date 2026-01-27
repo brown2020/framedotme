@@ -7,6 +7,12 @@ import { ScanIcon } from "lucide-react";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";
 
+/**
+ * Header component that displays the app logo and navigation menu
+ * Shows navigation items on desktop and handles React Native WebView interactions
+ * 
+ * @returns The header component with logo and navigation
+ */
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();

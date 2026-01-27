@@ -4,6 +4,12 @@ import { MENU_ITEMS } from "@/constants/menuItems";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import Link from "next/link";
 
+/**
+ * Footer component that displays navigation links based on user authentication state
+ * Filters menu items to show only footer-appropriate links
+ * 
+ * @returns The footer component with filtered navigation links
+ */
 export default function Footer() {
   const uid = useAuthStore((s) => s.uid);
 

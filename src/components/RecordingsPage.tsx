@@ -7,11 +7,18 @@ import {
   deleteRecording, 
   downloadRecording 
 } from "@/services/storageService";
-import { VideoMetadata } from "@/types/video";
+import type { VideoMetadata } from "@/types/video";
 import { logger } from "@/utils/logger";
 import { ConfirmDialog } from "./ui/confirm-dialog";
 import { ClipLoader } from "react-spinners";
 
+/**
+ * Recordings page component that displays all user recordings
+ * Features a grid view of recordings with a featured video player
+ * Allows users to view, download, and delete their recordings
+ * 
+ * @returns The recordings page component with video grid and featured player
+ */
 export default function RecordingsPage() {
   const uid = useAuthStore((state) => state.uid);
 

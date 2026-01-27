@@ -22,34 +22,34 @@ export const DOCUMENTS = {
 /**
  * Constructs a user document path
  */
-export function getUserPath(uid: string): string {
+export const getUserPath = (uid: string): string => {
   return `${COLLECTIONS.USERS}/${uid}`;
-}
+};
 
 /**
  * Constructs a user profile document path
  */
-export function getUserProfilePath(uid: string): string {
+export const getUserProfilePath = (uid: string): string => {
   return `${getUserPath(uid)}/${SUBCOLLECTIONS.PROFILE}/${DOCUMENTS.USER_DATA}`;
-}
+};
 
 /**
  * Constructs a user payments collection path
  */
-export function getUserPaymentsPath(uid: string): string {
+export const getUserPaymentsPath = (uid: string): string => {
   return `${getUserPath(uid)}/${SUBCOLLECTIONS.PAYMENTS}`;
-}
+};
 
 /**
  * Constructs a user botcasts collection path
  */
-export function getUserBotcastsPath(uid: string): string {
+export const getUserBotcastsPath = (uid: string): string => {
   return `${getUserPath(uid)}/${SUBCOLLECTIONS.BOTCASTS}`;
-}
+};
 
 /**
  * Constructs a user recorder settings document path
  */
-export function getUserRecorderSettingsPath(uid: string): string {
+export const getUserRecorderSettingsPath = (uid: string): string => {
   return `${getUserPath(uid)}/${SUBCOLLECTIONS.SETTINGS}/${DOCUMENTS.RECORDER}`;
-}
+};

@@ -1,9 +1,10 @@
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "@/firebase/firebaseClient";
-import { RecorderStatusType } from "@/types/recorder";
+import type { RecorderStatusType } from "@/types/recorder";
 import { logger } from "@/utils/logger";
 import { validateUserId } from "@/lib/validation";
 import { getUserRecorderSettingsPath } from "@/lib/firestore";
+import { StorageError } from "@/types/errors";
 
 /**
  * Updates the recorder status in Firestore
@@ -19,10 +20,10 @@ import { getUserRecorderSettingsPath } from "@/lib/firestore";
  * await updateRecorderStatus(user.uid, 'recording');
  * ```
  */
-export async function updateRecorderStatus(
+export const updateRecorderStatus = async (
   uid: string,
   newStatus: RecorderStatusType
-): Promise<void> {
+): Promise<void> => {
   const validatedUid = validateUserId(uid);
 
   try {
@@ -35,12 +36,15 @@ export async function updateRecorderStatus(
     await setDoc(settingsRef, settings, { merge: true });
     logger.debug(`Recorder status updated to: ${newStatus}`);
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
     logger.error("Failed to update recorder status", error);
-    throw new Error(`Failed to update status: ${errorMessage}`);
+    throw new StorageError(
+      'Failed to update recorder status',
+      'firestore-write',
+      error as Error,
+      { userId: validatedUid, status: newStatus }
+    );
   }
-}
+};
 
 /**
  * Subscribes to recorder status changes in Firestore
@@ -64,11 +68,11 @@ export async function updateRecorderStatus(
  * unsubscribe();
  * ```
  */
-export function subscribeToRecorderStatus(
+export const subscribeToRecorderStatus = (
   uid: string,
   onStatusChange: (status: RecorderStatusType) => void,
   onError: (error: Error) => void
-): () => void {
+): (() => void) => {
   try {
     const validatedUid = validateUserId(uid);
     const settingsRef = doc(db, getUserRecorderSettingsPath(validatedUid));
@@ -92,4 +96,4 @@ export function subscribeToRecorderStatus(
     onError(error as Error);
     return () => {};
   }
-}
+};

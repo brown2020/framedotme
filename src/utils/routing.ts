@@ -12,7 +12,7 @@ const PUBLIC_ROUTES = [
 /**
  * Checks if a route is publicly accessible
  */
-export function isPublicRoute(pathname: string): boolean {
+export const isPublicRoute = (pathname: string): boolean => {
   // Check exact matches
   if (PUBLIC_ROUTES.includes(pathname as typeof PUBLIC_ROUTES[number])) {
     return true;
@@ -24,16 +24,16 @@ export function isPublicRoute(pathname: string): boolean {
   }
 
   return false;
-}
+};
 
 /**
  * Determines if a redirect to home is needed based on auth state
  */
-export function shouldRedirectToHome(
+export const shouldRedirectToHome = (
   loading: boolean,
   uid: string | undefined,
   pathname: string
-): boolean {
+): boolean => {
   // Don't redirect while loading
   if (loading) {
     return false;
@@ -50,4 +50,4 @@ export function shouldRedirectToHome(
   }
 
   return true;
-}
+};

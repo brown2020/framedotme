@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 import { getErrorMessage, logError } from "@/utils/errorHandling";
 import { logger } from "@/utils/logger";
 import {
@@ -96,7 +96,16 @@ function handleError(
   set({ paymentsError: errorMessage, paymentsLoading: false });
 }
 
-// Selectors for optimized re-renders
+/**
+ * Optimized selectors for payment state
+ */
 export const usePayments = () => usePaymentsStore((state) => state.payments);
 export const usePaymentsLoading = () => usePaymentsStore((state) => state.paymentsLoading);
 export const usePaymentsError = () => usePaymentsStore((state) => state.paymentsError);
+
+// Grouped selector for payment state
+export const usePaymentsState = () => usePaymentsStore((state) => ({
+  payments: state.payments,
+  loading: state.paymentsLoading,
+  error: state.paymentsError,
+}));

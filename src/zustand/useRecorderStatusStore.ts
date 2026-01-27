@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { RecorderStatusType } from "@/types/recorder";
+import type { RecorderStatusType } from "@/types/recorder";
 
 interface RecorderStatusState {
   recorderStatus: RecorderStatusType;
@@ -18,6 +18,14 @@ export const useRecorderStatusStore = create<RecorderStatusState>((set) => ({
   setError: (error: Error | null) => set({ lastError: error }),
 }));
 
-// Selectors for optimized re-renders
+/**
+ * Optimized selectors for recorder state
+ */
 export const useRecorderStatus = () => useRecorderStatusStore((state) => state.recorderStatus);
 export const useRecorderError = () => useRecorderStatusStore((state) => state.lastError);
+
+// Grouped selector for complete recorder state
+export const useRecorderState = () => useRecorderStatusStore((state) => ({
+  status: state.recorderStatus,
+  error: state.lastError,
+}));

@@ -241,8 +241,8 @@ export const deleteRecording = async (
   const validatedUserId = validateUserId(userId);
 
   try {
-    // Delete from storage
-    if (video.filename && video.filename !== "no filename") {
+    // Delete from storage using filename path if available, otherwise use download URL
+    if (video.filename) {
       const filePath = `${validatedUserId}/botcasts/${video.filename}`;
       const storageRef = ref(storage, filePath);
       await deleteObject(storageRef);
@@ -276,11 +276,7 @@ export const deleteRecording = async (
  * ```
  */
 export const downloadRecording = async (video: VideoMetadata): Promise<void> => {
-  const filename =
-    video.filename && video.filename !== "no filename"
-      ? video.filename
-      : "botcasting_video.webm";
-      
+  const filename = video.filename || "botcasting_video.webm";
   await downloadFromUrl(video.downloadUrl, filename);
 };
 

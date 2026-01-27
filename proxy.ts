@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import {
   LEGACY_ID_TOKEN_COOKIE_NAME,
   REDIRECT_URL_COOKIE_NAME,
@@ -11,20 +11,20 @@ import { logger } from "./src/utils/logger";
 
 const COOKIE_PATH = "/";
 
-function isAuthPage(pathname: string) {
+const isAuthPage = (pathname: string): boolean => {
   return pathname === ROUTES.home || pathname.startsWith(ROUTES.loginFinish);
-}
+};
 
-function clearAuthCookies(response: NextResponse) {
+const clearAuthCookies = (response: NextResponse): NextResponse => {
   response.cookies.delete({ name: SESSION_COOKIE_NAME, path: COOKIE_PATH });
   response.cookies.delete({
     name: LEGACY_ID_TOKEN_COOKIE_NAME,
     path: COOKIE_PATH,
   });
   return response;
-}
+};
 
-async function getVerifiedUser(request: NextRequest) {
+const getVerifiedUser = async (request: NextRequest) => {
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (sessionCookie) return verifySessionToken(sessionCookie);
 
@@ -32,9 +32,9 @@ async function getVerifiedUser(request: NextRequest) {
   if (legacyIdToken) return verifyIdToken(legacyIdToken);
 
   return null;
-}
+};
 
-export async function proxy(request: NextRequest) {
+export const proxy = async (request: NextRequest) => {
   try {
     const { pathname } = request.nextUrl;
     const onAuthPage = isAuthPage(pathname);
@@ -90,7 +90,7 @@ export async function proxy(request: NextRequest) {
       NextResponse.redirect(new URL(ROUTES.home, request.url))
     );
   }
-}
+};
 
 export const config = {
   matcher: [

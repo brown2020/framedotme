@@ -3,6 +3,12 @@
 import AuthComponent from "./AuthComponent";
 import Footer from "./Footer";
 
+/**
+ * Home page component that displays the landing page with authentication
+ * Displays welcome message and authentication interface for users to sign in
+ * 
+ * @returns The home page component with centered layout and auth controls
+ */
 export default function HomePage() {
   return (
     <div className="relative flex flex-col h-full w-full justify-center items-center text-white overflow-hidden">

@@ -24,14 +24,17 @@ export default function VideoControlsPage() {
     error,
   } = useScreenRecorder();
   const screenVideoElem = useRef<HTMLVideoElement | null>(null);
+  const hasInitialized = useRef(false);
 
-  // Add auto-initialization
+  // Auto-initialize only once when component mounts
   useEffect(() => {
-    if (!uid) return;
+    if (!uid || hasInitialized.current) return;
+    
     if (recorderStatus === "idle") {
+      hasInitialized.current = true;
       initializeRecorder();
     }
-  }, [recorderStatus, initializeRecorder, uid]);
+  }, [uid, recorderStatus, initializeRecorder]);
 
   useEffect(() => {
     const currentScreenVideoElem = screenVideoElem.current;

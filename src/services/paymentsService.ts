@@ -14,20 +14,31 @@ import { getUserPaymentsPath } from "@/lib/firestore";
 
 /**
  * Maps Firestore document data to PaymentType
+ * Uses the Firestore document ID if provided, otherwise falls back to the id field in the data
+ * 
+ * @param data - The Firestore document data
+ * @param firestoreDocId - Optional Firestore document ID to use as payment ID
+ * @returns Mapped payment object
+ * 
  * @internal Helper function to maintain consistency in data mapping
  */
-function mapDocumentToPayment(data: DocumentData, docId?: string): PaymentType {
+const mapDocumentToPayment = (
+  data: DocumentData, 
+  firestoreDocId?: string
+): PaymentType => {
   return {
-    id: docId || data.id,
-    amount: data.amount,
-    createdAt: data.createdAt,
-    status: data.status,
-    mode: data.mode,
-    currency: data.currency,
-    platform: data.platform,
-    productId: data.productId,
+    // Prefer Firestore document ID when available (for documents fetched from Firestore)
+    // Fall back to data.id for custom ID fields
+    id: firestoreDocId ?? data.id,
+    amount: data.amount as number,
+    createdAt: data.createdAt as PaymentType["createdAt"],
+    status: data.status as string,
+    mode: data.mode as string,
+    currency: data.currency as string,
+    platform: data.platform as string,
+    productId: data.productId as string,
   };
-}
+};
 
 /**
  * Fetches all payments for a user from Firestore
@@ -43,16 +54,18 @@ function mapDocumentToPayment(data: DocumentData, docId?: string): PaymentType {
  * payments.forEach(p => console.log(p.amount));
  * ```
  */
-export async function fetchUserPayments(uid: string): Promise<PaymentType[]> {
+export const fetchUserPayments = async (uid: string): Promise<PaymentType[]> => {
   const validatedUid = validateUserId(uid);
   const q = query(collection(db, getUserPaymentsPath(validatedUid)));
   const querySnapshot = await getDocs(q);
+  
+  // Map each Firestore document to PaymentType, using the document ID
   const payments = querySnapshot.docs.map((doc) => 
     mapDocumentToPayment(doc.data(), doc.id)
   );
 
   return sortPayments(payments);
-}
+};
 
 /**
  * Checks if a payment with the given ID exists
@@ -63,10 +76,10 @@ export async function fetchUserPayments(uid: string): Promise<PaymentType[]> {
  * @returns Promise resolving to true if payment exists, false otherwise
  * @throws {ValidationError} If uid is invalid
  */
-export async function checkPaymentExists(
+export const checkPaymentExists = async (
   uid: string,
   paymentId: string
-): Promise<boolean> {
+): Promise<boolean> => {
   const validatedUid = validateUserId(uid);
   
   // Check if payment exists by querying for the "id" field
@@ -77,7 +90,7 @@ export async function checkPaymentExists(
   );
   const querySnapshot = await getDocs(q);
   return !querySnapshot.empty;
-}
+};
 
 /**
  * Creates a new payment record in Firestore
@@ -87,10 +100,10 @@ export async function checkPaymentExists(
  * @returns Promise resolving to the created payment with createdAt
  * @throws {ValidationError} If uid is invalid
  */
-export async function createPayment(
+export const createPayment = async (
   uid: string,
   payment: Omit<PaymentType, "createdAt">
-): Promise<PaymentType> {
+): Promise<PaymentType> => {
   const validatedUid = validateUserId(uid);
   const createdAt = Timestamp.now();
   
@@ -115,7 +128,7 @@ export async function createPayment(
     platform: payment.platform,
     productId: payment.productId,
   };
-}
+};
 
 /**
  * Finds a processed (succeeded) payment by ID
@@ -125,10 +138,10 @@ export async function createPayment(
  * @returns Promise resolving to the payment if found and succeeded, null otherwise
  * @throws {ValidationError} If uid is invalid
  */
-export async function findProcessedPayment(
+export const findProcessedPayment = async (
   uid: string,
   paymentId: string
-): Promise<PaymentType | null> {
+): Promise<PaymentType | null> => {
   const validatedUid = validateUserId(uid);
   const paymentsRef = collection(db, getUserPaymentsPath(validatedUid));
   const q = query(
@@ -140,11 +153,12 @@ export async function findProcessedPayment(
 
   if (!querySnapshot.empty && querySnapshot.docs[0]) {
     const doc = querySnapshot.docs[0];
-    return mapDocumentToPayment(doc.data());
+    // Use Firestore document ID for consistency
+    return mapDocumentToPayment(doc.data(), doc.id);
   }
 
   return null;
-}
+};
 
 /**
  * Sorts payments by creation date (newest first)
@@ -152,8 +166,8 @@ export async function findProcessedPayment(
  * @param payments - Array of payments to sort
  * @returns Sorted array with newest payments first
  */
-export function sortPayments(payments: PaymentType[]): PaymentType[] {
+export const sortPayments = (payments: PaymentType[]): PaymentType[] => {
   return payments.sort(
     (a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
   );
-}
+};

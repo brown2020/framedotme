@@ -8,10 +8,11 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { deleteUser, getAuth } from "firebase/auth";
-import { ProfileType } from "@/zustand/useProfileStore";
+import type { ProfileType } from "@/zustand/useProfileStore";
 import { logger } from "@/utils/logger";
 import { validateUserId } from "@/lib/validation";
 import { getUserPath, getUserProfilePath } from "@/lib/firestore";
+import { StorageError } from "@/types/errors";
 
 /**
  * Updates user authentication details in Firestore
@@ -51,9 +52,13 @@ export const updateUserDetailsInFirestore = async (
       { merge: true }
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
     logger.error("Error updating auth details in Firestore", error);
-    throw new Error(`Failed to update user details: ${message}`);
+    throw new StorageError(
+      'Failed to update user details',
+      'firestore-write',
+      error as Error,
+      { userId: validatedUid }
+    );
   }
 };
 
@@ -92,9 +97,13 @@ export const fetchUserProfile = async (uid: string): Promise<ProfileType | null>
       useCredits: data.useCredits !== undefined ? data.useCredits : true,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
     logger.error("Error fetching user profile", error);
-    throw new Error(`Failed to fetch user profile: ${message}`);
+    throw new StorageError(
+      'Failed to fetch user profile',
+      'firestore-write',
+      error as Error,
+      { userId: validatedUid }
+    );
   }
 };
 
@@ -125,9 +134,13 @@ export const saveUserProfile = async (
     const userRef = doc(db, getUserProfilePath(validatedUid));
     await setDoc(userRef, profileData);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
     logger.error("Error saving user profile", error);
-    throw new Error(`Failed to save user profile: ${message}`);
+    throw new StorageError(
+      'Failed to save user profile',
+      'firestore-write',
+      error as Error,
+      { userId: validatedUid }
+    );
   }
 };
 
@@ -154,9 +167,13 @@ export const updateUserProfile = async (
     const userRef = doc(db, getUserProfilePath(validatedUid));
     await updateDoc(userRef, data);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
     logger.error("Error updating user profile", error);
-    throw new Error(`Failed to update user profile: ${message}`);
+    throw new StorageError(
+      'Failed to update user profile',
+      'firestore-write',
+      error as Error,
+      { userId: validatedUid }
+    );
   }
 };
 
@@ -181,7 +198,14 @@ export const deleteUserAccount = async (uid: string): Promise<void> => {
     const auth = getAuth();
     const currentUser = auth.currentUser;
 
-    if (!currentUser) throw new Error("No current user found");
+    if (!currentUser) {
+      throw new StorageError(
+        'No current user found',
+        'firestore-write',
+        new Error('Authentication required'),
+        { userId: validatedUid }
+      );
+    }
 
     const userRef = doc(db, getUserProfilePath(validatedUid));
     
@@ -191,9 +215,16 @@ export const deleteUserAccount = async (uid: string): Promise<void> => {
     // Delete the user from Firebase Authentication
     await deleteUser(currentUser);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
     logger.error("Error deleting user account", error);
-    throw new Error(`Failed to delete user account: ${message}`);
+    if (error instanceof StorageError) {
+      throw error;
+    }
+    throw new StorageError(
+      'Failed to delete user account',
+      'firestore-write',
+      error as Error,
+      { userId: validatedUid }
+    );
   }
 };
 

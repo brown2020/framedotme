@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { updateRecorderStatus } from "@/services/recorderStatusService";
-import { RecorderStatusType } from "@/types/recorder";
+import type { RecorderStatusType } from "@/types/recorder";
 import { logger } from "@/utils/logger";
 
 /**

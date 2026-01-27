@@ -52,15 +52,36 @@ export const useAuthStore = create<AuthStore>((set) => ({
   clearAuthDetails: () => set({ ...defaultAuthState }),
 }));
 
-// Selectors for optimized re-renders
+/**
+ * Optimized selectors for common auth state access patterns
+ * Use these instead of directly accessing the store to prevent unnecessary re-renders
+ */
+
+// Core auth state
 export const useAuthUid = () => useAuthStore((state) => state.uid);
+export const useIsAuthenticated = () => useAuthStore((state) => !!state.uid);
+export const useAuthReady = () => useAuthStore((state) => state.authReady);
+export const useAuthPending = () => useAuthStore((state) => state.authPending);
+
+// User profile info
 export const useAuthEmail = () => useAuthStore((state) => state.authEmail);
 export const useAuthDisplayName = () => useAuthStore((state) => state.authDisplayName);
 export const useAuthPhotoUrl = () => useAuthStore((state) => state.authPhotoUrl);
 export const useAuthEmailVerified = () => useAuthStore((state) => state.authEmailVerified);
-export const useAuthReady = () => useAuthStore((state) => state.authReady);
-export const useAuthPending = () => useAuthStore((state) => state.authPending);
-export const useIsAuthenticated = () => useAuthStore((state) => !!state.uid);
+
+// Permissions and features
+export const useAuthPermissions = () => useAuthStore((state) => ({
+  isAdmin: state.isAdmin,
+  isAllowed: state.isAllowed,
+  isInvited: state.isInvited,
+}));
+
+export const useAuthFeatures = () => useAuthStore((state) => ({
+  credits: state.credits,
+  premium: state.premium,
+}));
+
+// Backward compatibility - kept for existing code
 export const useIsAdmin = () => useAuthStore((state) => state.isAdmin);
 export const useIsAllowed = () => useAuthStore((state) => state.isAllowed);
 export const useCredits = () => useAuthStore((state) => state.credits);

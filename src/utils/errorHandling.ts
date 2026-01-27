@@ -16,11 +16,11 @@ import {
  * @param operation - Optional operation context for better error messages
  * @returns A user-friendly error message string
  */
-export function getErrorMessage(
+export const getErrorMessage = (
   error: unknown, 
   defaultMessage = "An unknown error occurred",
   operation?: string
-): string {
+): string => {
   // Handle custom error types with context
   if (isStorageError(error)) {
     return getStorageErrorMessage(error, operation);
@@ -48,21 +48,21 @@ export function getErrorMessage(
   }
   
   return defaultMessage;
-}
+};
 
 /**
  * Gets a user-friendly message for storage errors
  */
-function getStorageErrorMessage(error: StorageError, operation?: string): string {
+const getStorageErrorMessage = (error: StorageError, operation?: string): string => {
   const op = operation || 'complete the operation';
   const stageMessage = error.stage ? ` (${error.stage})` : '';
   return `Failed to ${op}${stageMessage}: ${error.message}`;
-}
+};
 
 /**
  * Gets a user-friendly message for authentication errors
  */
-function getAuthErrorMessage(error: AuthenticationError): string {
+const getAuthErrorMessage = (error: AuthenticationError): string => {
   const codeMessages: Record<string, string> = {
     'auth/user-not-found': 'No account found with this email address.',
     'auth/wrong-password': 'Incorrect password. Please try again.',
@@ -79,22 +79,22 @@ function getAuthErrorMessage(error: AuthenticationError): string {
     if (message) return message;
   }
   return error.message;
-}
+};
 
 /**
  * Gets a user-friendly message for payment errors
  */
-function getPaymentErrorMessage(error: PaymentError): string {
+const getPaymentErrorMessage = (error: PaymentError): string => {
   if (error.paymentId) {
     return `Payment failed (ID: ${error.paymentId}): ${error.message}`;
   }
   return `Payment failed: ${error.message}`;
-}
+};
 
 /**
  * Gets context-aware error message for standard errors
  */
-function getContextualErrorMessage(error: Error, operation?: string): string {
+const getContextualErrorMessage = (error: Error, operation?: string): string => {
   const message = error.message.toLowerCase();
   
   // Firebase-specific errors
@@ -119,28 +119,28 @@ function getContextualErrorMessage(error: Error, operation?: string): string {
   }
   
   return error.message;
-}
+};
 
 /**
  * Displays an error toast notification with context
  */
-export function showErrorToast(error: unknown, defaultMessage?: string, operation?: string): void {
+export const showErrorToast = (error: unknown, defaultMessage?: string, operation?: string): void => {
   const message = getErrorMessage(error, defaultMessage, operation);
   toast.error(message);
-}
+};
 
 /**
  * Logs an error to the console with context
  */
-export function logError(context: string, error: unknown): void {
+export const logError = (context: string, error: unknown): void => {
   const message = getErrorMessage(error);
   console.error(`[${context}]`, message, error);
-}
+};
 
 /**
  * Handles an error by logging it and optionally showing a toast
  */
-export function handleError(
+export const handleError = (
   context: string,
   error: unknown,
   options?: {
@@ -148,7 +148,7 @@ export function handleError(
     defaultMessage?: string;
     operation?: string;
   }
-): string {
+): string => {
   const { showToast = false, defaultMessage, operation } = options || {};
   const message = getErrorMessage(error, defaultMessage, operation);
   
@@ -159,4 +159,4 @@ export function handleError(
   }
   
   return message;
-}
+};

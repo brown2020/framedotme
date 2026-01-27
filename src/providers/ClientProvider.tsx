@@ -1,74 +1,27 @@
 "use client";
 
-import { useEffect } from "react";
+import type { ReactNode } from "react";
 import { Toaster } from "react-hot-toast";
-import { ClipLoader } from "react-spinners";
 import CookieConsent from "react-cookie-consent";
 
-import useAuthToken from "@/hooks/useAuthToken";
-import { useInitializeStores } from "@/zustand/useInitializeStores";
-import { useSyncAuthToFirestore } from "@/hooks/useSyncAuthToFirestore";
-
-import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/zustand/useAuthStore";
 import { RecorderStatusProvider } from "./RecorderStatusProvider";
+import { ViewportProvider } from "./ViewportProvider";
+import { AuthProvider } from "./AuthProvider";
+import { RouteGuardProvider } from "./RouteGuardProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { shouldRedirectToHome } from "@/utils/routing";
 import { isReactNativeWebView } from "@/utils/platform";
 
-export function ClientProvider({ children }: { children: React.ReactNode }) {
-  const { loading, uid } = useAuthToken(process.env.NEXT_PUBLIC_COOKIE_NAME!);
-  const router = useRouter();
-  const pathname = usePathname();
-  useInitializeStores();
-  useSyncAuthToFirestore();
-
-  useEffect(() => {
-    function adjustHeight() {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty("--vh", `${vh}px`);
-    }
-
-    window.addEventListener("resize", adjustHeight);
-    window.addEventListener("orientationchange", adjustHeight);
-
-    // Initial adjustment
-    adjustHeight();
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("resize", adjustHeight);
-      window.removeEventListener("orientationchange", adjustHeight);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isReactNativeWebView()) {
-      document.body.classList.add("noscroll");
-    } else {
-      document.body.classList.remove("noscroll");
-    }
-
-    return () => {
-      document.body.classList.remove("noscroll");
-    };
-  }, []);
-
-  useEffect(() => {
-    if (shouldRedirectToHome(loading, uid, pathname)) {
-      router.push("/");
-    }
-  }, [loading, pathname, router, uid]);
-
-  if (loading)
-    return (
-      <ErrorBoundary>
-        <div
-          className={`flex flex-col items-center justify-center h-full bg-[#333b51]`}
-        >
-          <ClipLoader color="#fff" size={80} />
-        </div>
-      </ErrorBoundary>
-    );
+/**
+ * Client provider component that composes all necessary providers
+ * Provides authentication, viewport management, route guards, and global UI elements
+ * 
+ * @param props - Component props
+ * @param props.children - Child components to wrap
+ * @returns The client provider with all app-level context providers
+ */
+export function ClientProvider({ children }: { children: ReactNode }) {
+  const uid = useAuthStore((state) => state.uid);
 
   // Only wrap children with RecorderStatusProvider when user is authenticated
   const wrappedChildren = uid ? (
@@ -79,15 +32,21 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ErrorBoundary>
-      <div className="flex flex-col h-full">
-        {wrappedChildren}
-        {!isReactNativeWebView() && (
-          <CookieConsent>
-            This app uses cookies to enhance the user experience.
-          </CookieConsent>
-        )}
-        <Toaster position="bottom-center" />
-      </div>
+      <ViewportProvider>
+        <AuthProvider>
+          <RouteGuardProvider>
+            <div className="flex flex-col h-full">
+              {wrappedChildren}
+              {!isReactNativeWebView() && (
+                <CookieConsent>
+                  This app uses cookies to enhance the user experience.
+                </CookieConsent>
+              )}
+              <Toaster position="bottom-center" />
+            </div>
+          </RouteGuardProvider>
+        </AuthProvider>
+      </ViewportProvider>
     </ErrorBoundary>
   );
 }

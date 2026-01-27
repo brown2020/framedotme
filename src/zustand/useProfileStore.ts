@@ -190,12 +190,22 @@ function handleProfileError(action: string, error: unknown): void {
   logError(`Profile - ${action}`, error);
 }
 
-// Selectors for optimized re-renders
+/**
+ * Optimized selectors for profile state
+ */
 export const useProfile = () => useProfileStore((state) => state.profile);
 export const useProfileEmail = () => useProfileStore((state) => state.profile.email);
 export const useProfileCredits = () => useProfileStore((state) => state.profile.credits);
 export const useProfileDisplayName = () => useProfileStore((state) => state.profile.displayName);
 export const useProfilePhotoUrl = () => useProfileStore((state) => state.profile.photoUrl);
 export const useProfileUseCredits = () => useProfileStore((state) => state.profile.useCredits);
+
+// Grouped selector for profile info
+export const useProfileInfo = () => useProfileStore((state) => ({
+  email: state.profile.email,
+  displayName: state.profile.displayName,
+  photoUrl: state.profile.photoUrl,
+  emailVerified: state.profile.emailVerified,
+}));
 
 export default useProfileStore;

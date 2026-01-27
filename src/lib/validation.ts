@@ -49,28 +49,28 @@ export const PaymentSchema = z.object({
  * Validates and returns a user ID
  * @throws {ValidationError} If the user ID is invalid
  */
-export function validateUserId(uid: unknown): string {
+export const validateUserId = (uid: unknown): string => {
   return UserIdSchema.parse(uid);
-}
+};
 
 /**
  * Validates and returns a filename
  * @throws {ValidationError} If the filename is invalid
  */
-export function validateFilename(filename: unknown): string {
+export const validateFilename = (filename: unknown): string => {
   return FileNameSchema.parse(filename);
-}
+};
 
 /**
  * Type guard to check if a value is a valid VideoMetadata object
  */
-export function isVideoMetadata(value: unknown): value is z.infer<typeof VideoMetadataSchema> {
+export const isVideoMetadata = (value: unknown): value is z.infer<typeof VideoMetadataSchema> => {
   return VideoMetadataSchema.safeParse(value).success;
-}
+};
 
 /**
  * Type guard to check if a value is a valid Payment object
  */
-export function isPayment(value: unknown): value is z.infer<typeof PaymentSchema> {
+export const isPayment = (value: unknown): value is z.infer<typeof PaymentSchema> => {
   return PaymentSchema.safeParse(value).success;
-}
+};

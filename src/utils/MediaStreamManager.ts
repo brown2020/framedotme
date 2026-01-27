@@ -97,19 +97,31 @@ export class MediaStreamManager {
     }
 
     try {
+      // Check if screen stream already has audio
+      const hasScreenAudio = this.screenStream.getAudioTracks().length > 0;
+      
+      // If screen stream has audio, just use it directly without requesting mic
+      if (hasScreenAudio) {
+        logger.info("Using screen audio, skipping microphone request");
+        this.combinedStream = this.screenStream;
+        return this.combinedStream;
+      }
+
+      // If no screen audio, create combined stream with optional mic
       const audioContext = new AudioContext();
       const destination = audioContext.createMediaStreamDestination();
-
-      // Add screen audio if available
       const streams: MediaStream[] = [this.screenStream];
 
-      // Try to add mic audio
-      try {
-        const micStream = await this.initializeMicrophoneCapture();
-        streams.push(micStream);
-      } catch (error) {
-        logger.warn("Microphone not available", error);
-        // Continue without mic
+      // Only try to add mic if screen has no audio (avoid double permission prompt)
+      if (!hasScreenAudio && !this.micStream) {
+        logger.info("No screen audio detected, attempting to add microphone");
+        try {
+          const micStream = await this.initializeMicrophoneCapture();
+          streams.push(micStream);
+        } catch (error) {
+          logger.warn("Microphone not available, continuing without mic audio", error);
+          // Continue without mic - not critical
+        }
       }
 
       streams.forEach((stream) => {

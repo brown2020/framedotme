@@ -12,28 +12,7 @@ import {
 import { browserStorage, AUTH_STORAGE_KEYS } from "@/services/browserStorageService";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";
-
-/**
- * Debounces a function with cleanup support
- */
-function debounce<T extends (...args: Parameters<T>) => void>(
-  func: T,
-  wait: number
-): T & { cancel: () => void } {
-  let timeout: NodeJS.Timeout | null = null;
-  
-  const debounced = ((...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  }) as T & { cancel: () => void };
-  
-  debounced.cancel = () => {
-    if (timeout) clearTimeout(timeout);
-    timeout = null;
-  };
-  
-  return debounced;
-}
+import { debounce } from "@/utils/debounce";
 
 const useAuthToken = (cookieName = LEGACY_ID_TOKEN_COOKIE_NAME) => {
   const [user, loading, error] = useAuthState(auth);
