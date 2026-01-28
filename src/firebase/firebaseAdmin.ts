@@ -1,53 +1,28 @@
 import admin from "firebase-admin";
 import { getApps } from "firebase-admin/app";
-import { logger } from "@/utils/logger";
+
+import { getRequiredEnv } from "@/lib/env";
 
 /**
- * Validates Firebase Admin configuration
- * Throws error if required environment variables are missing to fail fast
+ * Firebase Admin credentials
+ * Extracted and processed from environment variables
  */
-function validateFirebaseAdminConfig(): void {
-  const requiredEnvVars = [
-    'FIREBASE_TYPE',
-    'FIREBASE_PROJECT_ID',
-    'FIREBASE_PRIVATE_KEY_ID',
-    'FIREBASE_PRIVATE_KEY',
-    'FIREBASE_CLIENT_EMAIL',
-    'FIREBASE_CLIENT_ID',
-    'FIREBASE_AUTH_URI',
-    'FIREBASE_TOKEN_URI',
-    'FIREBASE_AUTH_PROVIDER_X509_CERT_URL',
-    'FIREBASE_CLIENT_CERTS_URL',
-    'NEXT_PUBLIC_FIREBASE_STORAGEBUCKET',
-  ] as const;
-
-  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-  
-  if (missingVars.length > 0) {
-    const error = `Missing required Firebase Admin configuration: ${missingVars.join(', ')}. Check your .env file for FIREBASE_* variables`;
-    logger.error(error);
-    throw new Error(error);
-  }
-}
-
-// Validate config before initializing Firebase
-validateFirebaseAdminConfig();
-
-// Extract and process Firebase Admin credentials
 const processedCredentials = {
-  type: process.env.FIREBASE_TYPE!,
-  projectId: process.env.FIREBASE_PROJECT_ID!,
-  privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID!,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-  clientId: process.env.FIREBASE_CLIENT_ID!,
-  authUri: process.env.FIREBASE_AUTH_URI!,
-  tokenUri: process.env.FIREBASE_TOKEN_URI!,
-  authProviderX509CertUrl: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL!,
-  clientCertsUrl: process.env.FIREBASE_CLIENT_CERTS_URL!,
+  type: getRequiredEnv('FIREBASE_TYPE'),
+  projectId: getRequiredEnv('FIREBASE_PROJECT_ID'),
+  privateKeyId: getRequiredEnv('FIREBASE_PRIVATE_KEY_ID'),
+  privateKey: getRequiredEnv('FIREBASE_PRIVATE_KEY').replace(/\\n/g, "\n"),
+  clientEmail: getRequiredEnv('FIREBASE_CLIENT_EMAIL'),
+  clientId: getRequiredEnv('FIREBASE_CLIENT_ID'),
+  authUri: getRequiredEnv('FIREBASE_AUTH_URI'),
+  tokenUri: getRequiredEnv('FIREBASE_TOKEN_URI'),
+  authProviderX509CertUrl: getRequiredEnv('FIREBASE_AUTH_PROVIDER_X509_CERT_URL'),
+  clientCertsUrl: getRequiredEnv('FIREBASE_CLIENT_CERTS_URL'),
 };
 
-const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGEBUCKET!;
+// Note: Storage bucket uses NEXT_PUBLIC_ prefix but is safe to use getRequiredEnv here
+// because firebaseAdmin only runs server-side (never in browser/static builds)
+const storageBucket = getRequiredEnv('NEXT_PUBLIC_FIREBASE_STORAGEBUCKET');
 
 if (!getApps().length) {
   admin.initializeApp({

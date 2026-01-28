@@ -25,6 +25,13 @@ export const ROUTES = {
 /**
  * UI and styling constants
  * Z-Index layers to prevent conflicts and ensure proper stacking
+ * 
+ * Usage:
+ * - base: Default layer for content
+ * - header: Header component (fixed navigation)
+ * - modal: AuthModal component
+ * - dialog: ConfirmDialog component
+ * - toast: Toast notifications (managed by react-hot-toast library)
  */
 export const Z_INDEX = {
   base: 0,

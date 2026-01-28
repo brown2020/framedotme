@@ -1,3 +1,46 @@
+/**
+ * Firestore operation wrappers for consistent error handling
+ * 
+ * PURPOSE:
+ * These wrappers ensure all Firestore operations throw consistent AppError instances
+ * with proper categorization and context, making error handling predictable throughout
+ * the application.
+ * 
+ * WHEN TO USE:
+ * - ALWAYS use these wrappers in the services layer (src/services/)
+ * - Use firestoreRead() for all read operations (getDoc, getDocs, onSnapshot, etc.)
+ * - Use firestoreWrite() for all write operations (setDoc, updateDoc, deleteDoc, etc.)
+ * 
+ * ERROR HANDLING HIERARCHY:
+ * 1. Services (lib/, services/) - Throw AppError for all failures using these wrappers
+ * 2. Hooks (hooks/) - Catch errors, show toast notifications, set local error state
+ * 3. Components - Display inline error messages from hook state
+ * 
+ * EXAMPLES:
+ * ```typescript
+ * // Reading from Firestore
+ * export async function fetchUserProfile(uid: string): Promise<Profile | null> {
+ *   return firestoreRead(
+ *     async () => {
+ *       const docSnap = await getDoc(doc(db, 'users', uid));
+ *       return docSnap.exists() ? docSnap.data() : null;
+ *     },
+ *     'Failed to fetch user profile',
+ *     { userId: uid }
+ *   );
+ * }
+ * 
+ * // Writing to Firestore
+ * export async function saveUserProfile(uid: string, data: Profile): Promise<void> {
+ *   await firestoreWrite(
+ *     () => setDoc(doc(db, 'users', uid), data),
+ *     'Failed to save user profile',
+ *     { userId: uid }
+ *   );
+ * }
+ * ```
+ */
+
 import { AppError } from "@/types/errors";
 
 /**

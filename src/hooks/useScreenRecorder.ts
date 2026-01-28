@@ -1,14 +1,16 @@
+import type { RecorderStatusType } from "@/types/recorder";
+
 import { useCallback, useRef, useState, useEffect } from "react";
-import { useAuthStore } from "@/zustand/useAuthStore";
-import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
+
+import { MediaStreamError } from "@/types/mediaStreamTypes";
+import { getErrorMessage } from "@/lib/errors";
 import { MediaStreamManager } from "@/lib/media-stream-manager";
+import { RecordingManager } from "@/lib/recording-manager";
 import { uploadRecording } from "@/services/storageService";
 import { downloadBlob } from "@/utils/downloadUtils";
-import { RecordingManager } from "@/lib/recording-manager";
-import { MediaStreamError } from "../types/mediaStreamTypes";
-import type { RecorderStatusType } from "../types/recorder";
 import { logger } from "@/utils/logger";
-import { getErrorMessage } from "@/lib/errors";
+import { useAuthStore } from "@/zustand/useAuthStore";
+import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
 
 export const useScreenRecorder = () => {
   const { recorderStatus, setRecorderStatus } = useRecorderStatusStore();
@@ -16,6 +18,7 @@ export const useScreenRecorder = () => {
   const [isRecordingWindowOpen, setIsRecordingWindowOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const processingStatusChangeRef = useRef(false);
 
   const updateStatus = useCallback(
     (status: RecorderStatusType) => {
@@ -132,7 +135,7 @@ export const useScreenRecorder = () => {
     const currentMediaManager = mediaManager.current;
     const currentRecordingManager = recordingManager.current;
 
-    currentMediaManager.cleanup();
+    await currentMediaManager.cleanup();
     await currentRecordingManager.cleanup();
     setError(null);
     setScreenStream(null);
@@ -144,10 +147,26 @@ export const useScreenRecorder = () => {
   useEffect(() => {
     // Fire-and-forget: errors are handled within startRecording/stopRecording
     const processStatusChange = async () => {
+      // Guard against concurrent operations
+      if (processingStatusChangeRef.current) {
+        logger.warn(`Skipping status change to ${recorderStatus} - operation already in progress`);
+        return;
+      }
+
       if (recorderStatus === "shouldStart") {
-        await startRecording();
+        processingStatusChangeRef.current = true;
+        try {
+          await startRecording();
+        } finally {
+          processingStatusChangeRef.current = false;
+        }
       } else if (recorderStatus === "shouldStop") {
-        await stopRecording();
+        processingStatusChangeRef.current = true;
+        try {
+          await stopRecording();
+        } finally {
+          processingStatusChangeRef.current = false;
+        }
       } else if (recorderStatus !== "idle" && recorderStatus !== "ready" && recorderStatus !== "recording" && recorderStatus !== "saving" && recorderStatus !== "error") {
         // Log warning for unexpected status transitions
         logger.warn(`Unexpected recorder status transition: ${recorderStatus}`);
@@ -163,8 +182,8 @@ export const useScreenRecorder = () => {
     const currentRecordingManager = recordingManager.current;
 
     return () => {
-      currentMediaManager.cleanup();
       // Fire-and-forget: cleanup errors are already logged internally
+      void currentMediaManager.cleanup();
       void currentRecordingManager.cleanup();
     };
   }, []);

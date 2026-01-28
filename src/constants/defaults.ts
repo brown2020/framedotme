@@ -3,8 +3,8 @@
  * Co-located defaults that are tightly coupled with their type definitions
  */
 
-import type { AuthState } from "@/types/auth.types";
-import type { Profile } from "@/types/profile.types";
+import type { AuthState } from "@/types/auth";
+import type { Profile } from "@/types/profile";
 
 /**
  * Default auth state values

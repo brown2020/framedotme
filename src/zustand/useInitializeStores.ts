@@ -1,11 +1,5 @@
 import { useEffect, useRef } from "react";
-import {
-  useAuthUid,
-  useAuthEmail,
-  useAuthDisplayName,
-  useAuthPhotoUrl,
-  useAuthEmailVerified,
-} from "./useAuthStore";
+import { useAuthUid, useAuthStore } from "./useAuthStore";
 import useProfileStore from "./useProfileStore";
 
 /**
@@ -14,11 +8,6 @@ import useProfileStore from "./useProfileStore";
  */
 export const useInitializeStores = () => {
   const uid = useAuthUid();
-  const authEmail = useAuthEmail();
-  const authDisplayName = useAuthDisplayName();
-  const authPhotoUrl = useAuthPhotoUrl();
-  const authEmailVerified = useAuthEmailVerified();
-  
   const fetchProfile = useProfileStore((state) => state.fetchProfile);
   const lastFetchedUidRef = useRef<string>("");
 
@@ -29,11 +18,13 @@ export const useInitializeStores = () => {
     lastFetchedUidRef.current = uid;
     
     // Fire-and-forget: fetchProfile handles its own errors internally
+    // Read auth context at fetch time (not on every render) to avoid extra subscriptions
+    const authState = useAuthStore.getState();
     void fetchProfile(uid, {
-      authEmail,
-      authDisplayName,
-      authPhotoUrl,
-      authEmailVerified,
+      authEmail: authState.authEmail,
+      authDisplayName: authState.authDisplayName,
+      authPhotoUrl: authState.authPhotoUrl,
+      authEmailVerified: authState.authEmailVerified,
     });
-  }, [uid, authEmail, authDisplayName, authPhotoUrl, authEmailVerified, fetchProfile]);
+  }, [uid, fetchProfile]);
 };

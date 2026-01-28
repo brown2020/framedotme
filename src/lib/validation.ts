@@ -1,9 +1,18 @@
-import { z } from 'zod';
+import { z, type ZodSchema } from 'zod';
 import { Timestamp } from 'firebase/firestore';
 
 /**
  * Validation schemas for runtime type checking
  */
+
+/** Generic validation helper that parses with Zod and provides consistent error messages */
+function validate<T>(schema: ZodSchema<T>, value: unknown, fieldName: string): T {
+  try {
+    return schema.parse(value);
+  } catch (error) {
+    throw new Error(`Failed to validate ${fieldName}: ${error instanceof Error ? error.message : 'Invalid value'}`);
+  }
+}
 
 /**
  * User ID validation schema
@@ -51,19 +60,19 @@ export const PaymentSchema = z.object({
  * Trims whitespace and validates format
  * @throws {ValidationError} If the user ID is invalid
  */
-export const validateUserId = (uid: unknown): string => {
+export function validateUserId(uid: unknown): string {
   const sanitized = typeof uid === 'string' ? uid.trim() : uid;
-  return UserIdSchema.parse(sanitized);
-};
+  return validate(UserIdSchema, sanitized, 'user ID');
+}
 
 /**
  * Validates and sanitizes a filename
  * Trims whitespace, removes path traversal attempts, validates extension, and ensures safe format
  * @throws {ValidationError} If the filename is invalid or has unsafe extension
  */
-export const validateFilename = (filename: unknown): string => {
+export function validateFilename(filename: unknown): string {
   if (typeof filename !== 'string') {
-    return FileNameSchema.parse(filename);
+    return validate(FileNameSchema, filename, 'filename');
   }
   
   // Sanitize: trim and remove path traversal attempts
@@ -73,7 +82,7 @@ export const validateFilename = (filename: unknown): string => {
     .replace(/[/\\]/g, ''); // Remove path separators
   
   // Validate minimum requirements
-  const validated = FileNameSchema.parse(sanitized);
+  const validated = validate(FileNameSchema, sanitized, 'filename');
   
   // Check for allowed file extensions
   const hasAllowedExtension = ALLOWED_EXTENSIONS.some(ext => 

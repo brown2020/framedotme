@@ -36,7 +36,9 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
       const payments = await fetchUserPayments(uid);
       set({ payments, paymentsLoading: false, paymentsError: null });
     } catch (error) {
-      handlePaymentError(set, error, "fetch payments");
+      const errorMessage = getErrorMessage(error);
+      logError("Payments - fetch payments", error);
+      set({ paymentsError: errorMessage, paymentsLoading: false });
     }
   },
 
@@ -61,7 +63,9 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
         return { payments: updatedPayments, paymentsLoading: false, paymentsError: null };
       });
     } catch (error) {
-      handlePaymentError(set, error, "add payment");
+      const errorMessage = getErrorMessage(error);
+      logError("Payments - add payment", error);
+      set({ paymentsError: errorMessage, paymentsLoading: false });
     }
   },
 
@@ -70,20 +74,6 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
     return await findProcessedPayment(uid, paymentId);
   },
 }));
-
-function handlePaymentError(
-  set: (
-    partial:
-      | Partial<PaymentsStoreState>
-      | ((state: PaymentsStoreState) => Partial<PaymentsStoreState>)
-  ) => void,
-  error: unknown,
-  context: string
-): void {
-  const errorMessage = getErrorMessage(error);
-  logError(`Payments - ${context}`, error);
-  set({ paymentsError: errorMessage, paymentsLoading: false });
-}
 
 /**
  * Optimized selectors for payment state

@@ -111,7 +111,7 @@ export class MediaStreamManager {
       const handlers = {
         onended: () => {
           this.updateStatus("idle");
-          this.cleanup();
+          void this.cleanup();
         },
         onmute: () => {
           logger.warn(`Track muted: ${track.kind}`);
@@ -228,7 +228,7 @@ export class MediaStreamManager {
    * Cleans up all media streams and releases system resources
    * Stops all tracks, removes event listeners, and closes audio context
    */
-  cleanup() {
+  async cleanup(): Promise<void> {
     [this.screenStream, this.micStream, this.combinedStream].forEach(
       (stream) => {
         if (stream) {
@@ -247,10 +247,11 @@ export class MediaStreamManager {
     );
 
     if (this.audioContext) {
-      // Fire-and-forget: AudioContext cleanup errors are non-critical
-      void this.audioContext.close().catch((error) => {
+      try {
+        await this.audioContext.close();
+      } catch (error) {
         logger.warn("Failed to close AudioContext", error);
-      });
+      }
       this.audioContext = null;
     }
 

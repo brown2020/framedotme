@@ -13,8 +13,10 @@ export const REDIRECT_URL_COOKIE_NAME = "redirect_url";
 export const SESSION_EXPIRES_IN_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 
 // Token refresh
+// Refresh tokens every 50 minutes (10 minutes before Firebase's 1-hour token expiry)
+// This ensures tokens are always valid for server-side authentication
 export const TOKEN_REFRESH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes
-export const TOKEN_REFRESH_DEBOUNCE_MS = 1000;
+export const TOKEN_REFRESH_DEBOUNCE_MS = 1000; // 1 second debounce for cross-tab sync
 
 // Auth pending timeout
 export const AUTH_PENDING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes

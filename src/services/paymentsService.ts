@@ -1,3 +1,4 @@
+import type { DocumentData } from "firebase/firestore";
 import {
   collection,
   addDoc,
@@ -6,25 +7,15 @@ import {
   getDocs,
   Timestamp,
 } from "firebase/firestore";
-import type { DocumentData } from "firebase/firestore";
-import { db } from "@/firebase/firebaseClient";
-import type { Payment, PaymentInput, PaymentStatus } from "@/types/payment";
-import { validateUserId } from "@/lib/validation";
-import { getUserPaymentsPath } from "@/lib/firestore";
-import { PaymentSchema } from "@/lib/validation";
-import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
 
-/**
- * Maps Firestore document data to Payment with runtime validation
- * Uses the id field from the document data (which stores the Stripe payment intent ID)
- * 
- * @param data - The Firestore document data
- * @returns Validated and mapped payment object
- * @throws {ValidationError} If the document data doesn't match Payment schema
- * 
- * @internal Helper function to maintain consistency in data mapping
- */
-const mapDocumentToPayment = (data: DocumentData): Payment => {
+import type { Payment, PaymentInput } from "@/types/payment";
+import { db } from "@/firebase/firebaseClient";
+import { getUserPaymentsPath } from "@/lib/firestore";
+import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
+import { PaymentSchema, validateUserId } from "@/lib/validation";
+
+/** Maps Firestore document data to Payment with runtime validation */
+function mapDocumentToPayment(data: DocumentData): Payment {
   const payment = {
     id: data.id,
     amount: data.amount,
@@ -54,7 +45,7 @@ const mapDocumentToPayment = (data: DocumentData): Payment => {
  * payments.forEach(p => console.log(p.amount));
  * ```
  */
-export const fetchUserPayments = async (uid: string): Promise<Payment[]> => {
+export async function fetchUserPayments(uid: string): Promise<Payment[]> {
   const validatedUid = validateUserId(uid);
   
   return firestoreRead(
@@ -72,7 +63,7 @@ export const fetchUserPayments = async (uid: string): Promise<Payment[]> => {
     'Failed to fetch user payments',
     { userId: validatedUid }
   );
-};
+}
 
 /**
  * Checks if a payment with the given ID exists
@@ -83,10 +74,10 @@ export const fetchUserPayments = async (uid: string): Promise<Payment[]> => {
  * @returns Promise resolving to true if payment exists, false otherwise
  * @throws {ValidationError} If uid is invalid
  */
-export const checkPaymentExists = async (
+export async function checkPaymentExists(
   uid: string,
   paymentId: string
-): Promise<boolean> => {
+): Promise<boolean> {
   const validatedUid = validateUserId(uid);
   
   return firestoreRead(
@@ -103,7 +94,7 @@ export const checkPaymentExists = async (
     'Failed to check payment existence',
     { userId: validatedUid, paymentId }
   );
-};
+}
 
 /**
  * Creates a new payment record in Firestore
@@ -113,10 +104,10 @@ export const checkPaymentExists = async (
  * @returns Promise resolving to the created payment with createdAt
  * @throws {ValidationError} If uid is invalid
  */
-export const createPayment = async (
+export async function createPayment(
   uid: string,
   payment: PaymentInput
-): Promise<Payment> => {
+): Promise<Payment> {
   const validatedUid = validateUserId(uid);
   const createdAt = Timestamp.now();
   
@@ -145,7 +136,7 @@ export const createPayment = async (
     platform: payment.platform,
     productId: payment.productId,
   };
-};
+}
 
 /**
  * Finds a processed (succeeded) payment by ID
@@ -155,10 +146,10 @@ export const createPayment = async (
  * @returns Promise resolving to the payment if found and succeeded, null otherwise
  * @throws {ValidationError} If uid is invalid
  */
-export const findProcessedPayment = async (
+export async function findProcessedPayment(
   uid: string,
   paymentId: string
-): Promise<Payment | null> => {
+): Promise<Payment | null> {
   const validatedUid = validateUserId(uid);
 
   return firestoreRead(
@@ -181,7 +172,7 @@ export const findProcessedPayment = async (
     'Failed to find processed payment',
     { userId: validatedUid, paymentId }
   );
-};
+}
 
 /**
  * Sorts payments by creation date (newest first)
@@ -189,7 +180,7 @@ export const findProcessedPayment = async (
  * @param payments - Array of payments to sort
  * @returns Sorted array with newest payments first
  */
-export const sortPayments = (payments: Payment[]): Payment[] => {
+export function sortPayments(payments: Payment[]): Payment[] {
   return payments.sort(
     (a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
   );

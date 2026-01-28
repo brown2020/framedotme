@@ -8,8 +8,8 @@ import {
 import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/constants/payment";
 import { logError } from "@/lib/errors";
 import { DEFAULT_PROFILE } from "@/constants/defaults";
-import type { Profile } from "@/types/profile.types";
-import type { AuthContext } from "@/types/auth.types";
+import type { Profile } from "@/types/profile";
+import type { AuthContext } from "@/types/auth";
 
 interface ProfileState {
   profile: Profile;

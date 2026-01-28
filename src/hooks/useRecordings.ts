@@ -1,5 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
 import type { VideoMetadata } from "@/types/video";
+
+import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
+
+import { getErrorMessage } from "@/lib/errors";
 import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { 
   fetchUserRecordings, 
@@ -7,7 +11,6 @@ import {
   downloadRecording 
 } from "@/services/storageService";
 import { logger } from "@/utils/logger";
-import toast from "react-hot-toast";
 
 /**
  * Custom hook for managing recordings data and operations
@@ -46,8 +49,10 @@ export function useRecordings(uid: string) {
         setFeaturedVideo(null);
       }
     } catch (error) {
+      // deleteRecording throws AppError - convert to user-friendly toast
+      const message = getErrorMessage(error, "Failed to delete recording");
       logger.error("Error deleting video", error);
-      toast.error("Failed to delete recording. Please try again.");
+      toast.error(message);
     }
   }, [uid, fetchVideos, featuredVideo]);
 
@@ -56,8 +61,9 @@ export function useRecordings(uid: string) {
       await downloadRecording(video);
       toast.success("Recording download started");
     } catch (error) {
+      const message = getErrorMessage(error, "Failed to download recording");
       logger.error("Error downloading the video", error);
-      toast.error("Failed to download recording. Please try again.");
+      toast.error(message);
     }
   }, []);
 

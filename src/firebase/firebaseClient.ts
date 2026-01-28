@@ -2,14 +2,16 @@ import { getApp, getApps, initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+
 import { logger } from "@/utils/logger";
 
 /**
  * Firebase client configuration
  * These are public keys meant for client-side use
  * 
- * Note: NEXT_PUBLIC_* variables must be accessed directly (not via dynamic property access)
- * for Next.js build-time static replacement to work correctly
+ * CRITICAL: NEXT_PUBLIC_* variables MUST be accessed directly (not dynamically)
+ * Next.js performs static analysis at build time to replace these values.
+ * Using getRequiredEnv() or process.env[key] breaks this replacement.
  */
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_APIKEY || "",

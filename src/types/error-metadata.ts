@@ -8,11 +8,22 @@
 export type ErrorCategory = 'storage' | 'authentication' | 'payment' | 'validation';
 
 /**
+ * Error stages for tracking where errors occur in operations
+ */
+export type ErrorStage = 
+  | 'storage-upload'
+  | 'firestore-write'
+  | 'firestore-read'
+  | 'upload-init'
+  | 'storage-delete'
+  | 'auth';
+
+/**
  * Metadata for specific error types
  */
 export interface ErrorMetadata {
-  // Storage errors
-  stage?: 'storage-upload' | 'firestore-write' | 'firestore-read' | 'upload-init' | 'storage-delete' | 'auth';
+  // Operation stage where error occurred
+  stage?: ErrorStage;
   
   // Authentication errors
   code?: string;

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AuthState } from "@/types/auth.types";
+import type { AuthState } from "@/types/auth";
 import { DEFAULT_AUTH_STATE } from "@/constants/defaults";
 
 interface AuthActions {
@@ -22,6 +22,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
 /**
  * Optimized selectors for common auth state access patterns
  * Use these instead of directly accessing the store to prevent unnecessary re-renders
+ * 
+ * Note: Creating object selectors causes infinite loops in Zustand.
+ * Always use primitive selectors or useAuthStore.getState() for one-time reads.
  */
 
 // Core auth state
@@ -29,10 +32,3 @@ export const useAuthUid = () => useAuthStore((state) => state.uid);
 export const useIsAuthenticated = () => useAuthStore((state) => !!state.uid);
 export const useAuthReady = () => useAuthStore((state) => state.authReady);
 export const useAuthPending = () => useAuthStore((state) => state.authPending);
-
-// User profile info
-export const useAuthEmail = () => useAuthStore((state) => state.authEmail);
-export const useAuthDisplayName = () => useAuthStore((state) => state.authDisplayName);
-export const useAuthPhotoUrl = () => useAuthStore((state) => state.authPhotoUrl);
-export const useAuthEmailVerified = () => useAuthStore((state) => state.authEmailVerified);
-

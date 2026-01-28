@@ -1,4 +1,4 @@
-import type { ErrorCategory, ErrorMetadata } from "./errors.types";
+import type { ErrorCategory, ErrorMetadata, ErrorStage } from "./error-metadata";
 
 /**
  * Unified application error class
@@ -16,4 +16,4 @@ export class AppError extends Error {
 }
 
 // Re-export types for convenience
-export type { ErrorCategory, ErrorMetadata } from "./errors.types";
+export type { ErrorCategory, ErrorMetadata, ErrorStage } from "./error-metadata";

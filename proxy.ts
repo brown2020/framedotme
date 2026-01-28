@@ -11,6 +11,24 @@ import { logger } from "./src/utils/logger";
 
 const COOKIE_PATH = "/";
 
+/** Cookie manipulation helpers to reduce duplication */
+const cookieHelpers = {
+  /** Deletes cookies from response */
+  clear(response: NextResponse, ...names: string[]): void {
+    names.forEach(name => {
+      response.cookies.delete({ name, path: COOKIE_PATH });
+    });
+  },
+  
+  /** Sets a cookie on response */
+  set(response: NextResponse, name: string, value: string): void {
+    response.cookies.set(name, value, {
+      sameSite: "lax",
+      path: COOKIE_PATH,
+    });
+  },
+};
+
 const isAuthPage = (pathname: string): boolean => {
   return pathname === ROUTES.home || pathname === ROUTES.loginFinish || pathname.startsWith(`${ROUTES.loginFinish}/`);
 };
@@ -23,19 +41,12 @@ const hasAuthTokens = (request: NextRequest): boolean => {
 };
 
 const clearAuthCookies = (response: NextResponse): NextResponse => {
-  response.cookies.delete({ name: SESSION_COOKIE_NAME, path: COOKIE_PATH });
-  response.cookies.delete({
-    name: CLIENT_ID_TOKEN_COOKIE_NAME,
-    path: COOKIE_PATH,
-  });
+  cookieHelpers.clear(response, SESSION_COOKIE_NAME, CLIENT_ID_TOKEN_COOKIE_NAME);
   return response;
 };
 
 const setRedirectCookie = (response: NextResponse, pathname: string): void => {
-  response.cookies.set(REDIRECT_URL_COOKIE_NAME, pathname, {
-    sameSite: "lax",
-    path: COOKIE_PATH,
-  });
+  cookieHelpers.set(response, REDIRECT_URL_COOKIE_NAME, pathname);
 };
 
 const getVerifiedUser = async (request: NextRequest) => {

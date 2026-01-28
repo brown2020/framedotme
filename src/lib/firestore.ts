@@ -7,10 +7,20 @@ export const COLLECTIONS = {
   USERS: 'users',
 } as const;
 
+/**
+ * Legacy collection name for recordings (formerly "botcasts").
+ * This name is preserved in Firestore paths for backwards compatibility with existing user data.
+ * All new code should reference this constant rather than the literal string.
+ * 
+ * IMPORTANT: Changing this value will break access to existing recordings.
+ * Any migration must handle data transfer from old to new collection.
+ */
+export const LEGACY_RECORDINGS_COLLECTION = 'botcasts' as const;
+
 export const SUBCOLLECTIONS = {
   PROFILE: 'profile',
   PAYMENTS: 'payments',
-  RECORDINGS: 'botcasts', // Firestore path still uses 'botcasts' for backwards compatibility
+  RECORDINGS: LEGACY_RECORDINGS_COLLECTION,
   SETTINGS: 'settings',
 } as const;
 
@@ -22,35 +32,35 @@ export const DOCUMENTS = {
 /**
  * Constructs a user document path
  */
-export const getUserPath = (uid: string): string => {
+export function getUserPath(uid: string): string {
   return `${COLLECTIONS.USERS}/${uid}`;
-};
+}
 
 /**
  * Constructs a user profile document path
  */
-export const getUserProfilePath = (uid: string): string => {
+export function getUserProfilePath(uid: string): string {
   return `${getUserPath(uid)}/${SUBCOLLECTIONS.PROFILE}/${DOCUMENTS.USER_DATA}`;
-};
+}
 
 /**
  * Constructs a user payments collection path
  */
-export const getUserPaymentsPath = (uid: string): string => {
+export function getUserPaymentsPath(uid: string): string {
   return `${getUserPath(uid)}/${SUBCOLLECTIONS.PAYMENTS}`;
-};
+}
 
 /**
  * Constructs a user recordings collection path
- * Note: Firestore path uses 'botcasts' for backwards compatibility
+ * Note: Uses LEGACY_RECORDINGS_COLLECTION for backwards compatibility
  */
-export const getUserRecordingsPath = (uid: string): string => {
+export function getUserRecordingsPath(uid: string): string {
   return `${getUserPath(uid)}/${SUBCOLLECTIONS.RECORDINGS}`;
-};
+}
 
 /**
  * Constructs a user recorder settings document path
  */
-export const getUserRecorderSettingsPath = (uid: string): string => {
+export function getUserRecorderSettingsPath(uid: string): string {
   return `${getUserPath(uid)}/${SUBCOLLECTIONS.SETTINGS}/${DOCUMENTS.RECORDER}`;
 };

@@ -42,11 +42,11 @@ import { logger } from "@/utils/logger";
  * @param operation - Optional operation context for better error messages
  * @returns A user-friendly error message string
  */
-export const getErrorMessage = (
+export function getErrorMessage(
   error: unknown, 
   defaultMessage = "An unknown error occurred",
   operation?: string
-): string => {
+): string {
   // Handle custom error types with context
   if (isStorageError(error)) {
     return getStorageErrorMessage(error, operation);
@@ -79,20 +79,16 @@ export const getErrorMessage = (
   }
   
   return defaultMessage;
-};
+}
 
-/**
- * Gets a user-friendly message for storage errors
- */
+/** Gets a user-friendly message for storage errors */
 function getStorageErrorMessage(error: AppError, operation?: string): string {
   const op = operation || 'complete the operation';
   const stageMessage = error.metadata.stage ? ` (${error.metadata.stage})` : '';
   return `Failed to ${op}${stageMessage}: ${error.message}`;
 }
 
-/**
- * Gets a user-friendly message for authentication errors
- */
+/** Gets a user-friendly message for authentication errors */
 function getAuthErrorMessage(error: AppError): string {
   const codeMessages: Record<string, string> = {
     'auth/user-not-found': 'No account found with this email address.',
@@ -112,9 +108,7 @@ function getAuthErrorMessage(error: AppError): string {
   return error.message;
 }
 
-/**
- * Gets a user-friendly message for payment errors
- */
+/** Gets a user-friendly message for payment errors */
 function getPaymentErrorMessage(error: AppError): string {
   if (error.metadata.paymentId) {
     return `Payment failed (ID: ${error.metadata.paymentId}): ${error.message}`;
@@ -122,9 +116,7 @@ function getPaymentErrorMessage(error: AppError): string {
   return `Payment failed: ${error.message}`;
 }
 
-/**
- * Gets a user-friendly message for media stream errors
- */
+/** Gets a user-friendly message for media stream errors */
 function getMediaStreamErrorMessage(error: MediaStreamError): string {
   const typeMessages: Record<string, string> = {
     'permission': 'Permission denied. Please allow access to continue.',
@@ -136,9 +128,7 @@ function getMediaStreamErrorMessage(error: MediaStreamError): string {
   return typeMessages[error.type] || error.message;
 }
 
-/**
- * Gets context-aware error message for standard errors
- */
+/** Gets context-aware error message for standard errors */
 function getContextualErrorMessage(error: Error, operation?: string): string {
   const message = error.message.toLowerCase();
   
@@ -173,23 +163,23 @@ function getContextualErrorMessage(error: Error, operation?: string): string {
 /**
  * Logs an error with context
  */
-export const logError = (context: string, error: unknown): void => {
+export function logError(context: string, error: unknown): void {
   const message = getErrorMessage(error);
   logger.error(`[${context}]`, message, error);
-};
+}
 
 /**
  * Displays an error toast notification with context
  */
-export const showErrorToast = (error: unknown, defaultMessage?: string, operation?: string): void => {
+export function showErrorToast(error: unknown, defaultMessage?: string, operation?: string): void {
   const message = getErrorMessage(error, defaultMessage, operation);
   toast.error(message);
-};
+}
 
 /**
  * Handles an error by logging it and optionally showing a toast
  */
-export const handleError = (
+export function handleError(
   context: string,
   error: unknown,
   options?: {
@@ -197,7 +187,7 @@ export const handleError = (
     defaultMessage?: string;
     operation?: string;
   }
-): string => {
+): string {
   const { showToast = false, defaultMessage, operation } = options || {};
   const message = getErrorMessage(error, defaultMessage, operation);
   

@@ -1,8 +1,6 @@
-// Type imports
 import type { VideoMetadata } from "@/types/video";
 import type { UploadProgress } from "@/types/recorder";
 
-// Third-party imports
 import {
   collection,
   deleteDoc,
@@ -20,21 +18,12 @@ import {
   uploadBytesResumable,
 } from "firebase/storage";
 
-// Internal imports - Types
 import { AppError } from "@/types/errors";
-
-// Internal imports - Constants
 import { MAX_RECORDING_FILE_SIZE } from "@/constants/recording";
-
-// Internal imports - Firebase
 import { auth, db, storage } from "@/firebase/firebaseClient";
-
-// Internal imports - Lib
-import { getUserRecordingsPath } from "@/lib/firestore";
+import { getUserRecordingsPath, LEGACY_RECORDINGS_COLLECTION } from "@/lib/firestore";
 import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
 import { validateFilename, validateUserId } from "@/lib/validation";
-
-// Internal imports - Utils
 import { downloadFromUrl } from "@/utils/downloadUtils";
 
 /**
@@ -51,7 +40,7 @@ import { downloadFromUrl } from "@/utils/downloadUtils";
  * recordings.forEach(video => logger.debug(video.filename));
  * ```
  */
-export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata[]> => {
+export async function fetchUserRecordings(userId: string): Promise<VideoMetadata[]> {
   const validatedUserId = validateUserId(userId);
   
   return firestoreRead(
@@ -75,7 +64,7 @@ export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata
     'Failed to fetch user recordings',
     { userId: validatedUserId }
   );
-};
+}
 
 /**
  * Uploads a recording to Firebase Storage and creates a Firestore record
@@ -98,12 +87,12 @@ export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata
  * );
  * ```
  */
-export const uploadRecording = async (
+export async function uploadRecording(
   userId: string,
   videoBlob: Blob,
   filename: string,
   onProgress?: (progress: UploadProgress) => void
-): Promise<string> => {
+): Promise<string> {
   const validatedUserId = validateUserId(userId);
   const validatedFilename = validateFilename(filename);
 
@@ -137,8 +126,8 @@ export const uploadRecording = async (
   onProgress?.({ progress: 0, status: "starting" });
 
   try {
-    // Storage path uses 'botcasts' for backwards compatibility with existing data
-    const filePath = `${validatedUserId}/botcasts/${validatedFilename}`;
+    // Storage path uses legacy collection name for backwards compatibility with existing data
+    const filePath = `${validatedUserId}/${LEGACY_RECORDINGS_COLLECTION}/${validatedFilename}`;
     const storageRef = ref(storage, filePath);
     const uploadTask = uploadBytesResumable(storageRef, videoBlob, {
       contentType: validatedFilename.endsWith(".webm") ? "video/webm" : "video/*",
@@ -210,10 +199,10 @@ export const uploadRecording = async (
       progress: 0,
       status: "error",
       error: initError,
-    });
+    }    );
     throw initError;
   }
-};
+}
 
 /**
  * Creates a Firestore record for an uploaded recording
@@ -224,14 +213,14 @@ export const uploadRecording = async (
  * @throws {StorageError} If Firestore write fails
  * @internal
  */
-const createFirestoreRecord = async (
+async function createFirestoreRecord(
   userId: string,
   filename: string,
   downloadUrl: string
-): Promise<void> => {
+): Promise<void> {
   const recordingRef = doc(db, `${getUserRecordingsPath(userId)}/${filename}`);
-  // Storage path uses 'botcasts' for backwards compatibility with existing data
-  const storagePath = `${userId}/botcasts/${filename}`;
+  // Storage path uses legacy collection name for backwards compatibility with existing data
+  const storagePath = `${userId}/${LEGACY_RECORDINGS_COLLECTION}/${filename}`;
 
   const metadata: VideoMetadata = {
     id: recordingRef.id,
@@ -259,7 +248,7 @@ const createFirestoreRecord = async (
       filename
     }
   );
-};
+}
 
 /**
  * Deletes a recording from both Firebase Storage and Firestore
@@ -275,10 +264,10 @@ const createFirestoreRecord = async (
  * await deleteRecording(user.uid, videoToDelete);
  * ```
  */
-export const deleteRecording = async (
+export async function deleteRecording(
   userId: string,
   video: VideoMetadata
-): Promise<void> => {
+): Promise<void> {
   const validatedUserId = validateUserId(userId);
 
   await firestoreWrite(
@@ -293,7 +282,7 @@ export const deleteRecording = async (
     'Failed to delete recording',
     { userId: validatedUserId, videoId: video.id }
   );
-};
+}
 
 /**
  * Downloads a recording to the user's device
@@ -307,7 +296,7 @@ export const deleteRecording = async (
  * await downloadRecording(selectedVideo);
  * ```
  */
-export const downloadRecording = async (video: VideoMetadata): Promise<void> => {
+export async function downloadRecording(video: VideoMetadata): Promise<void> {
   const filename = video.filename || "recording_video.webm";
   await downloadFromUrl(video.downloadUrl, filename);
 };
