@@ -12,6 +12,21 @@ import { logger } from "@/utils/logger";
 /**
  * Error handling utilities
  * 
+ * ERROR HANDLING HIERARCHY:
+ * 1. Services (lib/, services/) - Throw AppError for all failures
+ * 2. Hooks (hooks/) - Catch errors, show toast notifications, set local error state
+ * 3. Components - Display inline error messages from hook state
+ * 
+ * FUNCTION DECLARATION CONVENTIONS:
+ * - Page/component exports: Use function declarations
+ * - Utilities and non-exported functions: Use arrow functions
+ * - Exported utilities: Use function declarations for better stack traces
+ * 
+ * ASYNC CONVENTIONS:
+ * - Intentional fire-and-forget: Use explicit `void` prefix
+ * - Error handling required: Always `await` inside try/catch
+ * - Never use bare promises without void or await
+ * 
  * Pure formatters: Convert errors to user-friendly messages without side effects
  * Side-effect functions: Display errors to users and log them
  */

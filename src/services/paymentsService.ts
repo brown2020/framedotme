@@ -5,8 +5,8 @@ import {
   where,
   getDocs,
   Timestamp,
-  DocumentData,
 } from "firebase/firestore";
+import type { DocumentData } from "firebase/firestore";
 import { db } from "@/firebase/firebaseClient";
 import type { Payment, PaymentInput, PaymentStatus } from "@/types/payment";
 import { validateUserId } from "@/lib/validation";

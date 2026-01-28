@@ -1,11 +1,12 @@
+import type { ReactNode, RefObject } from "react";
 import { XIcon } from "lucide-react";
 import { Z_INDEX } from "@/constants/config";
 
 interface AuthModalProps {
   isVisible: boolean;
-  modalRef: React.RefObject<HTMLDivElement | null>;
+  modalRef: RefObject<HTMLDivElement | null>;
   onClose: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 /**

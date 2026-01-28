@@ -38,7 +38,7 @@ export function AuthContainer(): ReactElement {
     setIsEmailLinkLogin,
     signInWithGoogle,
     handleSignOut,
-    handlePasswordSignup,
+    handlePasswordAuth,
     handleEmailLinkSignIn,
     handlePasswordReset,
   } = useAuthHandlers(hideModal);
@@ -53,7 +53,7 @@ export function AuthContainer(): ReactElement {
 
   const handleFormSubmit = isEmailLinkLogin
     ? handleEmailLinkSignIn
-    : handlePasswordSignup;
+    : handlePasswordAuth;
 
   return (
     <>

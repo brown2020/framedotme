@@ -15,6 +15,11 @@ export class MediaStreamManager {
     onunmute: () => void;
   }> = new Map();
 
+  /**
+   * Creates a new MediaStreamManager instance
+   * 
+   * @param statusCallback - Optional callback to receive recorder status updates
+   */
   constructor(statusCallback?: (status: RecorderStatusType) => void) {
     this.statusCallback = statusCallback;
   }
@@ -23,13 +28,27 @@ export class MediaStreamManager {
     this.statusCallback?.(status);
   }
 
+  /**
+   * Initializes screen capture with video and optional audio
+   * 
+   * @returns Promise resolving to the screen capture MediaStream
+   * @throws {MediaStreamError} If permission denied or device access fails
+   * 
+   * @example
+   * ```typescript
+   * const manager = new MediaStreamManager();
+   * const stream = await manager.initializeScreenCapture();
+   * ```
+   */
   async initializeScreenCapture(): Promise<MediaStream> {
     try {
       this.screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           frameRate: { ideal: RECORDING_FRAME_RATE },
         },
-        audio: true, // Keep this simple for screen share audio
+        // Request audio without constraints because browser handles tab audio sharing
+        // automatically, and additional constraints can cause permission dialogs to fail
+        audio: true,
       });
 
       this.setupTrackListeners(this.screenStream);
@@ -52,6 +71,12 @@ export class MediaStreamManager {
     }
   }
 
+  /**
+   * Initializes microphone capture with echo cancellation and noise suppression
+   * 
+   * @returns Promise resolving to the microphone MediaStream
+   * @throws {MediaStreamError} If permission denied or microphone access fails
+   */
   async initializeMicrophoneCapture(): Promise<MediaStream> {
     try {
       this.micStream = await navigator.mediaDevices.getUserMedia({
@@ -151,23 +176,13 @@ export class MediaStreamManager {
    * Attempts to add microphone when screen has no audio, but continues without it if unavailable
    */
   private async createMixedAudioStream(): Promise<MediaStream> {
-    // Clean up any existing AudioContext before creating a new one
+    // Close existing AudioContext to prevent memory leaks from abandoned contexts
+    // Each context consumes system audio resources even when not actively used
     if (this.audioContext) {
-      // Close with timeout to prevent hanging
-      const closeTimeout = new Promise<void>((resolve) => {
-        setTimeout(() => {
-          logger.warn("AudioContext close timed out, proceeding anyway");
-          resolve();
-        }, 1000); // 1 second timeout
+      await this.audioContext.close().catch((error) => {
+        // Context may already be closed - log but continue
+        logger.warn("AudioContext close error (continuing)", error);
       });
-      
-      await Promise.race([
-        this.audioContext.close().catch((error) => {
-          // Context may already be closed - log but continue
-          logger.warn("AudioContext close error (continuing)", error);
-        }),
-        closeTimeout
-      ]);
     }
     
     this.audioContext = new AudioContext();
@@ -209,6 +224,10 @@ export class MediaStreamManager {
     return this.combinedStream;
   }
 
+  /**
+   * Cleans up all media streams and releases system resources
+   * Stops all tracks, removes event listeners, and closes audio context
+   */
   cleanup() {
     [this.screenStream, this.micStream, this.combinedStream].forEach(
       (stream) => {
@@ -240,10 +259,20 @@ export class MediaStreamManager {
     this.combinedStream = null;
   }
 
+  /**
+   * Checks if any media stream is currently active
+   * 
+   * @returns True if screen or combined stream is active
+   */
   get isActive(): boolean {
     return Boolean(this.screenStream?.active || this.combinedStream?.active);
   }
 
+  /**
+   * Gets the current screen capture stream
+   * 
+   * @returns The screen MediaStream or null if not initialized
+   */
   get currentScreenStream(): MediaStream | null {
     return this.screenStream;
   }

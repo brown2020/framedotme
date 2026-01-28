@@ -1,4 +1,4 @@
-import { RecorderStatusType } from "@/types/recorder";
+import type { RecorderStatusType } from "@/types/recorder";
 
 /**
  * Gets button styling class based on recorder status

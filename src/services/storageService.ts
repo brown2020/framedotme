@@ -1,27 +1,41 @@
-import { auth, db, storage } from "@/firebase/firebaseClient";
-import {
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import { 
-  doc, 
-  setDoc, 
-  Timestamp, 
-  deleteDoc,
-  collection,
-  query,
-  orderBy,
-  getDocs
-} from "firebase/firestore";
-import { downloadFromUrl } from "@/utils/downloadUtils";
+// Type imports
 import type { VideoMetadata } from "@/types/video";
 import type { UploadProgress } from "@/types/recorder";
+
+// Third-party imports
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+  Timestamp,
+} from "firebase/firestore";
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytesResumable,
+} from "firebase/storage";
+
+// Internal imports - Types
 import { AppError } from "@/types/errors";
-import { validateUserId, validateFilename } from "@/lib/validation";
-import { getUserBotcastsPath } from "@/lib/firestore";
+
+// Internal imports - Constants
+import { MAX_RECORDING_FILE_SIZE } from "@/constants/recording";
+
+// Internal imports - Firebase
+import { auth, db, storage } from "@/firebase/firebaseClient";
+
+// Internal imports - Lib
+import { getUserRecordingsPath } from "@/lib/firestore";
 import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
+import { validateFilename, validateUserId } from "@/lib/validation";
+
+// Internal imports - Utils
+import { downloadFromUrl } from "@/utils/downloadUtils";
 
 /**
  * Fetches all recordings for a specific user from Firestore
@@ -42,7 +56,7 @@ export const fetchUserRecordings = async (userId: string): Promise<VideoMetadata
   
   return firestoreRead(
     async () => {
-      const videosRef = collection(db, getUserBotcastsPath(validatedUserId));
+      const videosRef = collection(db, getUserRecordingsPath(validatedUserId));
       const q = query(videosRef, orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
       
@@ -93,9 +107,37 @@ export const uploadRecording = async (
   const validatedUserId = validateUserId(userId);
   const validatedFilename = validateFilename(filename);
 
+  // Validate blob size and type
+  if (videoBlob.size > MAX_RECORDING_FILE_SIZE) {
+    throw new AppError(
+      'Video file is too large. Maximum size is 500MB',
+      'validation',
+      { 
+        stage: 'upload-init',
+        field: 'videoBlob',
+        value: videoBlob.size,
+        context: { maxSize: MAX_RECORDING_FILE_SIZE }
+      }
+    );
+  }
+
+  if (!videoBlob.type.startsWith('video/')) {
+    throw new AppError(
+      'Invalid file type. Only video files are allowed',
+      'validation',
+      { 
+        stage: 'upload-init',
+        field: 'videoBlob',
+        value: videoBlob.type,
+        context: { expectedType: 'video/*' }
+      }
+    );
+  }
+
   onProgress?.({ progress: 0, status: "starting" });
 
   try {
+    // Storage path uses 'botcasts' for backwards compatibility with existing data
     const filePath = `${validatedUserId}/botcasts/${validatedFilename}`;
     const storageRef = ref(storage, filePath);
     const uploadTask = uploadBytesResumable(storageRef, videoBlob, {
@@ -187,11 +229,12 @@ const createFirestoreRecord = async (
   filename: string,
   downloadUrl: string
 ): Promise<void> => {
-  const botcastRef = doc(db, `${getUserBotcastsPath(userId)}/${filename}`);
+  const recordingRef = doc(db, `${getUserRecordingsPath(userId)}/${filename}`);
+  // Storage path uses 'botcasts' for backwards compatibility with existing data
   const storagePath = `${userId}/botcasts/${filename}`;
 
   const metadata: VideoMetadata = {
-    id: botcastRef.id,
+    id: recordingRef.id,
     downloadUrl,
     storagePath,
     createdAt: Timestamp.now(),
@@ -207,10 +250,10 @@ const createFirestoreRecord = async (
   }
 
   await firestoreWrite(
-    () => setDoc(botcastRef, metadata),
+    () => setDoc(recordingRef, metadata),
     'Failed to write to Firestore: authentication or security rules denied access',
     {
-      path: botcastRef.path,
+      path: recordingRef.path,
       authUid: auth.currentUser?.uid ?? 'null',
       userId,
       filename
@@ -245,7 +288,7 @@ export const deleteRecording = async (
       await deleteObject(storageRef);
 
       // Delete from Firestore
-      await deleteDoc(doc(db, getUserBotcastsPath(validatedUserId), video.id));
+      await deleteDoc(doc(db, getUserRecordingsPath(validatedUserId), video.id));
     },
     'Failed to delete recording',
     { userId: validatedUserId, videoId: video.id }
@@ -265,7 +308,7 @@ export const deleteRecording = async (
  * ```
  */
 export const downloadRecording = async (video: VideoMetadata): Promise<void> => {
-  const filename = video.filename || "botcasting_video.webm";
+  const filename = video.filename || "recording_video.webm";
   await downloadFromUrl(video.downloadUrl, filename);
 };
 

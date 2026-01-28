@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
     <html lang="en">
@@ -46,8 +46,9 @@ export default function RootLayout({
         <ClientProvider>
           <div className="flex flex-col h-full">
             <Header />
-            {/* Custom height utilities: h-container-small (calc(100vh - 8rem)) on mobile, 
-                h-container-custom (calc(100vh - 4rem)) on desktop - defined in globals.css */}
+            {/* Mobile needs 8rem height deduction (4rem header + 4rem bottom nav space),
+                desktop needs 4rem (header only, no bottom nav). Custom utilities defined in globals.css
+                to avoid viewport calculation issues with fixed positioning. */}
             <div className="flex flex-col h-container-small md:h-container-custom overflow-y-scroll flex-1">
               {children}
             </div>

@@ -111,7 +111,7 @@ const handleProxyError = (error: unknown, request: NextRequest): NextResponse =>
   );
 };
 
-export const proxy = async (request: NextRequest) => {
+export default async function proxy(request: NextRequest) {
   try {
     const { pathname } = request.nextUrl;
     const onAuthPage = isAuthPage(pathname);
@@ -125,7 +125,7 @@ export const proxy = async (request: NextRequest) => {
   } catch (error) {
     return handleProxyError(error, request);
   }
-};
+}
 
 export const config = {
   matcher: [

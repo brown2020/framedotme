@@ -83,10 +83,10 @@ export function useAuthHandlers(hideModal: () => void) {
   }, [email]);
 
   /**
-   * Handles password-based signup (creates new account)
-   * Falls back to login if email already exists
+   * Handles password-based authentication (signup or signin)
+   * Creates new account if email doesn't exist, signs in if it does
    */
-  const handlePasswordSignup = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePasswordAuth = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       await createUserWithEmailAndPassword(auth, email, password);
@@ -174,7 +174,7 @@ export function useAuthHandlers(hideModal: () => void) {
     // Handlers
     signInWithGoogle,
     handleSignOut,
-    handlePasswordSignup,
+    handlePasswordAuth,
     handleEmailLinkSignIn,
     handlePasswordReset,
   };

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
 
 export const metadata = {
@@ -12,7 +13,7 @@ export const metadata = {
 export default function AboutLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
     <div className="flex flex-col h-full">

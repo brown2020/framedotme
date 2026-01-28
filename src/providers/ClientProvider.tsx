@@ -43,7 +43,7 @@ const PROVIDER_ORDER = [
 export function ClientProvider({ children }: { children: ReactNode }) {
   return (
     <ProviderComposer providers={PROVIDER_ORDER}>
-      <div className="flex flex-col h-full">{children}</div>
+      {children}
     </ProviderComposer>
   );
 }

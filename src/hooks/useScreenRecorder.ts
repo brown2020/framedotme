@@ -1,10 +1,10 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
-import { MediaStreamManager } from "@/lib/MediaStreamManager";
+import { MediaStreamManager } from "@/lib/media-stream-manager";
 import { uploadRecording } from "@/services/storageService";
 import { downloadBlob } from "@/utils/downloadUtils";
-import { RecordingManager } from "@/lib/RecordingManager";
+import { RecordingManager } from "@/lib/recording-manager";
 import { MediaStreamError } from "../types/mediaStreamTypes";
 import type { RecorderStatusType } from "../types/recorder";
 import { logger } from "@/utils/logger";
@@ -148,6 +148,9 @@ export const useScreenRecorder = () => {
         await startRecording();
       } else if (recorderStatus === "shouldStop") {
         await stopRecording();
+      } else if (recorderStatus !== "idle" && recorderStatus !== "ready" && recorderStatus !== "recording" && recorderStatus !== "saving" && recorderStatus !== "error") {
+        // Log warning for unexpected status transitions
+        logger.warn(`Unexpected recorder status transition: ${recorderStatus}`);
       }
     };
 

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
 import { useAuthStore } from "@/zustand/useAuthStore";
@@ -6,7 +7,7 @@ import { subscribeToRecorderStatus } from "@/services/recorderStatusService";
 export function RecorderStatusProvider({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const { setRecorderStatus, setError } = useRecorderStatusStore();
   const { uid, authReady } = useAuthStore();

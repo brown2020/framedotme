@@ -21,6 +21,7 @@
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": false,
     "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": true,
     "plugins": [
       {
         "name": "next"

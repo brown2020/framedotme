@@ -10,7 +10,7 @@ export const COLLECTIONS = {
 export const SUBCOLLECTIONS = {
   PROFILE: 'profile',
   PAYMENTS: 'payments',
-  BOTCASTS: 'botcasts',
+  RECORDINGS: 'botcasts', // Firestore path still uses 'botcasts' for backwards compatibility
   SETTINGS: 'settings',
 } as const;
 
@@ -41,10 +41,11 @@ export const getUserPaymentsPath = (uid: string): string => {
 };
 
 /**
- * Constructs a user botcasts collection path
+ * Constructs a user recordings collection path
+ * Note: Firestore path uses 'botcasts' for backwards compatibility
  */
-export const getUserBotcastsPath = (uid: string): string => {
-  return `${getUserPath(uid)}/${SUBCOLLECTIONS.BOTCASTS}`;
+export const getUserRecordingsPath = (uid: string): string => {
+  return `${getUserPath(uid)}/${SUBCOLLECTIONS.RECORDINGS}`;
 };
 
 /**
