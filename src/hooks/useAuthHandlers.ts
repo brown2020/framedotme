@@ -9,11 +9,13 @@ import {
   signOut,
 } from "firebase/auth";
 import toast from "react-hot-toast";
-import { auth } from "@/firebase/firebaseClient";
+
+import { isFirebaseError } from "@/types/guards";
+
 import { useAuthStore } from "@/zustand/useAuthStore";
+import { auth } from "@/firebase/firebaseClient";
 import { handleError } from "@/lib/errors";
 import { browserStorage } from "@/services/browserStorageService";
-import { isFirebaseError } from "@/types/guards";
 import { AUTH_PENDING_TIMEOUT_MS, AUTH_STORAGE_KEYS } from "@/constants/auth";
 
 /**

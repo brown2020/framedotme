@@ -25,12 +25,12 @@ interface ProfileState {
  * Initializes user credits with validation
  * Returns existing credits if valid, otherwise returns default credits
  */
-function initializeCredits(credits: number | undefined): number {
+const initializeCredits = (credits: number | undefined): number => {
   if (credits && credits >= CREDITS_THRESHOLD) {
     return credits;
   }
   return DEFAULT_CREDITS;
-}
+};
 
 /**
  * Merges partial profile data with defaults and auth context
@@ -162,12 +162,12 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 /**
  * Creates a new profile with default values
  */
-function createNewProfile(
+const createNewProfile = (
   authEmail?: string,
   authDisplayName?: string,
   authPhotoUrl?: string,
   authEmailVerified?: boolean
-): Profile {
+): Profile => {
   return {
     email: authEmail || "",
     contactEmail: "",
@@ -179,14 +179,14 @@ function createNewProfile(
     selectedTalkingPhoto: "",
     useCredits: true,
   };
-}
+};
 
 /**
  * Handles profile-related errors with consistent logging
  */
-function handleProfileError(action: string, error: unknown): void {
+const handleProfileError = (action: string, error: unknown): void => {
   logError(`Profile - ${action}`, error);
-}
+};
 
 /**
  * Optimized selectors for profile state

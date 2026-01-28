@@ -152,5 +152,3 @@ export const config = {
     "/videocontrols/:path*",
   ],
 };
-
-

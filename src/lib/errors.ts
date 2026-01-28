@@ -81,55 +81,57 @@ export function getErrorMessage(
   return defaultMessage;
 }
 
+/** Auth error code to user-friendly message mapping */
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  'auth/user-not-found': 'No account found with this email address.',
+  'auth/wrong-password': 'Incorrect password. Please try again.',
+  'auth/email-already-in-use': 'An account with this email already exists.',
+  'auth/weak-password': 'Password is too weak. Please use a stronger password.',
+  'auth/invalid-email': 'Invalid email address format.',
+  'auth/user-disabled': 'This account has been disabled.',
+  'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
+  'auth/network-request-failed': 'Network error. Please check your connection.',
+};
+
+/** Media stream error type to user-friendly message mapping */
+const MEDIA_STREAM_ERROR_MESSAGES: Record<string, string> = {
+  'permission': 'Permission denied. Please allow access to continue.',
+  'device': 'Failed to access recording device. Please check your settings.',
+  'stream': 'Failed to process media stream. Please try again.',
+  'unknown': 'An unexpected error occurred. Please try again.',
+};
+
 /** Gets a user-friendly message for storage errors */
-function getStorageErrorMessage(error: AppError, operation?: string): string {
+const getStorageErrorMessage = (error: AppError, operation?: string): string => {
   const op = operation || 'complete the operation';
   const stageMessage = error.metadata.stage ? ` (${error.metadata.stage})` : '';
   return `Failed to ${op}${stageMessage}: ${error.message}`;
-}
+};
 
 /** Gets a user-friendly message for authentication errors */
-function getAuthErrorMessage(error: AppError): string {
-  const codeMessages: Record<string, string> = {
-    'auth/user-not-found': 'No account found with this email address.',
-    'auth/wrong-password': 'Incorrect password. Please try again.',
-    'auth/email-already-in-use': 'An account with this email already exists.',
-    'auth/weak-password': 'Password is too weak. Please use a stronger password.',
-    'auth/invalid-email': 'Invalid email address format.',
-    'auth/user-disabled': 'This account has been disabled.',
-    'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
-    'auth/network-request-failed': 'Network error. Please check your connection.',
-  };
-  
+const getAuthErrorMessage = (error: AppError): string => {
   if (error.metadata.code) {
-    const message = codeMessages[error.metadata.code];
+    const message = AUTH_ERROR_MESSAGES[error.metadata.code];
     if (message) return message;
   }
   return error.message;
-}
+};
 
 /** Gets a user-friendly message for payment errors */
-function getPaymentErrorMessage(error: AppError): string {
+const getPaymentErrorMessage = (error: AppError): string => {
   if (error.metadata.paymentId) {
     return `Payment failed (ID: ${error.metadata.paymentId}): ${error.message}`;
   }
   return `Payment failed: ${error.message}`;
-}
+};
 
 /** Gets a user-friendly message for media stream errors */
-function getMediaStreamErrorMessage(error: MediaStreamError): string {
-  const typeMessages: Record<string, string> = {
-    'permission': 'Permission denied. Please allow access to continue.',
-    'device': 'Failed to access recording device. Please check your settings.',
-    'stream': 'Failed to process media stream. Please try again.',
-    'unknown': 'An unexpected error occurred. Please try again.',
-  };
-  
-  return typeMessages[error.type] || error.message;
-}
+const getMediaStreamErrorMessage = (error: MediaStreamError): string => {
+  return MEDIA_STREAM_ERROR_MESSAGES[error.type] || error.message;
+};
 
 /** Gets context-aware error message for standard errors */
-function getContextualErrorMessage(error: Error, operation?: string): string {
+const getContextualErrorMessage = (error: Error, operation?: string): string => {
   const message = error.message.toLowerCase();
   
   // Firebase-specific errors
@@ -154,7 +156,7 @@ function getContextualErrorMessage(error: Error, operation?: string): string {
   }
   
   return error.message;
-}
+};
 
 // ============================================================================
 // SIDE-EFFECT FUNCTIONS (logging, notifications)

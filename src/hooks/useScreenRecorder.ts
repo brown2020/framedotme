@@ -1,6 +1,6 @@
 import type { RecorderStatusType } from "@/types/recorder";
 
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef, useState, useEffect, type MutableRefObject } from "react";
 
 import { MediaStreamError } from "@/types/mediaStreamTypes";
 import { getErrorMessage } from "@/lib/errors";
@@ -11,6 +11,55 @@ import { downloadBlob } from "@/utils/downloadUtils";
 import { logger } from "@/utils/logger";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
+
+/**
+ * Handles recorder status transitions with concurrency protection
+ * Processes status changes and delegates to appropriate recording handlers
+ */
+const handleStatusTransition = async (
+  status: RecorderStatusType,
+  startRecording: () => Promise<void>,
+  stopRecording: () => Promise<void>,
+  processingRef: MutableRefObject<boolean>
+): Promise<void> => {
+  // Guard against concurrent operations
+  if (processingRef.current) {
+    logger.warn(`Skipping status change to ${status} - operation already in progress`);
+    return;
+  }
+
+  switch (status) {
+    case "shouldStart":
+      processingRef.current = true;
+      try {
+        await startRecording();
+      } finally {
+        processingRef.current = false;
+      }
+      break;
+
+    case "shouldStop":
+      processingRef.current = true;
+      try {
+        await stopRecording();
+      } finally {
+        processingRef.current = false;
+      }
+      break;
+
+    case "idle":
+    case "ready":
+    case "recording":
+    case "saving":
+    case "error":
+      // Expected stable states - no action needed
+      break;
+
+    default:
+      logger.warn(`Unexpected recorder status transition: ${status}`);
+      break;
+  }
+};
 
 export const useScreenRecorder = () => {
   const { recorderStatus, setRecorderStatus } = useRecorderStatusStore();
@@ -146,34 +195,7 @@ export const useScreenRecorder = () => {
   // Handle recorder status changes based on status transitions
   useEffect(() => {
     // Fire-and-forget: errors are handled within startRecording/stopRecording
-    const processStatusChange = async () => {
-      // Guard against concurrent operations
-      if (processingStatusChangeRef.current) {
-        logger.warn(`Skipping status change to ${recorderStatus} - operation already in progress`);
-        return;
-      }
-
-      if (recorderStatus === "shouldStart") {
-        processingStatusChangeRef.current = true;
-        try {
-          await startRecording();
-        } finally {
-          processingStatusChangeRef.current = false;
-        }
-      } else if (recorderStatus === "shouldStop") {
-        processingStatusChangeRef.current = true;
-        try {
-          await stopRecording();
-        } finally {
-          processingStatusChangeRef.current = false;
-        }
-      } else if (recorderStatus !== "idle" && recorderStatus !== "ready" && recorderStatus !== "recording" && recorderStatus !== "saving" && recorderStatus !== "error") {
-        // Log warning for unexpected status transitions
-        logger.warn(`Unexpected recorder status transition: ${recorderStatus}`);
-      }
-    };
-
-    void processStatusChange();
+    void handleStatusTransition(recorderStatus, startRecording, stopRecording, processingStatusChangeRef);
   }, [recorderStatus, startRecording, stopRecording]);
 
   // Cleanup on unmount

@@ -29,7 +29,7 @@ type PaymentAction =
   | { type: "SET_ERROR"; message: string }
   | { type: "SET_SUCCESS"; message: string; data: { id: string; created: number; amount: number; status: string } };
 
-function paymentReducer(state: PaymentState, action: PaymentAction): PaymentState {
+const paymentReducer = (state: PaymentState, action: PaymentAction): PaymentState => {
   switch (action.type) {
     case "SET_LOADING":
       return { ...state, loading: action.loading };
@@ -40,7 +40,7 @@ function paymentReducer(state: PaymentState, action: PaymentAction): PaymentStat
     default:
       return state;
   }
-}
+};
 
 const initialState: PaymentState = {
   loading: true,

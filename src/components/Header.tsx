@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
-import { useCallback, memo } from "react";
+import { useCallback } from "react";
 import { navItems } from "@/constants/menuItems";
 import { ScanIcon } from "lucide-react";
 import { logger } from "@/utils/logger";
@@ -12,7 +12,6 @@ import { Z_INDEX } from "@/constants/config";
 /**
  * Header component that displays the app logo and navigation menu
  * Shows navigation items on desktop and handles React Native WebView interactions
- * Memoized and optimized for performance
  * 
  * @returns The header component with logo and navigation
  */

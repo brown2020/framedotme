@@ -3,6 +3,10 @@ import { adminAuth } from "@/firebase/firebaseAdmin";
 /**
  * Session verification service
  * Handles server-side token verification for authentication
+ * 
+ * NOTE: This service returns null on verification failures instead of throwing errors.
+ * This is intentional for middleware usage (proxy.ts) where invalid tokens should be
+ * handled gracefully as "not authenticated" rather than causing exceptions.
  */
 
 /**

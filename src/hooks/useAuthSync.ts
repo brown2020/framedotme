@@ -1,27 +1,13 @@
 /**
  * Authentication synchronization hook with dual cookie strategy
  * 
- * DUAL COOKIE ARCHITECTURE:
- * This hook manages TWO cookies for robust authentication:
+ * See src/lib/auth/README.md for complete dual-cookie architecture documentation.
  * 
- * 1. CLIENT_ID_TOKEN_COOKIE_NAME (JavaScript-readable):
- *    - Accessible to Firebase client SDK in browser
- *    - Enables client-side auth state restoration
- *    - Used for real-time Firebase queries with security rules
- * 
- * 2. SESSION_COOKIE_NAME (httpOnly, server-only):
- *    - Created via /api/session endpoint
- *    - Used by proxy.ts middleware for server-side route protection
- *    - Prevents CSRF attacks and XSS token theft
- * 
- * WHY BOTH?
- * - Client cookie: Firebase SDK requires JavaScript access for client-side operations
- * - Server cookie: Next.js middleware cannot access JavaScript cookies, needs httpOnly
- * - Both contain same auth token but serve different layers of the application
- * 
- * TRANSACTION GUARANTEE:
- * Token refresh treats both cookies as a transaction - if server cookie fails,
- * client cookie is rolled back to maintain consistency.
+ * This hook manages authentication state synchronization between:
+ * - Firebase Auth SDK (client-side)
+ * - Zustand store (application state)
+ * - Client and server cookies (see README for details)
+ * - Firestore (user data persistence)
  */
 
 import { useCallback, useEffect, useRef } from "react";

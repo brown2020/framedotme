@@ -132,10 +132,9 @@ export class MediaStreamManager {
   /**
    * Creates a combined stream from screen and optional microphone audio
    * 
-   * Audio handling strategy:
-   * 1. If screen share includes audio (e.g., "Share tab" with audio), use it exclusively
-   * 2. If screen share has no audio (e.g., "Share window"), attempt to add microphone
-   * 3. Use Web Audio API to mix multiple audio sources when needed
+   * Two distinct audio handling paths:
+   * - Path 1 (Screen has audio): Use screen audio only, skip microphone request
+   * - Path 2 (No screen audio): Mix screen video with microphone audio via Web Audio API
    * 
    * This approach minimizes user friction while providing best audio quality
    */
@@ -144,14 +143,18 @@ export class MediaStreamManager {
       throw new MediaStreamError("Failed to create combined stream: screen stream not initialized", "stream");
     }
 
+    const hasScreenAudio = this.screenStream.getAudioTracks().length > 0;
+
     try {
-      const hasScreenAudio = this.screenStream.getAudioTracks().length > 0;
-      
+      // Path 1: Screen share includes audio (e.g., "Share tab" with audio)
+      // Use screen audio exclusively to avoid extra permission prompts
       if (hasScreenAudio) {
-        return this.useScreenAudioOnly();
+        return this.createScreenOnlyStream();
       }
 
-      return await this.createMixedAudioStream();
+      // Path 2: Screen share has no audio (e.g., "Share window")
+      // Attempt to add microphone and mix audio tracks
+      return await this.createStreamWithMixedAudio();
     } catch (error) {
       throw new MediaStreamError(
         "Failed to combine media streams",
@@ -162,20 +165,31 @@ export class MediaStreamManager {
   }
 
   /**
-   * Use screen audio exclusively without requesting microphone
-   * Avoids extra permission prompts and audio mixing complexity
+   * Creates stream using screen audio only (Path 1)
+   * Used when screen share already includes audio, avoiding extra permission prompts
+   * 
+   * Note: Caller ensures screenStream is non-null before calling this method
    */
-  private useScreenAudioOnly(): MediaStream {
-    logger.info("Using screen audio, skipping microphone request");
+  private createScreenOnlyStream(): MediaStream {
+    logger.info("Screen includes audio - using screen audio only, skipping microphone");
     this.combinedStream = this.screenStream;
-    return this.combinedStream!;
+    // screenStream is guaranteed non-null by createCombinedStream check
+    return this.screenStream as MediaStream;
   }
 
   /**
-   * Create mixed audio stream with optional microphone fallback
-   * Attempts to add microphone when screen has no audio, but continues without it if unavailable
+   * Creates stream with mixed audio from screen video and microphone (Path 2)
+   * Attempts to add microphone when screen has no audio, mixes via Web Audio API
+   * Continues without microphone if unavailable (screen video only in that case)
+   * 
+   * Note: Caller ensures screenStream is non-null before calling this method
    */
-  private async createMixedAudioStream(): Promise<MediaStream> {
+  private async createStreamWithMixedAudio(): Promise<MediaStream> {
+    // screenStream is guaranteed non-null by createCombinedStream check
+    if (!this.screenStream) {
+      throw new MediaStreamError("screenStream is null in createMixedAudioStream", "stream");
+    }
+
     // Close existing AudioContext to prevent memory leaks from abandoned contexts
     // Each context consumes system audio resources even when not actively used
     if (this.audioContext) {
@@ -186,8 +200,9 @@ export class MediaStreamManager {
     }
     
     this.audioContext = new AudioContext();
-    const destination = this.audioContext.createMediaStreamDestination();
-    const streams: MediaStream[] = [this.screenStream!];
+    const audioContext = this.audioContext; // Local reference for TypeScript
+    const destination = audioContext.createMediaStreamDestination();
+    const streams: MediaStream[] = [this.screenStream];
 
     // Attempt to add microphone - optional, continues without it if unavailable
     if (!this.micStream) {
@@ -203,13 +218,13 @@ export class MediaStreamManager {
     // Connect all audio sources using Web Audio API
     streams.forEach((stream) => {
       if (stream.getAudioTracks().length > 0) {
-        const source = this.audioContext!.createMediaStreamSource(stream);
+        const source = audioContext.createMediaStreamSource(stream);
         source.connect(destination);
       }
     });
 
     // Combine video from screen with mixed audio tracks
-    const videoTrack = this.screenStream!.getVideoTracks()[0];
+    const videoTrack = this.screenStream.getVideoTracks()[0];
     const audioTracks = destination.stream.getAudioTracks();
 
     const tracks: MediaStreamTrack[] = [];

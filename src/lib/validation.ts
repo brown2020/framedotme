@@ -6,13 +6,13 @@ import { Timestamp } from 'firebase/firestore';
  */
 
 /** Generic validation helper that parses with Zod and provides consistent error messages */
-function validate<T>(schema: ZodSchema<T>, value: unknown, fieldName: string): T {
+const validate = <T>(schema: ZodSchema<T>, value: unknown, fieldName: string): T => {
   try {
     return schema.parse(value);
   } catch (error) {
     throw new Error(`Failed to validate ${fieldName}: ${error instanceof Error ? error.message : 'Invalid value'}`);
   }
-}
+};
 
 /**
  * User ID validation schema
@@ -66,27 +66,23 @@ export function validateUserId(uid: unknown): string {
 }
 
 /**
- * Validates and sanitizes a filename
- * Trims whitespace, removes path traversal attempts, validates extension, and ensures safe format
- * @throws {ValidationError} If the filename is invalid or has unsafe extension
+ * Sanitizes a filename by removing dangerous characters
+ * Trims whitespace and removes path traversal attempts
  */
-export function validateFilename(filename: unknown): string {
-  if (typeof filename !== 'string') {
-    return validate(FileNameSchema, filename, 'filename');
-  }
-  
-  // Sanitize: trim and remove path traversal attempts
-  const sanitized = filename
+const sanitizeFilename = (filename: string): string => {
+  return filename
     .trim()
     .replace(/\.\./g, '') // Remove .. path traversal
     .replace(/[/\\]/g, ''); // Remove path separators
-  
-  // Validate minimum requirements
-  const validated = validate(FileNameSchema, sanitized, 'filename');
-  
-  // Check for allowed file extensions
+};
+
+/**
+ * Validates that filename has an allowed extension
+ * @throws {Error} If extension is not in ALLOWED_EXTENSIONS list
+ */
+const validateExtension = (filename: string): void => {
   const hasAllowedExtension = ALLOWED_EXTENSIONS.some(ext => 
-    validated.toLowerCase().endsWith(ext)
+    filename.toLowerCase().endsWith(ext)
   );
   
   if (!hasAllowedExtension) {
@@ -94,11 +90,33 @@ export function validateFilename(filename: unknown): string {
       `Failed to validate filename: only ${ALLOWED_EXTENSIONS.join(', ')} files are allowed`
     );
   }
-  
-  // Prevent null bytes and control characters
-  if (/[\x00-\x1f\x7f]/.test(validated)) {
+};
+
+/**
+ * Checks for null bytes and control characters in filename
+ * @throws {Error} If filename contains invalid control characters
+ */
+const checkControlCharacters = (filename: string): void => {
+  if (/[\x00-\x1f\x7f]/.test(filename)) {
     throw new Error('Failed to validate filename: contains invalid control characters');
   }
+};
+
+/**
+ * Validates and sanitizes a filename
+ * Performs type checking, sanitization, extension validation, and control character checks
+ * @throws {ValidationError} If the filename is invalid or unsafe
+ */
+export function validateFilename(filename: unknown): string {
+  if (typeof filename !== 'string') {
+    return validate(FileNameSchema, filename, 'filename');
+  }
+  
+  const sanitized = sanitizeFilename(filename);
+  const validated = validate(FileNameSchema, sanitized, 'filename');
+  
+  validateExtension(validated);
+  checkControlCharacters(validated);
   
   return validated;
 };

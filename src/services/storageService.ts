@@ -199,7 +199,7 @@ export async function uploadRecording(
       progress: 0,
       status: "error",
       error: initError,
-    }    );
+    });
     throw initError;
   }
 }
@@ -213,11 +213,11 @@ export async function uploadRecording(
  * @throws {StorageError} If Firestore write fails
  * @internal
  */
-async function createFirestoreRecord(
+const createFirestoreRecord = async (
   userId: string,
   filename: string,
   downloadUrl: string
-): Promise<void> {
+): Promise<void> => {
   const recordingRef = doc(db, `${getUserRecordingsPath(userId)}/${filename}`);
   // Storage path uses legacy collection name for backwards compatibility with existing data
   const storagePath = `${userId}/${LEGACY_RECORDINGS_COLLECTION}/${filename}`;
@@ -231,9 +231,19 @@ async function createFirestoreRecord(
     showOnProfile: false,
   };
 
-  // Refresh token before write to ensure auth is valid
-  // This is critical for multi-window scenarios (video controls in popup)
-  // where auth state may not be fully synchronized across windows
+  // CRITICAL: Refresh token before Firestore write in multi-window scenarios
+  //
+  // Race condition: Video controls popup may have stale auth token while parent window
+  // has already refreshed. Without this refresh, Firestore write fails with permission denied.
+  //
+  // Why this happens:
+  // 1. Parent window refreshes token (every 50min via useTokenRefresh)
+  // 2. Popup window opens with old Firebase auth state
+  // 3. Popup attempts Firestore write with stale token
+  // 4. Firestore rejects write (token expired or mismatch)
+  //
+  // Solution: Force token refresh before write ensures popup has fresh token,
+  // preventing "authentication or security rules denied access" errors.
   if (auth.currentUser) {
     await auth.currentUser.getIdToken(true);
   }
@@ -248,7 +258,7 @@ async function createFirestoreRecord(
       filename
     }
   );
-}
+};
 
 /**
  * Deletes a recording from both Firebase Storage and Firestore

@@ -15,7 +15,11 @@ import { browserStorage } from "@/services/browserStorageService";
 
 /**
  * Hook for managing token refresh and session cookie synchronization
- * Handles periodic token refresh, cross-tab synchronization, and server session cookies
+ * 
+ * Handles periodic token refresh (every 50 minutes), cross-tab synchronization,
+ * and transaction-safe cookie updates for both client and server cookies.
+ * 
+ * See src/lib/auth/README.md for complete dual-cookie architecture documentation.
  * 
  * @param cookieName - Name of the client cookie to store the auth token
  * @param setServerSessionCookie - Function to set the server-side httpOnly session cookie
@@ -98,7 +102,9 @@ export function useTokenRefresh(
     }
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
+      if (typeof window !== 'undefined' && !isReactNativeWebView()) {
+        window.removeEventListener("storage", handleStorageChange);
+      }
       if (activityTimeoutRef.current) {
         clearTimeout(activityTimeoutRef.current);
         activityTimeoutRef.current = null;

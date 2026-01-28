@@ -5,10 +5,13 @@ import { logger } from "@/utils/logger";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch((err) => {
-      logger.warn("Failed to parse request body", err);
-      return null;
-    })) as { idToken?: unknown } | null;
+    let body: { idToken?: unknown } | null;
+    try {
+      body = await request.json() as { idToken?: unknown };
+    } catch (parseError) {
+      logger.error("Invalid JSON in request body", parseError);
+      return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
+    }
 
     const idToken = typeof body?.idToken === "string" ? body.idToken : "";
     if (!idToken) {
@@ -39,5 +42,3 @@ export async function DELETE() {
   response.cookies.delete({ name: SESSION_COOKIE_NAME, path: "/" });
   return response;
 }
-
-

@@ -4,40 +4,50 @@
  */
 
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
-const ENABLE_DEBUG = !IS_PRODUCTION;
-const ENABLE_INFO = !IS_PRODUCTION;
+
+/** Log level enablement configuration (computed once at module load) */
+const ENABLED_LEVELS = {
+  debug: !IS_PRODUCTION,
+  info: !IS_PRODUCTION,
+  warn: true,
+  error: true,
+} as const;
 
 /**
  * Logs debug messages (development only)
  */
-function debug(message: string, ...args: unknown[]): void {
-  if (ENABLE_DEBUG) {
+const debug = (message: string, ...args: unknown[]): void => {
+  if (ENABLED_LEVELS.debug) {
     console.debug(`[DEBUG] ${message}`, ...args);
   }
-}
+};
 
 /**
  * Logs info messages (development only)
  */
-function info(message: string, ...args: unknown[]): void {
-  if (ENABLE_INFO) {
+const info = (message: string, ...args: unknown[]): void => {
+  if (ENABLED_LEVELS.info) {
     console.info(`[INFO] ${message}`, ...args);
   }
-}
+};
 
 /**
  * Logs warning messages (all environments)
  */
-function warn(message: string, ...args: unknown[]): void {
-  console.warn(`[WARN] ${message}`, ...args);
-}
+const warn = (message: string, ...args: unknown[]): void => {
+  if (ENABLED_LEVELS.warn) {
+    console.warn(`[WARN] ${message}`, ...args);
+  }
+};
 
 /**
  * Logs error messages (all environments)
  */
-function error(message: string, ...args: unknown[]): void {
-  console.error(`[ERROR] ${message}`, ...args);
-}
+const error = (message: string, ...args: unknown[]): void => {
+  if (ENABLED_LEVELS.error) {
+    console.error(`[ERROR] ${message}`, ...args);
+  }
+};
 
 export const logger = {
   debug,

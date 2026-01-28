@@ -15,7 +15,7 @@ import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
 import { PaymentSchema, validateUserId } from "@/lib/validation";
 
 /** Maps Firestore document data to Payment with runtime validation */
-function mapDocumentToPayment(data: DocumentData): Payment {
+const mapDocumentToPayment = (data: DocumentData): Payment => {
   const payment = {
     id: data.id,
     amount: data.amount,
