@@ -18,17 +18,11 @@ import { validateUserId } from "@/lib/validation";
 
 /**
  * Updates user authentication details in Firestore
- * Sanitizes the details object to exclude functions before storing
+ * Automatically sanitizes to remove function properties and adds lastSignIn timestamp
  * 
  * @param details - Object containing user details to update
  * @param uid - The user's unique identifier
- * @returns Promise that resolves when update is complete
  * @throws {ValidationError} If uid is invalid
- * 
- * @example
- * ```typescript
- * await updateUserDetailsInFirestore({ authEmail: 'user@example.com' }, user.uid);
- * ```
  */
 export async function updateUserDetailsInFirestore(
   details: Record<string, unknown>,
@@ -64,12 +58,6 @@ export async function updateUserDetailsInFirestore(
  * @param uid - The user's unique identifier
  * @returns Promise resolving to the user's profile or null if not found
  * @throws {ValidationError} If uid is invalid
- * 
- * @example
- * ```typescript
- * const profile = await fetchUserProfile(user.uid);
- * if (profile) logger.debug(profile.displayName);
- * ```
  */
 export async function fetchUserProfile(uid: string): Promise<Profile | null> {
   const validatedUid = validateUserId(uid);
@@ -104,17 +92,7 @@ export async function fetchUserProfile(uid: string): Promise<Profile | null> {
  * 
  * @param uid - The user's unique identifier
  * @param profileData - Complete profile data to save
- * @returns Promise that resolves when save is complete
  * @throws {ValidationError} If uid is invalid
- * 
- * @example
- * ```typescript
- * await saveUserProfile(user.uid, {
- *   email: 'user@example.com',
- *   displayName: 'John Doe',
- *   credits: 1000
- * });
- * ```
  */
 export async function saveUserProfile(
   uid: string,
@@ -137,13 +115,7 @@ export async function saveUserProfile(
  * 
  * @param uid - The user's unique identifier
  * @param data - Partial profile data to update
- * @returns Promise that resolves when update is complete
  * @throws {ValidationError} If uid is invalid
- * 
- * @example
- * ```typescript
- * await updateUserProfile(user.uid, { credits: 500 });
- * ```
  */
 export async function updateUserProfile(
   uid: string,
@@ -165,15 +137,8 @@ export async function updateUserProfile(
  * Deletes a user account from both Firestore and Firebase Authentication
  * 
  * @param uid - The user's unique identifier
- * @returns Promise that resolves when deletion is complete
  * @throws {Error} If no current user is found
  * @throws {ValidationError} If uid is invalid
- * 
- * @example
- * ```typescript
- * await deleteUserAccount(user.uid);
- * // User is now deleted from both Firestore and Auth
- * ```
  */
 export async function deleteUserAccount(uid: string): Promise<void> {
   const validatedUid = validateUserId(uid);

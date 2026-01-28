@@ -46,15 +46,7 @@ export default function RootLayout({
         <ClientProvider>
           <div className="flex flex-col h-full">
             <Header />
-            {/* 
-              Content container with responsive height calculations:
-              - Mobile (default): h-container-small = calc(100vh - 8rem) 
-                Accounts for 4rem header + 4rem bottom navigation space
-              - Desktop (md+): h-container-custom = calc(100vh - 4rem)
-                Accounts for 4rem header only (no bottom navigation)
-              
-              Custom utilities defined in globals.css to avoid viewport calc issues with fixed positioning.
-            */}
+            {/* Height adjusts for header (4rem) + mobile bottom nav (4rem on mobile only) */}
             <div className="flex flex-col h-container-small md:h-container-custom overflow-y-scroll flex-1">
               {children}
             </div>

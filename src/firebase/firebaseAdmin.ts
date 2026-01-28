@@ -6,6 +6,7 @@ import { getRequiredEnv } from "@/lib/env";
 /**
  * Firebase Admin credentials
  * Extracted and processed from environment variables
+ * Using getRequiredEnv ensures explicit, clear errors if credentials are missing
  */
 const processedCredentials = {
   type: getRequiredEnv('FIREBASE_TYPE'),
@@ -30,6 +31,7 @@ if (!getApps().length) {
     storageBucket,
   });
 }
+
 const adminBucket = admin.storage().bucket();
 const adminDb = admin.firestore();
 const adminAuth = admin.auth();

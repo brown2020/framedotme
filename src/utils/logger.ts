@@ -1,23 +1,15 @@
 /**
  * Simple logging utility with environment-based filtering
- * Checks environment once at module load for optimal performance
+ * Environment checked once at module load for optimal performance
  */
 
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
-
-/** Log level enablement configuration (computed once at module load) */
-const ENABLED_LEVELS = {
-  debug: !IS_PRODUCTION,
-  info: !IS_PRODUCTION,
-  warn: true,
-  error: true,
-} as const;
+const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
 
 /**
  * Logs debug messages (development only)
  */
 const debug = (message: string, ...args: unknown[]): void => {
-  if (ENABLED_LEVELS.debug) {
+  if (IS_DEVELOPMENT) {
     console.debug(`[DEBUG] ${message}`, ...args);
   }
 };
@@ -26,7 +18,7 @@ const debug = (message: string, ...args: unknown[]): void => {
  * Logs info messages (development only)
  */
 const info = (message: string, ...args: unknown[]): void => {
-  if (ENABLED_LEVELS.info) {
+  if (IS_DEVELOPMENT) {
     console.info(`[INFO] ${message}`, ...args);
   }
 };
@@ -35,18 +27,14 @@ const info = (message: string, ...args: unknown[]): void => {
  * Logs warning messages (all environments)
  */
 const warn = (message: string, ...args: unknown[]): void => {
-  if (ENABLED_LEVELS.warn) {
-    console.warn(`[WARN] ${message}`, ...args);
-  }
+  console.warn(`[WARN] ${message}`, ...args);
 };
 
 /**
  * Logs error messages (all environments)
  */
 const error = (message: string, ...args: unknown[]): void => {
-  if (ENABLED_LEVELS.error) {
-    console.error(`[ERROR] ${message}`, ...args);
-  }
+  console.error(`[ERROR] ${message}`, ...args);
 };
 
 export const logger = {

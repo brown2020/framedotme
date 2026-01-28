@@ -66,57 +66,39 @@ export function validateUserId(uid: unknown): string {
 }
 
 /**
- * Sanitizes a filename by removing dangerous characters
- * Trims whitespace and removes path traversal attempts
- */
-const sanitizeFilename = (filename: string): string => {
-  return filename
-    .trim()
-    .replace(/\.\./g, '') // Remove .. path traversal
-    .replace(/[/\\]/g, ''); // Remove path separators
-};
-
-/**
- * Validates that filename has an allowed extension
- * @throws {Error} If extension is not in ALLOWED_EXTENSIONS list
- */
-const validateExtension = (filename: string): void => {
-  const hasAllowedExtension = ALLOWED_EXTENSIONS.some(ext => 
-    filename.toLowerCase().endsWith(ext)
-  );
-  
-  if (!hasAllowedExtension) {
-    throw new Error(
-      `Failed to validate filename: only ${ALLOWED_EXTENSIONS.join(', ')} files are allowed`
-    );
-  }
-};
-
-/**
- * Checks for null bytes and control characters in filename
- * @throws {Error} If filename contains invalid control characters
- */
-const checkControlCharacters = (filename: string): void => {
-  if (/[\x00-\x1f\x7f]/.test(filename)) {
-    throw new Error('Failed to validate filename: contains invalid control characters');
-  }
-};
-
-/**
  * Validates and sanitizes a filename
  * Performs type checking, sanitization, extension validation, and control character checks
  * @throws {ValidationError} If the filename is invalid or unsafe
  */
 export function validateFilename(filename: unknown): string {
+  // Type check
   if (typeof filename !== 'string') {
     return validate(FileNameSchema, filename, 'filename');
   }
   
-  const sanitized = sanitizeFilename(filename);
+  // Sanitize: remove dangerous characters and path traversal attempts
+  const sanitized = filename
+    .trim()
+    .replace(/\.\./g, '') // Remove .. path traversal
+    .replace(/[/\\]/g, ''); // Remove path separators
+  
+  // Validate length
   const validated = validate(FileNameSchema, sanitized, 'filename');
   
-  validateExtension(validated);
-  checkControlCharacters(validated);
+  // Check extension
+  const hasAllowedExtension = ALLOWED_EXTENSIONS.some(ext => 
+    validated.toLowerCase().endsWith(ext)
+  );
+  if (!hasAllowedExtension) {
+    throw new Error(
+      `Failed to validate filename: only ${ALLOWED_EXTENSIONS.join(', ')} files are allowed`
+    );
+  }
+  
+  // Check for control characters
+  if (/[\x00-\x1f\x7f]/.test(validated)) {
+    throw new Error('Failed to validate filename: contains invalid control characters');
+  }
   
   return validated;
 };

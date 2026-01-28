@@ -16,6 +16,7 @@ import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
 import { handleError } from "@/lib/errors";
 import { browserStorage } from "@/services/browserStorageService";
+import { clearServerSessionCookie } from "@/services/sessionCookieService";
 import { AUTH_PENDING_TIMEOUT_MS, AUTH_STORAGE_KEYS } from "@/constants/auth";
 
 /**
@@ -64,7 +65,7 @@ export function useAuthHandlers(hideModal: () => void) {
   const handleSignOut = useCallback(async () => {
     try {
       // Clear server-side session cookie before client sign out for security
-      await fetch("/api/session", { method: "DELETE" });
+      await clearServerSessionCookie();
       await signOut(auth);
       clearAuthDetails();
       hideModal();

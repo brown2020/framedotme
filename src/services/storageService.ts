@@ -33,12 +33,6 @@ import { downloadFromUrl } from "@/utils/downloadUtils";
  * @returns Promise resolving to array of video metadata sorted by creation date (newest first)
  * @throws {ValidationError} If userId is invalid
  * @throws {StorageError} If Firestore query fails
- * 
- * @example
- * ```typescript
- * const recordings = await fetchUserRecordings(user.uid);
- * recordings.forEach(video => logger.debug(video.filename));
- * ```
  */
 export async function fetchUserRecordings(userId: string): Promise<VideoMetadata[]> {
   const validatedUserId = validateUserId(userId);
@@ -76,16 +70,6 @@ export async function fetchUserRecordings(userId: string): Promise<VideoMetadata
  * @returns Promise resolving to the download URL of the uploaded file
  * @throws {ValidationError} If userId or filename is invalid
  * @throws {StorageError} If upload or Firestore write fails
- * 
- * @example
- * ```typescript
- * const url = await uploadRecording(
- *   user.uid,
- *   recordingBlob,
- *   'video_123.webm',
- *   (progress) => console.log(`${progress.progress}%`)
- * );
- * ```
  */
 export async function uploadRecording(
   userId: string,
@@ -268,11 +252,6 @@ const createFirestoreRecord = async (
  * @returns Promise that resolves when deletion is complete
  * @throws {ValidationError} If userId is invalid
  * @throws {StorageError} If deletion from Storage or Firestore fails
- * 
- * @example
- * ```typescript
- * await deleteRecording(user.uid, videoToDelete);
- * ```
  */
 export async function deleteRecording(
   userId: string,
@@ -300,11 +279,6 @@ export async function deleteRecording(
  * @param video - Metadata of the video to download
  * @returns Promise that resolves when download initiates
  * @throws {Error} If download fails
- * 
- * @example
- * ```typescript
- * await downloadRecording(selectedVideo);
- * ```
  */
 export async function downloadRecording(video: VideoMetadata): Promise<void> {
   const filename = video.filename || "recording_video.webm";

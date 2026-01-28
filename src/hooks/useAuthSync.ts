@@ -10,7 +10,7 @@
  * - Firestore (user data persistence)
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { deleteCookie } from "cookies-next";
 import { useAuthState } from "react-firebase-hooks/auth";
 
@@ -19,6 +19,7 @@ import { auth } from "@/firebase/firebaseClient";
 import { updateUserDetailsInFirestore } from "@/services/userService";
 import { logger } from "@/utils/logger";
 import { CLIENT_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
+import { setServerSessionCookie, clearServerSessionCookie } from "@/services/sessionCookieService";
 import { useTokenRefresh } from "./useTokenRefresh";
 
 /**
@@ -42,27 +43,6 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
   const [user, loading, error] = useAuthState(auth);
   const setAuthDetails = useAuthStore((state) => state.setAuthDetails);
   const previousUidRef = useRef<string>("");
-
-  // Session cookie management
-  const setServerSessionCookie = useCallback(async (idToken: string) => {
-    try {
-      await fetch("/api/session", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-    } catch (error: unknown) {
-      logger.error("Failed to set session cookie", error);
-    }
-  }, []);
-
-  const clearServerSessionCookie = useCallback(async () => {
-    try {
-      await fetch("/api/session", { method: "DELETE" });
-    } catch {
-      // Session cleanup is non-critical; user is already signed out locally
-    }
-  }, []);
 
   // Delegate token refresh to dedicated hook
   useTokenRefresh(
@@ -109,7 +89,7 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
       // Fire-and-forget: best-effort cleanup of server-side session cookie
       void clearServerSessionCookie();
     }
-  }, [clearServerSessionCookie, cookieName, loading, setAuthDetails, user]);
+  }, [cookieName, loading, setAuthDetails, user]);
 
   // Sync auth data to Firestore when user changes
   useEffect(() => {

@@ -11,25 +11,8 @@ import { CookieConsentProvider } from "./CookieConsentProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 /**
- * Provider order configuration (outermost to innermost)
- * 
- * ⚠️ CRITICAL: Order matters! Dependencies flow from outer to inner providers.
- * Changing this order WILL break the application.
- * 
- * Dependency Graph:
- * 1. ErrorBoundary - Must wrap everything to catch errors from any provider
- * 2. ViewportProvider - No dependencies, provides viewport state
- * 3. AuthProvider - No dependencies, initializes auth state
- * 4. RouteGuardProvider - DEPENDS ON: AuthProvider (reads authReady state)
- * 5. RecorderStatusProvider - DEPENDS ON: AuthProvider (reads user ID)
- * 6. ToasterProvider - No dependencies, provides toast notifications
- * 7. CookieConsentProvider - Innermost, shows cookie consent banner
- * 
- * To add a new provider:
- * 1. Identify which providers it depends on (must come AFTER those)
- * 2. Identify which providers depend on it (must come BEFORE those)
- * 3. Insert in the correct position based on dependency order
- * 4. Update this documentation with the new provider's dependencies
+ * Provider composition order (outermost to innermost)
+ * ⚠️ CRITICAL: Order enforced by validation below - do not modify without updating validation
  */
 const PROVIDER_ORDER = [
   { component: ErrorBoundary },

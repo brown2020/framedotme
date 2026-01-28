@@ -31,13 +31,5 @@ export const AUTH_STORAGE_KEYS = {
   NAME: "frameName",
 } as const;
 
-/**
- * Generates a token refresh storage key for a given cookie name
- * Used for cross-tab token refresh synchronization
- * 
- * @param cookieName - The cookie name to generate a key for
- * @returns The storage key for token refresh tracking
- */
-export function getTokenRefreshKey(cookieName: string): string {
-  return `lastTokenRefresh_${cookieName}`;
-}
+// Token refresh storage key prefix
+export const TOKEN_REFRESH_KEY_PREFIX = "lastTokenRefresh_";

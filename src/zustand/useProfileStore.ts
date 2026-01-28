@@ -33,10 +33,32 @@ const initializeCredits = (credits: number | undefined): number => {
 };
 
 /**
- * Merges partial profile data with defaults and auth context
- * Ensures all required fields have valid values
+ * Creates a new profile with default values
  */
-const mergeProfileWithDefaults = (
+const createNewProfile = (
+  authEmail?: string,
+  authDisplayName?: string,
+  authPhotoUrl?: string,
+  authEmailVerified?: boolean
+): Profile => {
+  return {
+    email: authEmail || "",
+    contactEmail: "",
+    displayName: authDisplayName || "",
+    photoUrl: authPhotoUrl || "",
+    emailVerified: authEmailVerified || false,
+    credits: DEFAULT_CREDITS,
+    selectedAvatar: "",
+    selectedTalkingPhoto: "",
+    useCredits: true,
+  };
+};
+
+/**
+ * Builds a complete profile from partial data, defaults, and auth context
+ * Initializes credits and merges auth state with proper fallbacks
+ */
+const buildProfileFromData = (
   profile: Partial<Profile>,
   authState: {
     authEmail?: string;
@@ -53,6 +75,13 @@ const mergeProfileWithDefaults = (
   photoUrl: profile.photoUrl || authState.authPhotoUrl || "",
 });
 
+/**
+ * Handles profile-related errors with consistent logging
+ */
+const handleProfileError = (action: string, error: unknown): void => {
+  logError(`Profile - ${action}`, error);
+};
+
 const useProfileStore = create<ProfileState>((set, get) => ({
   profile: DEFAULT_PROFILE,
 
@@ -63,7 +92,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       const profileData = await fetchUserProfile(uid);
 
       const newProfile = profileData
-        ? mergeProfileWithDefaults(profileData, authContext || {})
+        ? buildProfileFromData(profileData, authContext || {})
         : createNewProfile(
             authContext?.authEmail,
             authContext?.authDisplayName,
@@ -157,56 +186,6 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       throw error;
     }
   },
-}));
-
-/**
- * Creates a new profile with default values
- */
-const createNewProfile = (
-  authEmail?: string,
-  authDisplayName?: string,
-  authPhotoUrl?: string,
-  authEmailVerified?: boolean
-): Profile => {
-  return {
-    email: authEmail || "",
-    contactEmail: "",
-    displayName: authDisplayName || "",
-    photoUrl: authPhotoUrl || "",
-    emailVerified: authEmailVerified || false,
-    credits: DEFAULT_CREDITS,
-    selectedAvatar: "",
-    selectedTalkingPhoto: "",
-    useCredits: true,
-  };
-};
-
-/**
- * Handles profile-related errors with consistent logging
- */
-const handleProfileError = (action: string, error: unknown): void => {
-  logError(`Profile - ${action}`, error);
-};
-
-/**
- * Optimized selectors for profile state
- * Use these instead of directly accessing the store to prevent unnecessary re-renders
- */
-
-// Individual profile properties
-export const useProfile = () => useProfileStore((state) => state.profile);
-export const useProfileEmail = () => useProfileStore((state) => state.profile.email);
-export const useProfileCredits = () => useProfileStore((state) => state.profile.credits);
-export const useProfileDisplayName = () => useProfileStore((state) => state.profile.displayName);
-export const useProfilePhotoUrl = () => useProfileStore((state) => state.profile.photoUrl);
-export const useProfileUseCredits = () => useProfileStore((state) => state.profile.useCredits);
-
-// Grouped selector for profile info
-export const useProfileInfo = () => useProfileStore((state) => ({
-  email: state.profile.email,
-  displayName: state.profile.displayName,
-  photoUrl: state.profile.photoUrl,
-  emailVerified: state.profile.emailVerified,
 }));
 
 export default useProfileStore;

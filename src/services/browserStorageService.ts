@@ -1,34 +1,32 @@
 import { logger } from "@/utils/logger";
 
 /**
- * Safe wrapper for localStorage operations with error handling
+ * Checks if localStorage is available in the current environment
+ * Cached after first check for performance
  */
-class BrowserStorageService {
-  private _isAvailable: boolean | null = null;
+let isAvailableCache: boolean | null = null;
 
-  /**
-   * Checks if localStorage is available in the current environment
-   * Result is cached after first check for performance
-   * @returns True if localStorage is available, false otherwise
-   */
-  private isAvailable(): boolean {
-    // Cache the availability check
-    if (this._isAvailable !== null) {
-      return this._isAvailable;
-    }
-
-    try {
-      const testKey = "__storage_test__";
-      window.localStorage.setItem(testKey, "test");
-      window.localStorage.removeItem(testKey);
-      this._isAvailable = true;
-      return true;
-    } catch {
-      this._isAvailable = false;
-      return false;
-    }
+function isLocalStorageAvailable(): boolean {
+  if (isAvailableCache !== null) {
+    return isAvailableCache;
   }
 
+  try {
+    const testKey = "__storage_test__";
+    window.localStorage.setItem(testKey, "test");
+    window.localStorage.removeItem(testKey);
+    isAvailableCache = true;
+    return true;
+  } catch {
+    isAvailableCache = false;
+    return false;
+  }
+}
+
+/**
+ * Safe wrapper for localStorage operations with error handling
+ */
+export const browserStorage = {
   /**
    * Sets an item in localStorage
    * @param key - Storage key
@@ -36,7 +34,7 @@ class BrowserStorageService {
    * @returns True if successful, false otherwise
    */
   setItem(key: string, value: string): boolean {
-    if (!this.isAvailable()) {
+    if (!isLocalStorageAvailable()) {
       logger.warn("localStorage is not available");
       return false;
     }
@@ -48,7 +46,7 @@ class BrowserStorageService {
       logger.error(`Failed to set localStorage item: ${key}`, error);
       return false;
     }
-  }
+  },
 
   /**
    * Gets an item from localStorage
@@ -56,7 +54,7 @@ class BrowserStorageService {
    * @returns The stored value, or null if not found or unavailable
    */
   getItem(key: string): string | null {
-    if (!this.isAvailable()) {
+    if (!isLocalStorageAvailable()) {
       return null;
     }
 
@@ -66,7 +64,7 @@ class BrowserStorageService {
       logger.error(`Failed to get localStorage item: ${key}`, error);
       return null;
     }
-  }
+  },
 
   /**
    * Removes an item from localStorage
@@ -74,7 +72,7 @@ class BrowserStorageService {
    * @returns True if successful, false otherwise
    */
   removeItem(key: string): boolean {
-    if (!this.isAvailable()) {
+    if (!isLocalStorageAvailable()) {
       return false;
     }
 
@@ -85,14 +83,14 @@ class BrowserStorageService {
       logger.error(`Failed to remove localStorage item: ${key}`, error);
       return false;
     }
-  }
+  },
 
   /**
    * Clears all items from localStorage
    * @returns True if successful, false otherwise
    */
   clear(): boolean {
-    if (!this.isAvailable()) {
+    if (!isLocalStorageAvailable()) {
       return false;
     }
 
@@ -103,7 +101,5 @@ class BrowserStorageService {
       logger.error("Failed to clear localStorage", error);
       return false;
     }
-  }
-}
-
-export const browserStorage = new BrowserStorageService();
+  },
+};

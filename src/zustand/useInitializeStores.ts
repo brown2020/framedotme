@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useAuthUid, useAuthStore } from "./useAuthStore";
+import { useAuthStore } from "./useAuthStore";
 import useProfileStore from "./useProfileStore";
 
 /**
@@ -7,7 +7,7 @@ import useProfileStore from "./useProfileStore";
  * Optimized to only fetch profile once per user session
  */
 export const useInitializeStores = () => {
-  const uid = useAuthUid();
+  const uid = useAuthStore((state) => state.uid);
   const fetchProfile = useProfileStore((state) => state.fetchProfile);
   const lastFetchedUidRef = useRef<string>("");
 

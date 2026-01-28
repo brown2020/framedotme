@@ -9,7 +9,7 @@ import { debounce } from "@/utils/debounce";
 import { 
   TOKEN_REFRESH_INTERVAL_MS, 
   TOKEN_REFRESH_DEBOUNCE_MS,
-  getTokenRefreshKey
+  TOKEN_REFRESH_KEY_PREFIX
 } from "@/constants/auth";
 import { browserStorage } from "@/services/browserStorageService";
 
@@ -33,7 +33,7 @@ export function useTokenRefresh(
   isAuthenticated: boolean
 ) {
   const activityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastTokenRefresh = getTokenRefreshKey(cookieName);
+  const lastTokenRefresh = `${TOKEN_REFRESH_KEY_PREFIX}${cookieName}`;
 
   // Token refresh logic
   const refreshAuthToken = useCallback(async () => {
