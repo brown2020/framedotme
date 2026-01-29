@@ -19,14 +19,14 @@ import { validateUserId } from "@/lib/validation";
 /**
  * Updates user authentication details in Firestore
  * Automatically sanitizes to remove function properties and adds lastSignIn timestamp
- * 
+ *
  * @param details - Object containing user details to update
  * @param uid - The user's unique identifier
  * @throws {ValidationError} If uid is invalid
  */
 export async function updateUserDetailsInFirestore(
   details: Record<string, unknown>,
-  uid: string
+  uid: string,
 ): Promise<void> {
   const validatedUid = validateUserId(uid);
   const userRef = doc(db, getUserPath(validatedUid));
@@ -42,33 +42,42 @@ export async function updateUserDetailsInFirestore(
   });
 
   await firestoreWrite(
-    () => setDoc(
-      userRef,
-      { ...sanitizedDetails, lastSignIn: serverTimestamp() },
-      { merge: true }
-    ),
-    'Failed to update user details',
-    { userId: validatedUid }
+    () =>
+      setDoc(
+        userRef,
+        { ...sanitizedDetails, lastSignIn: serverTimestamp() },
+        { merge: true },
+      ),
+    "Failed to update user details",
+    { userId: validatedUid },
   );
 }
 
 /**
  * Fetches a user's profile from Firestore
- * 
+ *
  * @param uid - The user's unique identifier
  * @returns Promise resolving to the user's profile or null if not found
  * @throws {ValidationError} If uid is invalid
  */
 export async function fetchUserProfile(uid: string): Promise<Profile | null> {
   const validatedUid = validateUserId(uid);
-  
+
   return firestoreRead(
     async () => {
+      // Ensure Firebase auth is initialized before querying
+      // This ensures request.auth is available in Firestore security rules
+      if (!auth.currentUser) {
+        throw new Error(
+          "Firebase auth not initialized - user not authenticated",
+        );
+      }
+
       const userRef = doc(db, getUserProfilePath(validatedUid));
       const docSnap = await getDoc(userRef);
-      
+
       if (!docSnap.exists()) return null;
-      
+
       const data = docSnap.data();
       return {
         email: data.email || "",
@@ -82,84 +91,80 @@ export async function fetchUserProfile(uid: string): Promise<Profile | null> {
         useCredits: data.useCredits !== undefined ? data.useCredits : true,
       };
     },
-    'Failed to fetch user profile',
-    { userId: validatedUid }
+    "Failed to fetch user profile",
+    { userId: validatedUid },
   );
 }
 
 /**
  * Saves a complete user profile to Firestore
- * 
+ *
  * @param uid - The user's unique identifier
  * @param profileData - Complete profile data to save
  * @throws {ValidationError} If uid is invalid
  */
 export async function saveUserProfile(
   uid: string,
-  profileData: Profile
+  profileData: Profile,
 ): Promise<void> {
   const validatedUid = validateUserId(uid);
-  
+
   await firestoreWrite(
     () => {
       const userRef = doc(db, getUserProfilePath(validatedUid));
       return setDoc(userRef, profileData);
     },
-    'Failed to save user profile',
-    { userId: validatedUid }
+    "Failed to save user profile",
+    { userId: validatedUid },
   );
 }
 
 /**
  * Updates specific fields in a user's profile
- * 
+ *
  * @param uid - The user's unique identifier
  * @param data - Partial profile data to update
  * @throws {ValidationError} If uid is invalid
  */
 export async function updateUserProfile(
   uid: string,
-  data: Partial<Profile>
+  data: Partial<Profile>,
 ): Promise<void> {
   const validatedUid = validateUserId(uid);
-  
+
   await firestoreWrite(
     () => {
       const userRef = doc(db, getUserProfilePath(validatedUid));
       return updateDoc(userRef, data);
     },
-    'Failed to update user profile',
-    { userId: validatedUid }
+    "Failed to update user profile",
+    { userId: validatedUid },
   );
 }
 
 /**
  * Deletes a user account from both Firestore and Firebase Authentication
- * 
+ *
  * @param uid - The user's unique identifier
  * @throws {Error} If no current user is found
  * @throws {ValidationError} If uid is invalid
  */
 export async function deleteUserAccount(uid: string): Promise<void> {
   const validatedUid = validateUserId(uid);
-  
+
   try {
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
-      throw new AppError(
-        'No current user found',
-        'storage',
-        { 
-          stage: 'auth',
-          originalError: new Error('Authentication required'),
-          context: { userId: validatedUid }
-        }
-      );
+      throw new AppError("No current user found", "storage", {
+        stage: "auth",
+        originalError: new Error("Authentication required"),
+        context: { userId: validatedUid },
+      });
     }
 
     const userRef = doc(db, getUserProfilePath(validatedUid));
-    
+
     // Delete the user profile data from Firestore
     await deleteDoc(userRef);
 
@@ -169,18 +174,10 @@ export async function deleteUserAccount(uid: string): Promise<void> {
     if (error instanceof AppError) {
       throw error;
     }
-    throw new AppError(
-      'Failed to delete user account',
-      'storage',
-      { 
-        stage: 'firestore-write',
-        originalError: error as Error,
-        context: { userId: validatedUid }
-      }
-    );
+    throw new AppError("Failed to delete user account", "storage", {
+      stage: "firestore-write",
+      originalError: error as Error,
+      context: { userId: validatedUid },
+    });
   }
-};
-
-
-
-
+}

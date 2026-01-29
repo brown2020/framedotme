@@ -1,8 +1,8 @@
 /**
  * Authentication synchronization hook with dual cookie strategy
- * 
+ *
  * See src/lib/auth/README.md for complete dual-cookie architecture documentation.
- * 
+ *
  * This hook manages authentication state synchronization between:
  * - Firebase Auth SDK (client-side)
  * - Zustand store (application state)
@@ -19,20 +19,23 @@ import { auth } from "@/firebase/firebaseClient";
 import { updateUserDetailsInFirestore } from "@/services/userService";
 import { logger } from "@/utils/logger";
 import { CLIENT_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
-import { setServerSessionCookie, clearServerSessionCookie } from "@/services/sessionCookieService";
+import {
+  setServerSessionCookie,
+  clearServerSessionCookie,
+} from "@/services/sessionCookieService";
 import { useTokenRefresh } from "./useTokenRefresh";
 
 /**
  * Unified hook for all authentication synchronization concerns
  * Handles auth state tracking, token refresh, session cookies, and Firestore sync
- * 
+ *
  * Responsibilities:
  * 1. Sync Firebase Auth state to Zustand store
  * 2. Manage client and server session cookies
  * 3. Refresh auth tokens periodically
  * 4. Sync auth data to Firestore
  * 5. Handle cross-tab synchronization
- * 
+ *
  * @param cookieName - Name of the cookie to store the auth token
  */
 export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
@@ -49,12 +52,13 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
     cookieName,
     setServerSessionCookie,
     clearServerSessionCookie,
-    Boolean(user?.uid)
+    Boolean(user?.uid),
   );
 
   // Sync Firebase auth state to Zustand and manage cookies
   useEffect(() => {
     // Don't do anything until Firebase auth state is determined
+    // Note: loading remains true until Firebase SDK has initialized and checked auth state
     if (loading) {
       return;
     }
@@ -66,7 +70,7 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
         authDisplayName: user.displayName || "",
         authPhotoUrl: user.photoURL || "",
         authEmailVerified: user.emailVerified || false,
-        authReady: true,
+        authReady: true, // loading is false AND user exists = Firebase is ready
         authPending: false,
       });
     } else {
@@ -127,7 +131,7 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
           lastSignIn: currentState.lastSignIn,
           premium: currentState.premium,
         };
-        
+
         await updateUserDetailsInFirestore(authData, uid);
         logger.debug("Auth details synced to Firestore");
       } catch (error) {

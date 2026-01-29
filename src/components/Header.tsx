@@ -12,7 +12,7 @@ import { Z_INDEX } from "@/constants/config";
 /**
  * Header component that displays the app logo and navigation menu
  * Shows navigation items on desktop and handles React Native WebView interactions
- * 
+ *
  * @returns The header component with logo and navigation
  */
 export function Header() {
@@ -29,8 +29,8 @@ export function Header() {
   }, [router]);
 
   return (
-    <header 
-      className="flex items-center justify-between h-16 px-4 bg-blue-800" 
+    <header
+      className="flex items-center justify-between h-16 px-4 bg-blue-800"
       style={{ zIndex: Z_INDEX.header }}
       role="banner"
     >
@@ -44,28 +44,33 @@ export function Header() {
           Frame.me
         </span>
       </button>
-      <nav 
-        className="flex h-full gap-2 opacity-0 md:opacity-100 items-center"
+      <nav
+        className="flex h-full gap-1 md:gap-2 items-center"
         role="navigation"
         aria-label="Main navigation"
       >
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.path) && pathname !== "/";
-          
+
           return (
             <button
               key={item.path}
-              className={`flex items-center gap-1 px-3 h-full transition duration-300 text-white hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
+              className={`flex items-center gap-1 px-2 md:px-3 h-full transition duration-300 text-white hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
                 isActive ? "opacity-100 bg-white/30" : "opacity-50"
               }`}
               onClick={() => router.push(item.path)}
               aria-label={`Navigate to ${item.label}`}
               aria-current={isActive ? "page" : undefined}
             >
-              <div className="h-9 aspect-square" aria-hidden="true">
-                <item.icon size={30} className="h-full w-full object-cover" />
+              <div className="h-7 md:h-9 aspect-square" aria-hidden="true">
+                <item.icon
+                  size={28}
+                  className="h-full w-full object-cover md:w-auto md:h-auto"
+                />
               </div>
-              <span className="text-xl font-bold">{item.label}</span>
+              <span className="hidden md:inline text-xl font-bold">
+                {item.label}
+              </span>
             </button>
           );
         })}

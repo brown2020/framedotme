@@ -1,21 +1,21 @@
 /**
  * Firestore operation wrappers for consistent error handling
- * 
+ *
  * PURPOSE:
  * These wrappers ensure all Firestore operations throw consistent AppError instances
  * with proper categorization and context, making error handling predictable throughout
  * the application.
- * 
+ *
  * WHEN TO USE:
  * - ALWAYS use these wrappers in the services layer (src/services/)
  * - Use firestoreRead() for all read operations (getDoc, getDocs, onSnapshot, etc.)
  * - Use firestoreWrite() for all write operations (setDoc, updateDoc, deleteDoc, etc.)
- * 
+ *
  * ERROR HANDLING HIERARCHY:
  * 1. Services (lib/, services/) - Throw AppError for all failures using these wrappers
  * 2. Hooks (hooks/) - Catch errors, show toast notifications, set local error state
  * 3. Components - Display inline error messages from hook state
- * 
+ *
  * EXAMPLES:
  * ```typescript
  * // Reading from Firestore
@@ -29,7 +29,7 @@
  *     { userId: uid }
  *   );
  * }
- * 
+ *
  * // Writing to Firestore
  * export async function saveUserProfile(uid: string, data: Profile): Promise<void> {
  *   await firestoreWrite(
@@ -46,7 +46,7 @@ import { AppError } from "@/types/errors";
 /**
  * Generic Firestore read operation wrapper
  * Specifically for read operations with appropriate stage
- * 
+ *
  * @param operation - The Firestore read operation to execute
  * @param errorMessage - User-friendly error message
  * @param context - Additional context for error reporting
@@ -56,27 +56,23 @@ import { AppError } from "@/types/errors";
 export async function firestoreRead<T>(
   operation: () => Promise<T>,
   errorMessage: string,
-  context: Record<string, unknown> = {}
+  context: Record<string, unknown> = {},
 ): Promise<T> {
   try {
     return await operation();
   } catch (error) {
-    throw new AppError(
-      errorMessage,
-      'storage',
-      { 
-        stage: 'firestore-read',
-        originalError: error as Error,
-        context
-      }
-    );
+    throw new AppError(errorMessage, "storage", {
+      stage: "firestore-read",
+      originalError: error as Error,
+      context,
+    });
   }
 }
 
 /**
  * Generic Firestore write operation wrapper
  * Specifically for write operations with appropriate stage
- * 
+ *
  * @param operation - The Firestore write operation to execute
  * @param errorMessage - User-friendly error message
  * @param context - Additional context for error reporting
@@ -86,19 +82,15 @@ export async function firestoreRead<T>(
 export async function firestoreWrite<T>(
   operation: () => Promise<T>,
   errorMessage: string,
-  context: Record<string, unknown> = {}
+  context: Record<string, unknown> = {},
 ): Promise<T> {
   try {
     return await operation();
   } catch (error) {
-    throw new AppError(
-      errorMessage,
-      'storage',
-      { 
-        stage: 'firestore-write',
-        originalError: error as Error,
-        context
-      }
-    );
+    throw new AppError(errorMessage, "storage", {
+      stage: "firestore-write",
+      originalError: error as Error,
+      context,
+    });
   }
 }

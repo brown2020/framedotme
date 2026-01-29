@@ -6,13 +6,17 @@ import { useAuthStore } from "@/zustand/useAuthStore";
 
 /**
  * Route guard provider that shows loading state during authentication
- * Auth redirects are handled by middleware (proxy.ts) at the server level
- * 
+ * Auth redirects are handled by Next.js 16 proxy (src/proxy.ts) at the Edge level
+ *
  * @param props - Component props
  * @param props.children - Child components to wrap
  * @returns The route guard with loading state
  */
-export const RouteGuardProvider = ({ children }: { children: ReactNode }): ReactNode => {
+export const RouteGuardProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}): ReactNode => {
   const authReady = useAuthStore((state) => state.authReady);
   const loading = !authReady;
 

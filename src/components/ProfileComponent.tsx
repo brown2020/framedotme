@@ -44,52 +44,180 @@ export function ProfileComponent(): ReactElement {
     setShowDeleteModal(true);
   };
 
+  const handleSignOut = useCallback(async () => {
+    try {
+      // 1. Sign out from Firebase
+      await signOut(auth);
+
+      // 2. Clear all Zustand stores
+      clearAuthDetails();
+      useProfileStore.setState({
+        profile: {
+          email: "",
+          contactEmail: "",
+          displayName: "",
+          photoUrl: "",
+          emailVerified: false,
+          credits: 0,
+          selectedAvatar: "",
+          selectedTalkingPhoto: "",
+          useCredits: true,
+        },
+      });
+
+      // 3. Clear all cookies
+      const cookies = document.cookie.split(";");
+      for (const cookie of cookies) {
+        const eqPos = cookie.indexOf("=");
+        const name =
+          eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+        // Delete cookie for all paths
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
+      }
+
+      // 4. Clear all localStorage
+      try {
+        localStorage.clear();
+      } catch (error) {
+        logger.error("Error clearing localStorage", error);
+      }
+
+      // 5. Clear all sessionStorage
+      try {
+        sessionStorage.clear();
+      } catch (error) {
+        logger.error("Error clearing sessionStorage", error);
+      }
+
+      toast.success("Signed out successfully");
+
+      // 6. Force a full page reload to pristine state
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 500);
+    } catch (error) {
+      logger.error("Error signing out", error);
+      toast.error("Failed to sign out. Please try again.");
+    }
+  }, [clearAuthDetails]);
+
   const onDeleteConfirm = useCallback(async () => {
     if (!uid) return;
-    
+
     setShowDeleteModal(false);
     try {
+      // 1. Delete account and sign out
       await deleteAccount(uid);
       await signOut(auth);
+
+      // 2. Clear all Zustand stores
       clearAuthDetails();
+      useProfileStore.setState({
+        profile: {
+          email: "",
+          contactEmail: "",
+          displayName: "",
+          photoUrl: "",
+          emailVerified: false,
+          credits: 0,
+          selectedAvatar: "",
+          selectedTalkingPhoto: "",
+          useCredits: true,
+        },
+      });
+
+      // 3. Clear all cookies
+      const cookies = document.cookie.split(";");
+      for (const cookie of cookies) {
+        const eqPos = cookie.indexOf("=");
+        const name =
+          eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
+      }
+
+      // 4. Clear localStorage and sessionStorage
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch (error) {
+        logger.error("Error clearing storage", error);
+      }
+
       toast.success("Account deleted successfully.");
-      router.replace("/");
+
+      // 5. Force a full page reload
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 500);
     } catch (error) {
       logger.error("Error on deletion of account", error);
       toast.error("Failed to delete account. Please try again.");
     }
-  }, [deleteAccount, clearAuthDetails, router, uid]);
+  }, [deleteAccount, clearAuthDetails, uid]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <section 
-        className="flex flex-col sm:flex-row px-5 py-3 gap-3 border border-gray-500 rounded-md"
+    <div className="flex flex-col gap-6">
+      <h2 className="text-2xl font-bold text-gray-900">Account Settings</h2>
+      
+      {/* Credits Section */}
+      <section
+        className="bg-blue-50 rounded-xl p-6 border border-blue-200"
         aria-labelledby="credits-section"
       >
-        <div className="flex gap-2 w-full items-center">
-          <div className="flex-1" id="credits-section">
-            <strong>Usage Credits:</strong> {Math.round(profile.credits)}
+        <h3 id="credits-section" className="text-lg font-bold text-gray-900 mb-4">
+          Usage Credits
+        </h3>
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex-1">
+            <div className="text-3xl font-bold text-blue-600">
+              {Math.round(profile.credits).toLocaleString()}
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Available credits for recordings
+            </p>
           </div>
           <button
-            className="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600 transition-colors flex-1 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={handleBuyClick}
             aria-label="Purchase 10,000 credits"
           >
             Buy 10,000 Credits
           </button>
         </div>
-        <p className="text-sm text-gray-600 mt-2">
-          You can either buy credits or add your own API keys.
-        </p>
       </section>
 
-      <section 
-        className="flex flex-col px-5 py-3 gap-3 border border-gray-500 rounded-md"
+      {/* Account Actions */}
+      <section
+        className="bg-gray-50 rounded-xl p-6 border border-gray-200"
+        aria-labelledby="account-actions"
+      >
+        <h3 id="account-actions" className="text-lg font-bold text-gray-900 mb-4">
+          Account Actions
+        </h3>
+        <button
+          className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-all font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+          onClick={handleSignOut}
+          aria-label="Sign out of your account"
+        >
+          Sign Out
+        </button>
+      </section>
+
+      {/* Danger Zone */}
+      <section
+        className="bg-red-50 rounded-xl p-6 border-2 border-red-300"
         aria-labelledby="danger-zone"
       >
-        <h2 id="danger-zone" className="sr-only">Danger Zone</h2>
+        <h3 id="danger-zone" className="text-lg font-bold text-red-700 mb-2">
+          Danger Zone
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Once you delete your account, there is no going back. Please be certain.
+        </p>
         <button
-          className="btn-primary bg-[#e32012] self-start rounded-md hover:bg-[#e32012]/50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-all font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           onClick={handleDeleteClick}
           aria-label="Delete your account permanently"
         >

@@ -80,7 +80,9 @@
   transform: scale(0);
   opacity: 0;
   visibility: hidden;
-  transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out,
+  transition:
+    transform 0.5s ease-in-out,
+    opacity 0.5s ease-in-out,
     visibility 0s 0.5s;
 }
 
@@ -89,7 +91,9 @@
   transform: scale(1);
   opacity: 1;
   visibility: visible;
-  transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+  transition:
+    transform 0.5s ease-in-out,
+    opacity 0.5s ease-in-out;
 }
 
 @utility menu-closed {
@@ -97,7 +101,9 @@
   transform: scale(0);
   opacity: 0;
   visibility: hidden;
-  transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out,
+  transition:
+    transform 0.5s ease-in-out,
+    opacity 0.5s ease-in-out,
     visibility 0s 0.5s;
 }
 
@@ -106,12 +112,16 @@
   transform: scale(1);
   opacity: 1;
   visibility: visible;
-  transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+  transition:
+    transform 0.5s ease-in-out,
+    opacity 0.5s ease-in-out;
 }
 
 @utility overlay-closed {
   opacity: 0;
-  transition: opacity 0.3s ease-in-out, visibility 0s 0.3s;
+  transition:
+    opacity 0.3s ease-in-out,
+    visibility 0s 0.3s;
   visibility: hidden;
 }
 
@@ -173,15 +183,21 @@
 }
 
 @utility text-wrapper {
-  @apply flex flex-col space-y-3 max-w-4xl mx-auto;
+  @apply flex flex-col space-y-6 max-w-4xl mx-auto px-4 py-8;
   & h3 {
-    @apply text-2xl;
+    @apply text-3xl md:text-4xl font-bold text-gray-900 mb-4;
   }
   & h4 {
-    @apply text-lg;
+    @apply text-xl md:text-2xl font-semibold text-gray-800 mt-8 mb-3;
+  }
+  & p {
+    @apply text-gray-700 leading-relaxed text-base;
   }
   & ul {
-    @apply list-disc mx-4 space-y-3;
+    @apply list-disc ml-6 space-y-2 text-gray-700;
+  }
+  & li {
+    @apply leading-relaxed;
   }
 }
 

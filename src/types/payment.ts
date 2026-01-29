@@ -28,6 +28,7 @@ export type PaymentPlatform = "stripe" | "apple" | "google";
  */
 export interface Payment {
   id: string;
+  docId?: string; // Firestore document ID for unique keys
   amount: number;
   createdAt: Timestamp | null;
   status: PaymentStatus;

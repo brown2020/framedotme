@@ -16,12 +16,15 @@ import { ErrorBoundary } from "./ErrorBoundary";
  * Recordings page component that displays all user recordings
  * Features a grid view of recordings with a featured video player
  * Allows users to view, download, and delete their recordings
- * 
+ *
  * @returns The recordings page component with video grid and featured player
  */
 export function RecordingsSection(): ReactElement {
   const uid = useAuthStore((state) => state.uid);
-  const [videoToDelete, setVideoToDelete] = useState<VideoMetadata | null>(null);
+  const authReady = useAuthStore((state) => state.authReady);
+  const [videoToDelete, setVideoToDelete] = useState<VideoMetadata | null>(
+    null,
+  );
 
   const {
     videos,
@@ -31,7 +34,7 @@ export function RecordingsSection(): ReactElement {
     handleDownloadVideo,
     handleFeaturedVideoChange,
     clearFeaturedVideo,
-  } = useRecordings(uid);
+  } = useRecordings(uid, authReady);
 
   return (
     <ErrorBoundary featureName="Recordings">
