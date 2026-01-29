@@ -1,42 +1,70 @@
 /**
- * Authentication synchronization hook with dual cookie strategy
+ * Authentication synchronization hook with session-based strategy
  *
- * See src/lib/auth/README.md for complete dual-cookie architecture documentation.
- *
- * This hook manages authentication state synchronization between:
+ * This hook manages authentication state synchronization:
  * - Firebase Auth SDK (client-side)
+ * - Server session JWT (HTTP-only cookie for proxy validation)
  * - Zustand store (application state)
- * - Client and server cookies (see README for details)
  * - Firestore (user data persistence)
+ *
+ * CRITICAL: authReady is only set AFTER session cookie is confirmed created
+ * This prevents race conditions where users can't access protected routes
  */
 
-import { useEffect, useRef } from "react";
-import { deleteCookie } from "cookies-next";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { deleteCookie, setCookie } from "cookies-next";
 import { useAuthState } from "react-firebase-hooks/auth";
+import { getIdToken } from "firebase/auth";
 
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
 import { updateUserDetailsInFirestore } from "@/services/userService";
 import { logger } from "@/utils/logger";
 import { CLIENT_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
-import {
-  setServerSessionCookie,
-  clearServerSessionCookie,
-} from "@/services/sessionCookieService";
-import { useTokenRefresh } from "./useTokenRefresh";
 
 /**
- * Unified hook for all authentication synchronization concerns
- * Handles auth state tracking, token refresh, session cookies, and Firestore sync
+ * Create server session cookie from Firebase ID token
+ * This session cookie is what the proxy validates
+ */
+async function createSessionCookie(idToken: string): Promise<boolean> {
+  try {
+    const response = await fetch("/api/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (!response.ok) {
+      console.error(
+        "[createSessionCookie] API returned error:",
+        response.status,
+      );
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("[createSessionCookie] Request failed:", error);
+    return false;
+  }
+}
+
+/**
+ * Clear server session cookie
+ */
+async function clearSessionCookie(): Promise<void> {
+  try {
+    await fetch("/api/session", { method: "DELETE" });
+  } catch (error) {
+    // Best-effort cleanup, don't block on failure
+    logger.error("Failed to clear session cookie", error);
+  }
+}
+
+/**
+ * Unified hook for authentication synchronization
  *
- * Responsibilities:
- * 1. Sync Firebase Auth state to Zustand store
- * 2. Manage client and server session cookies
- * 3. Refresh auth tokens periodically
- * 4. Sync auth data to Firestore
- * 5. Handle cross-tab synchronization
- *
- * @param cookieName - Name of the cookie to store the auth token
+ * @param cookieName - Name of the client cookie for Firebase token
  */
 export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
   if (!cookieName) {
@@ -47,41 +75,101 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
   const setAuthDetails = useAuthStore((state) => state.setAuthDetails);
   const previousUidRef = useRef<string>("");
 
-  // Delegate token refresh to dedicated hook
-  useTokenRefresh(
-    cookieName,
-    setServerSessionCookie,
-    clearServerSessionCookie,
-    Boolean(user?.uid),
-  );
-
-  // Sync Firebase auth state to Zustand and manage cookies
+  // Setup session when user signs in
   useEffect(() => {
-    // Don't do anything until Firebase auth state is determined
-    // Note: loading remains true until Firebase SDK has initialized and checked auth state
+    // Wait for Firebase auth to load
     if (loading) {
       return;
     }
 
+    // User signed in
     if (user?.uid) {
-      setAuthDetails({
-        uid: user.uid,
-        authEmail: user.email || "",
-        authDisplayName: user.displayName || "",
-        authPhotoUrl: user.photoURL || "",
-        authEmailVerified: user.emailVerified || false,
-        authReady: true, // loading is false AND user exists = Firebase is ready
-        authPending: false,
-      });
+      let isMounted = true;
+
+      const setupUserSession = async () => {
+        try {
+          console.log("[useAuthSync] Setting up session for user:", user.uid);
+
+          // Get ID token
+          const idToken = await getIdToken(user, true);
+
+          // Set client cookie for Firebase SDK
+          setCookie(cookieName, idToken, {
+            path: "/",
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+          });
+
+          // Create server session cookie (THIS IS CRITICAL - proxy validates this)
+          const sessionCreated = await createSessionCookie(idToken);
+
+          if (!isMounted) return;
+
+          if (sessionCreated) {
+            console.log(
+              "[useAuthSync] ✅ Session ready, setting authReady=true",
+            );
+
+            // Only mark as ready AFTER session cookie is created
+            setAuthDetails({
+              uid: user.uid,
+              authEmail: user.email || "",
+              authDisplayName: user.displayName || "",
+              authPhotoUrl: user.photoURL || "",
+              authEmailVerified: user.emailVerified || false,
+              authReady: true, // Session is ready!
+              authPending: false,
+            });
+          } else {
+            console.error(
+              "[useAuthSync] ❌ Failed to create session, keeping authReady=false",
+            );
+
+            // Session failed - keep pending
+            setAuthDetails({
+              uid: user.uid,
+              authEmail: user.email || "",
+              authDisplayName: user.displayName || "",
+              authPhotoUrl: user.photoURL || "",
+              authEmailVerified: user.emailVerified || false,
+              authReady: false, // NOT ready because session creation failed
+              authPending: true,
+            });
+          }
+        } catch (error) {
+          console.error("[useAuthSync] Session setup error:", error);
+          logger.error("Session setup error", error);
+
+          if (isMounted) {
+            setAuthDetails({
+              uid: user.uid,
+              authEmail: user.email || "",
+              authDisplayName: user.displayName || "",
+              authPhotoUrl: user.photoURL || "",
+              authEmailVerified: user.emailVerified || false,
+              authReady: false,
+              authPending: true,
+            });
+          }
+        }
+      };
+
+      void setupUserSession();
+
+      return () => {
+        isMounted = false;
+      };
     } else {
-      // Clear auth but mark as ready (we've confirmed there's no user)
+      // No user: clear everything and mark ready
+      console.log("[useAuthSync] No user, clearing session");
+
       setAuthDetails({
         uid: "",
         authEmail: "",
         authDisplayName: "",
         authPhotoUrl: "",
         authEmailVerified: false,
-        authReady: true,
+        authReady: true, // Ready because we confirmed no user
         authPending: false,
         isAdmin: false,
         isAllowed: false,
@@ -89,9 +177,9 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
         lastSignIn: null,
         premium: false,
       });
+
       deleteCookie(cookieName);
-      // Fire-and-forget: best-effort cleanup of server-side session cookie
-      void clearServerSessionCookie();
+      void clearSessionCookie();
     }
   }, [cookieName, loading, setAuthDetails, user]);
 

@@ -39,7 +39,7 @@ export function VideoControlsLauncher(): ReactElement {
       videoControlsWindowRef.current = window.open(
         "/videocontrols",
         "videoControlsWindow",
-        features
+        features,
       );
 
       videoControlsWindowRef.current?.addEventListener("beforeunload", () => {
@@ -56,25 +56,67 @@ export function VideoControlsLauncher(): ReactElement {
       }
     };
 
-    const intervalId = window.setInterval(checkWindowClosed, VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS);
+    const intervalId = window.setInterval(
+      checkWindowClosed,
+      VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS,
+    );
 
     return () => {
       clearInterval(intervalId);
     };
   }, [updateStatus]);
 
+  const getButtonText = () => {
+    switch (recorderStatus) {
+      case "recording":
+        return "Stop Recording";
+      case "ready":
+        return "Start Recording";
+      case "saving":
+        return "Saving...";
+      default:
+        return "Open Recorder";
+    }
+  };
+
+  const getButtonStyle = () => {
+    switch (recorderStatus) {
+      case "recording":
+        return "bg-red-600 hover:bg-red-700 animate-pulse";
+      case "ready":
+        return "bg-green-600 hover:bg-green-700";
+      case "saving":
+        return "bg-blue-600 cursor-wait";
+      default:
+        return "bg-blue-600 hover:bg-blue-700";
+    }
+  };
+
   return (
-    <Button
-      variant="ghost"
-      className={cn(
-        "flex flex-col h-full items-center justify-center px-2 py-1 w-full rounded-none",
-        "text-white transition-all duration-200",
-        getRecorderButtonClass(recorderStatus, "launcher")
-      )}
+    <button
       onClick={openVideoControls}
+      disabled={recorderStatus === "saving"}
+      className={`
+        group relative overflow-hidden
+        flex flex-col items-center justify-center gap-3
+        px-12 py-8 rounded-2xl
+        text-white font-bold text-lg
+        shadow-2xl hover:shadow-3xl
+        transition-all duration-300
+        hover:scale-105
+        disabled:opacity-50 disabled:cursor-not-allowed
+        focus:outline-none focus:ring-4 focus:ring-blue-300
+        ${getButtonStyle()}
+      `}
     >
-      <VideoIcon className="h-6 w-6 mx-auto" />
-      <div className="text-xs">Record</div>
-    </Button>
+      <VideoIcon className="h-16 w-16" />
+      <span className="text-xl">{getButtonText()}</span>
+      {recorderStatus === "recording" && (
+        <span className="absolute top-2 right-2 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+        </span>
+      )}
+    </button>
   );
 }
