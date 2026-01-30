@@ -185,31 +185,44 @@ export class MediaStreamManager {
     const destination = audioContext.createMediaStreamDestination();
     const streams: MediaStream[] = [this.screenStream];
 
-    // ALWAYS attempt to add microphone for voice narration
-    // This allows recording BOTH system audio AND microphone together
-    if (!this.micStream) {
-      if (hasScreenAudio) {
-        logger.info("Screen has audio - adding microphone to mix both sources");
-      } else {
-        logger.info("No screen audio - adding microphone for voice");
-      }
-      
-      try {
-        const micStream = await this.initializeMicrophoneCapture();
-        streams.push(micStream);
-        logger.info("✅ Microphone added successfully");
-      } catch (error) {
-        logger.warn("Microphone not available, continuing with screen audio only", error);
-      }
+    // Track which audio sources we have
+    let micAdded = false;
+
+    // CRITICAL: ALWAYS request microphone - do NOT skip based on existing stream
+    // We need fresh microphone input for EVERY recording
+    logger.info(`[Audio] Screen audio detected: ${hasScreenAudio ? 'YES' : 'NO'}`);
+    logger.info("[Audio] Requesting microphone for voice narration...");
+    
+    try {
+      // Always request fresh microphone access
+      const micStream = await this.initializeMicrophoneCapture();
+      this.micStream = micStream;
+      streams.push(micStream);
+      micAdded = true;
+      logger.info("✅ [Audio] Microphone stream acquired");
+    } catch (error) {
+      logger.error("❌ [Audio] Microphone permission denied:", error);
+      // Continue without mic if user denies permission
     }
 
-    // Connect all audio sources using Web Audio API
-    streams.forEach((stream) => {
-      if (stream.getAudioTracks().length > 0) {
-        const source = audioContext.createMediaStreamSource(stream);
-        source.connect(destination);
+    // Connect ALL audio sources using Web Audio API
+    logger.info(`[Audio] Mixing ${streams.length} audio source(s)...`);
+    
+    streams.forEach((stream, index) => {
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length > 0) {
+        try {
+          const source = audioContext.createMediaStreamSource(stream);
+          source.connect(destination);
+          logger.info(`✅ [Audio] Source ${index + 1} connected (${audioTracks.length} track(s))`);
+        } catch (error) {
+          logger.error(`❌ [Audio] Failed to connect source ${index + 1}:`, error);
+        }
       }
     });
+
+    // Verify final configuration
+    logger.info(`[Audio] Final mix: ${micAdded ? 'Microphone' : 'NO MIC'} + ${hasScreenAudio ? 'System Audio' : 'NO SYSTEM'}`);
 
     // Combine video from screen with mixed audio tracks
     const videoTrack = this.screenStream.getVideoTracks()[0];
