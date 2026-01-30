@@ -130,30 +130,22 @@ export class MediaStreamManager {
   }
 
   /**
-   * Creates a combined stream from screen and optional microphone audio
+   * Creates a combined stream from screen and microphone audio
    * 
-   * Two distinct audio handling paths:
-   * - Path 1 (Screen has audio): Use screen audio only, skip microphone request
-   * - Path 2 (No screen audio): Mix screen video with microphone audio via Web Audio API
+   * Audio handling strategy:
+   * - ALWAYS attempts to add microphone audio for voice narration
+   * - Mixes microphone with screen audio (if present) using Web Audio API
+   * - If microphone unavailable, continues with screen audio only
    * 
-   * This approach minimizes user friction while providing best audio quality
+   * This ensures both system audio AND microphone are captured together
    */
   async createCombinedStream(): Promise<MediaStream> {
     if (!this.screenStream) {
       throw new MediaStreamError("Failed to create combined stream: screen stream not initialized", "stream");
     }
 
-    const hasScreenAudio = this.screenStream.getAudioTracks().length > 0;
-
     try {
-      // Path 1: Screen share includes audio (e.g., "Share tab" with audio)
-      // Use screen audio exclusively to avoid extra permission prompts
-      if (hasScreenAudio) {
-        return this.createScreenOnlyStream();
-      }
-
-      // Path 2: Screen share has no audio (e.g., "Share window")
-      // Attempt to add microphone and mix audio tracks
+      // Always attempt to mix audio - this allows capturing BOTH mic and system audio
       return await this.createStreamWithMixedAudio();
     } catch (error) {
       throw new MediaStreamError(
@@ -165,22 +157,9 @@ export class MediaStreamManager {
   }
 
   /**
-   * Creates stream using screen audio only (Path 1)
-   * Used when screen share already includes audio, avoiding extra permission prompts
-   * 
-   * Note: Caller ensures screenStream is non-null before calling this method
-   */
-  private createScreenOnlyStream(): MediaStream {
-    logger.info("Screen includes audio - using screen audio only, skipping microphone");
-    this.combinedStream = this.screenStream;
-    // screenStream is guaranteed non-null by createCombinedStream check
-    return this.screenStream as MediaStream;
-  }
-
-  /**
-   * Creates stream with mixed audio from screen video and microphone (Path 2)
-   * Attempts to add microphone when screen has no audio, mixes via Web Audio API
-   * Continues without microphone if unavailable (screen video only in that case)
+   * Creates stream with mixed audio from screen and microphone
+   * ALWAYS attempts to add microphone for voice narration
+   * Mixes microphone + screen audio (if present) via Web Audio API
    * 
    * Note: Caller ensures screenStream is non-null before calling this method
    */
@@ -189,6 +168,8 @@ export class MediaStreamManager {
     if (!this.screenStream) {
       throw new MediaStreamError("screenStream is null in createMixedAudioStream", "stream");
     }
+
+    const hasScreenAudio = this.screenStream.getAudioTracks().length > 0;
 
     // Close existing AudioContext to prevent memory leaks from abandoned contexts
     // Each context consumes system audio resources even when not actively used
@@ -204,14 +185,21 @@ export class MediaStreamManager {
     const destination = audioContext.createMediaStreamDestination();
     const streams: MediaStream[] = [this.screenStream];
 
-    // Attempt to add microphone - optional, continues without it if unavailable
+    // ALWAYS attempt to add microphone for voice narration
+    // This allows recording BOTH system audio AND microphone together
     if (!this.micStream) {
-      logger.info("No screen audio detected, attempting to add microphone");
+      if (hasScreenAudio) {
+        logger.info("Screen has audio - adding microphone to mix both sources");
+      } else {
+        logger.info("No screen audio - adding microphone for voice");
+      }
+      
       try {
         const micStream = await this.initializeMicrophoneCapture();
         streams.push(micStream);
+        logger.info("✅ Microphone added successfully");
       } catch (error) {
-        logger.warn("Microphone not available, continuing without mic audio", error);
+        logger.warn("Microphone not available, continuing with screen audio only", error);
       }
     }
 
