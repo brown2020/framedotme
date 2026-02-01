@@ -2,12 +2,12 @@
 
 import { validatePaymentIntent } from "@/actions/paymentActions";
 import { useAuthStore } from "@/zustand/useAuthStore";
-import { usePaymentsStore } from "@/zustand/usePaymentsStore";
 import useProfileStore from "@/zustand/useProfileStore";
 import { BONUS_CREDITS } from "@/constants/payment";
 import Link from "next/link";
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { logger } from "@/utils/logger";
+import { createPaymentIdempotent } from "@/services/paymentsService";
 
 interface Props {
   payment_intent: string;
@@ -51,10 +51,11 @@ const initialState: PaymentState = {
 export function PaymentSuccess({ payment_intent }: Props) {
   const [state, dispatch] = useReducer(paymentReducer, initialState);
 
-  const addPayment = usePaymentsStore((state) => state.addPayment);
-  const checkIfPaymentProcessed = usePaymentsStore(
-    (state) => state.checkIfPaymentProcessed
-  );
+  // Ref to prevent concurrent processing (race condition fix)
+  const processingRef = useRef(false);
+  // Ref to track if this payment_intent has been handled (prevents re-processing on re-renders)
+  const handledPaymentRef = useRef<string | null>(null);
+
   const addCredits = useProfileStore((state) => state.addCredits);
   const uid = useAuthStore((state) => state.uid);
 
@@ -64,32 +65,28 @@ export function PaymentSuccess({ payment_intent }: Props) {
       return;
     }
 
+    // Prevent re-processing the same payment intent
+    if (handledPaymentRef.current === payment_intent) {
+      return;
+    }
+
     const handlePaymentSuccess = async () => {
       if (!uid) return;
-      
+
+      // Prevent concurrent calls (e.g., double-click, multiple tabs)
+      if (processingRef.current) {
+        logger.warn("Payment already being processed, skipping duplicate call");
+        return;
+      }
+      processingRef.current = true;
+
       try {
         const data = await validatePaymentIntent(payment_intent);
 
         if (data.status === "succeeded") {
-          // Check if payment is already processed
-          const existingPayment = await checkIfPaymentProcessed(uid, data.id);
-          
-          if (existingPayment) {
-            dispatch({
-              type: "SET_SUCCESS",
-              message: "Payment has already been processed.",
-              data: {
-                id: existingPayment.id,
-                created: existingPayment.createdAt?.toMillis() || 0,
-                amount: existingPayment.amount,
-                status: existingPayment.status,
-              },
-            });
-            return;
-          }
-
-          // Add payment to store
-          await addPayment(uid, {
+          // Use idempotent payment creation - this atomically checks and creates
+          // preventing race conditions from multiple tabs or rapid reloads
+          const { payment, alreadyExists } = await createPaymentIdempotent(uid, {
             id: data.id,
             amount: data.amount,
             status: data.status,
@@ -99,7 +96,25 @@ export function PaymentSuccess({ payment_intent }: Props) {
             currency: "usd",
           });
 
-          // Add credits to profile
+          // Mark this payment_intent as handled
+          handledPaymentRef.current = payment_intent;
+
+          if (alreadyExists) {
+            // Payment was already processed - don't add credits again
+            dispatch({
+              type: "SET_SUCCESS",
+              message: "Payment has already been processed.",
+              data: {
+                id: payment.id,
+                created: payment.createdAt?.toMillis() || 0,
+                amount: payment.amount,
+                status: payment.status,
+              },
+            });
+            return;
+          }
+
+          // Only add credits for NEW payments (not duplicates)
           const creditsToAdd = Math.floor(data.amount / 100) + BONUS_CREDITS;
           await addCredits(uid, creditsToAdd);
 
@@ -120,11 +135,13 @@ export function PaymentSuccess({ payment_intent }: Props) {
       } catch (error) {
         logger.error("Error handling payment success", error);
         dispatch({ type: "SET_ERROR", message: "Error handling payment success" });
+      } finally {
+        processingRef.current = false;
       }
     };
 
     if (uid) handlePaymentSuccess();
-  }, [payment_intent, addPayment, checkIfPaymentProcessed, addCredits, uid]);
+  }, [payment_intent, addCredits, uid]);
 
   return (
     <main className="max-w-6xl flex flex-col gap-2.5 mx-auto p-10 text-black text-center border m-10 rounded-md border-black">

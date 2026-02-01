@@ -12,6 +12,7 @@ import {
   TOKEN_REFRESH_KEY_PREFIX,
 } from "@/constants/auth";
 import { browserStorage } from "@/services/browserStorageService";
+import { getTabLeader } from "@/utils/tabLeaderElection";
 
 /**
  * Hook for managing token refresh and session cookie synchronization
@@ -35,8 +36,18 @@ export function useTokenRefresh(
   const activityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTokenRefresh = `${TOKEN_REFRESH_KEY_PREFIX}${cookieName}`;
 
-  // Token refresh logic
-  const refreshAuthToken = useCallback(async () => {
+  // Tab leader election - only leader tab performs token refresh
+  const tabLeaderRef = useRef(getTabLeader(`token-refresh-${cookieName}`));
+
+  // Token refresh logic - only executes if this tab is the leader
+  const refreshAuthToken = useCallback(async (force = false) => {
+    // Only leader tab should perform token refresh to prevent race conditions
+    // across multiple tabs. Force bypasses leader check for initial setup.
+    if (!force && !tabLeaderRef.current.isLeader()) {
+      console.log("[useTokenRefresh] Not leader tab, skipping refresh");
+      return;
+    }
+
     try {
       if (!auth.currentUser) {
         console.error("[useTokenRefresh] No user found during token refresh");
@@ -89,6 +100,8 @@ export function useTokenRefresh(
 
       if (!isReactNativeWebView()) {
         browserStorage.setItem(lastTokenRefresh, Date.now().toString());
+        // Broadcast to other tabs that token was refreshed
+        tabLeaderRef.current.broadcast("token-refreshed");
       }
 
       console.log("[useTokenRefresh] ✅ Token refresh complete");
@@ -132,6 +145,8 @@ export function useTokenRefresh(
 
   // Setup token refresh and cross-tab sync
   useEffect(() => {
+    const tabLeader = tabLeaderRef.current;
+
     const handleStorageChange = (e: StorageEvent) => {
       debouncedHandler(e, lastTokenRefresh, scheduleTokenRefresh);
     };
@@ -139,6 +154,15 @@ export function useTokenRefresh(
     if (!isReactNativeWebView()) {
       window.addEventListener("storage", handleStorageChange);
     }
+
+    // Listen for token refresh broadcasts from leader tab
+    const unsubscribeBroadcast = tabLeader.onBroadcast((message) => {
+      if (message === "token-refreshed") {
+        console.log("[useTokenRefresh] Received token-refreshed broadcast from leader");
+        // Reschedule our local refresh timer since leader just refreshed
+        scheduleTokenRefresh();
+      }
+    });
 
     // Immediately refresh token if user is authenticated and cookie doesn't exist
     // This ensures the cookie is set right after sign-in
@@ -151,12 +175,19 @@ export function useTokenRefresh(
           ? now - parseInt(lastRefresh, 10)
           : Infinity;
 
-        // If no recent refresh (> 1 minute ago), refresh immediately
+        // If no recent refresh (> 1 minute ago), try to become leader and refresh
         if (timeSinceLastRefresh > 60000) {
-          await refreshAuthToken();
+          // Try to become leader for initial refresh
+          if (tabLeader.tryBecomeLeader()) {
+            await refreshAuthToken(true); // Force refresh as we just became leader
+          } else {
+            // Not leader, but still need initial cookie - force refresh once
+            console.log("[useTokenRefresh] Not leader, but forcing initial token refresh");
+            await refreshAuthToken(true);
+          }
         }
 
-        // Then schedule periodic refresh
+        // Then schedule periodic refresh (only leader will actually execute)
         scheduleTokenRefresh();
       };
 
@@ -172,6 +203,7 @@ export function useTokenRefresh(
         activityTimeoutRef.current = null;
       }
       debouncedHandler.cancel();
+      unsubscribeBroadcast();
     };
   }, [
     debouncedHandler,

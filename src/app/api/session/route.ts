@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { adminAuth } from "@/firebase/firebaseAdmin";
 import { SESSION_COOKIE_NAME, SESSION_EXPIRES_IN_MS } from "@/constants/auth";
 import { logger } from "@/utils/logger";
+import {
+  validateCsrfToken,
+  setCsrfTokenCookie,
+  CSRF_COOKIE_NAME,
+} from "@/lib/security/csrf";
 
 /**
  * Get JWT secret for signing session tokens
@@ -25,6 +30,20 @@ const SESSION_DURATION_SECONDS = Math.floor(SESSION_EXPIRES_IN_MS / 1000);
 
 export async function POST(request: Request) {
   try {
+    // CSRF Protection: Validate token for all POST requests
+    // Skip validation only for initial session creation (when no CSRF cookie exists)
+    const hasCsrfCookie = request.headers.get("cookie")?.includes(CSRF_COOKIE_NAME);
+    if (hasCsrfCookie) {
+      const csrfResult = validateCsrfToken(request);
+      if (!csrfResult.valid) {
+        logger.warn("CSRF validation failed", { error: csrfResult.error });
+        return NextResponse.json(
+          { error: csrfResult.error },
+          { status: 403 }
+        );
+      }
+    }
+
     let body: { idToken?: unknown } | null;
     try {
       body = (await request.json()) as { idToken?: unknown };
@@ -57,6 +76,8 @@ export async function POST(request: Request) {
       .sign(secret);
 
     const response = NextResponse.json({ ok: true });
+
+    // Set session cookie
     response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -64,6 +85,9 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: SESSION_DURATION_SECONDS,
     });
+
+    // Set CSRF token cookie for subsequent requests
+    setCsrfTokenCookie(response);
 
     logger.debug("Session cookie created successfully", { uid: decoded.uid });
     return response;
@@ -76,8 +100,22 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
+  // CSRF Protection: Validate token for DELETE requests
+  const hasCsrfCookie = request.headers.get("cookie")?.includes(CSRF_COOKIE_NAME);
+  if (hasCsrfCookie) {
+    const csrfResult = validateCsrfToken(request);
+    if (!csrfResult.valid) {
+      logger.warn("CSRF validation failed on DELETE", { error: csrfResult.error });
+      return NextResponse.json(
+        { error: csrfResult.error },
+        { status: 403 }
+      );
+    }
+  }
+
   const response = NextResponse.json({ ok: true });
   response.cookies.delete({ name: SESSION_COOKIE_NAME, path: "/" });
+  response.cookies.delete({ name: CSRF_COOKIE_NAME, path: "/" });
   return response;
 }

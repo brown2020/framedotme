@@ -21,6 +21,7 @@ import { auth } from "@/firebase/firebaseClient";
 import { updateUserDetailsInFirestore } from "@/services/userService";
 import { logger } from "@/utils/logger";
 import { CLIENT_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
+import { getClientCsrfToken, CSRF_HEADER_NAME } from "@/lib/security/csrf";
 
 /**
  * Create server session cookie from Firebase ID token
@@ -28,9 +29,16 @@ import { CLIENT_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
  */
 async function createSessionCookie(idToken: string): Promise<boolean> {
   try {
+    // Include CSRF token if available (for token refresh, not initial login)
+    const csrfToken = getClientCsrfToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (csrfToken) {
+      headers[CSRF_HEADER_NAME] = csrfToken;
+    }
+
     const response = await fetch("/api/session", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ idToken }),
     });
 
@@ -54,7 +62,17 @@ async function createSessionCookie(idToken: string): Promise<boolean> {
  */
 async function clearSessionCookie(): Promise<void> {
   try {
-    await fetch("/api/session", { method: "DELETE" });
+    // Include CSRF token for DELETE request
+    const csrfToken = getClientCsrfToken();
+    const headers: Record<string, string> = {};
+    if (csrfToken) {
+      headers[CSRF_HEADER_NAME] = csrfToken;
+    }
+
+    await fetch("/api/session", {
+      method: "DELETE",
+      headers,
+    });
   } catch (error) {
     // Best-effort cleanup, don't block on failure
     logger.error("Failed to clear session cookie", error);
@@ -75,6 +93,10 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
   const setAuthDetails = useAuthStore((state) => state.setAuthDetails);
   const previousUidRef = useRef<string>("");
 
+  // Version counter to invalidate stale async operations
+  // This prevents race conditions when auth state changes rapidly
+  const sessionVersionRef = useRef(0);
+
   // Setup session when user signs in
   useEffect(() => {
     // Wait for Firebase auth to load
@@ -82,16 +104,23 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
       return;
     }
 
+    // Increment version to invalidate any in-flight operations
+    const currentVersion = ++sessionVersionRef.current;
+
     // User signed in
     if (user?.uid) {
-      let isMounted = true;
-
       const setupUserSession = async () => {
         try {
-          console.log("[useAuthSync] Setting up session for user:", user.uid);
+          console.log("[useAuthSync] Setting up session for user:", user.uid, "version:", currentVersion);
 
           // Get ID token
           const idToken = await getIdToken(user, true);
+
+          // Check if this operation is still valid (no new auth changes)
+          if (currentVersion !== sessionVersionRef.current) {
+            console.log("[useAuthSync] Stale session setup, aborting (expected:", sessionVersionRef.current, "got:", currentVersion, ")");
+            return;
+          }
 
           // Set client cookie for Firebase SDK
           setCookie(cookieName, idToken, {
@@ -103,7 +132,11 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
           // Create server session cookie (THIS IS CRITICAL - proxy validates this)
           const sessionCreated = await createSessionCookie(idToken);
 
-          if (!isMounted) return;
+          // Check again after async operation
+          if (currentVersion !== sessionVersionRef.current) {
+            console.log("[useAuthSync] Stale session after cookie creation, aborting");
+            return;
+          }
 
           if (sessionCreated) {
             console.log(
@@ -137,28 +170,28 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
             });
           }
         } catch (error) {
+          // Only update state if this version is still current
+          if (currentVersion !== sessionVersionRef.current) {
+            console.log("[useAuthSync] Stale error handler, ignoring");
+            return;
+          }
+
           console.error("[useAuthSync] Session setup error:", error);
           logger.error("Session setup error", error);
 
-          if (isMounted) {
-            setAuthDetails({
-              uid: user.uid,
-              authEmail: user.email || "",
-              authDisplayName: user.displayName || "",
-              authPhotoUrl: user.photoURL || "",
-              authEmailVerified: user.emailVerified || false,
-              authReady: false,
-              authPending: true,
-            });
-          }
+          setAuthDetails({
+            uid: user.uid,
+            authEmail: user.email || "",
+            authDisplayName: user.displayName || "",
+            authPhotoUrl: user.photoURL || "",
+            authEmailVerified: user.emailVerified || false,
+            authReady: false,
+            authPending: true,
+          });
         }
       };
 
       void setupUserSession();
-
-      return () => {
-        isMounted = false;
-      };
     } else {
       // No user: clear everything and mark ready
       console.log("[useAuthSync] No user, clearing session");

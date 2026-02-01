@@ -1,15 +1,26 @@
 import { create } from "zustand";
-import { 
-  fetchUserProfile, 
-  saveUserProfile, 
-  updateUserProfile, 
-  deleteUserAccount 
+import {
+  fetchUserProfile,
+  saveUserProfile,
+  updateUserProfile,
+  deleteUserAccount
 } from "@/services/userService";
 import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/constants/payment";
 import { logError } from "@/lib/errors";
 import { DEFAULT_PROFILE } from "@/constants/defaults";
+import { OperationQueue } from "@/utils/optimisticUpdate";
 import type { Profile } from "@/types/profile";
 import type { AuthContext } from "@/types/auth";
+
+/**
+ * Operation queue for credit modifications.
+ * Ensures sequential execution of credit operations to prevent race conditions
+ * when multiple operations (e.g., minusCredits and addCredits) overlap.
+ *
+ * Without this queue, concurrent operations could read stale credit values
+ * and produce incorrect results or corrupt rollback state.
+ */
+const creditOperationQueue = new OperationQueue<number>();
 
 interface ProfileState {
   profile: Profile;
@@ -144,44 +155,91 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     set({ profile: DEFAULT_PROFILE });
   },
 
+  /**
+   * Subtracts credits from the user's profile.
+   *
+   * Uses an operation queue to prevent race conditions when multiple
+   * credit operations occur simultaneously.
+   *
+   * @param uid - User ID
+   * @param amount - Amount of credits to subtract
+   * @returns true if successful, false if insufficient credits or error
+   */
   minusCredits: async (uid: string, amount: number) => {
     if (!uid) return false;
 
-    const previousProfile = get().profile;
-    if (previousProfile.credits < amount) return false;
+    // Check credits before queueing to fail fast
+    const currentCredits = get().profile.credits;
+    if (currentCredits < amount) return false;
 
     try {
-      const newCredits = previousProfile.credits - amount;
-      
-      // Optimistic update
-      set({ profile: { ...previousProfile, credits: newCredits } });
-      
-      // API call
-      await updateUserProfile(uid, { credits: newCredits });
-      return true;
+      let success = false;
+
+      await creditOperationQueue.execute(
+        // Get current value - reads fresh state when operation executes
+        () => get().profile.credits,
+        // Calculate new value
+        (current) => {
+          // Double-check credits are sufficient at execution time
+          if (current < amount) {
+            throw new Error("Insufficient credits");
+          }
+          return current - amount;
+        },
+        // Apply optimistic update
+        (newCredits) => {
+          set({ profile: { ...get().profile, credits: newCredits } });
+        },
+        // Perform actual operation
+        async (newCredits) => {
+          await updateUserProfile(uid, { credits: newCredits });
+          success = true;
+        },
+        // Rollback on failure - restore previous credits
+        (previousCredits) => {
+          set({ profile: { ...get().profile, credits: previousCredits } });
+        }
+      );
+
+      return success;
     } catch (error) {
-      // Rollback on failure
-      set({ profile: previousProfile });
       handleProfileError("using credits", error);
       return false;
     }
   },
 
+  /**
+   * Adds credits to the user's profile.
+   *
+   * Uses an operation queue to prevent race conditions when multiple
+   * credit operations occur simultaneously.
+   *
+   * @param uid - User ID
+   * @param amount - Amount of credits to add
+   */
   addCredits: async (uid: string, amount: number) => {
     if (!uid) return;
 
-    const previousProfile = get().profile;
-    const newCredits = previousProfile.credits + amount;
-
     try {
-      // Optimistic update
-      set({ profile: { ...previousProfile, credits: newCredits } });
-      
-      // API call
-      await updateUserProfile(uid, { credits: newCredits });
+      await creditOperationQueue.execute(
+        // Get current value - reads fresh state when operation executes
+        () => get().profile.credits,
+        // Calculate new value
+        (current) => current + amount,
+        // Apply optimistic update
+        (newCredits) => {
+          set({ profile: { ...get().profile, credits: newCredits } });
+        },
+        // Perform actual operation
+        async (newCredits) => {
+          await updateUserProfile(uid, { credits: newCredits });
+        },
+        // Rollback on failure - restore previous credits
+        (previousCredits) => {
+          set({ profile: { ...get().profile, credits: previousCredits } });
+        }
+      );
     } catch (error) {
-      // Rollback on failure
-      set({ profile: previousProfile });
       handleProfileError("adding credits", error);
       throw error;
     }
@@ -189,3 +247,23 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 }));
 
 export default useProfileStore;
+
+/**
+ * Optimized selectors for profile state.
+ * Use these instead of directly accessing the store to prevent unnecessary re-renders.
+ */
+
+// Individual profile data selectors
+export const useProfile = () => useProfileStore((state) => state.profile);
+export const useCredits = () => useProfileStore((state) => state.profile.credits);
+export const useDisplayName = () => useProfileStore((state) => state.profile.displayName);
+export const usePhotoUrl = () => useProfileStore((state) => state.profile.photoUrl);
+export const useEmail = () => useProfileStore((state) => state.profile.email);
+
+// Action selectors
+export const useFetchProfile = () => useProfileStore((state) => state.fetchProfile);
+export const useUpdateProfile = () => useProfileStore((state) => state.updateProfile);
+export const useMinusCredits = () => useProfileStore((state) => state.minusCredits);
+export const useAddCredits = () => useProfileStore((state) => state.addCredits);
+export const useDeleteAccount = () => useProfileStore((state) => state.deleteAccount);
+export const useResetProfile = () => useProfileStore((state) => state.resetProfile);

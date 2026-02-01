@@ -6,6 +6,8 @@ import {
   where,
   getDocs,
   Timestamp,
+  runTransaction,
+  doc,
 } from "firebase/firestore";
 
 import type { Payment, PaymentInput } from "@/types/payment";
@@ -195,5 +197,115 @@ export async function findProcessedPayment(
 export function sortPayments(payments: Payment[]): Payment[] {
   return payments.sort(
     (a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0),
+  );
+}
+
+/**
+ * Result of an idempotent payment creation operation
+ */
+export interface CreatePaymentIdempotentResult {
+  /** The payment record (either newly created or existing) */
+  payment: Payment;
+  /** Whether the payment already existed (true) or was just created (false) */
+  alreadyExists: boolean;
+}
+
+/**
+ * Creates a payment record atomically using Firestore transactions.
+ *
+ * This function is IDEMPOTENT - it will safely handle concurrent calls
+ * for the same payment ID. If the payment already exists, it returns
+ * the existing payment without creating a duplicate.
+ *
+ * USE THIS instead of createPayment() when:
+ * - Processing payment webhooks that may be delivered multiple times
+ * - Handling payment success pages that may be loaded in multiple tabs
+ * - Any scenario where concurrent duplicate requests are possible
+ *
+ * @param uid - The user's unique identifier
+ * @param payment - Payment data (without createdAt, will be added automatically)
+ * @returns Promise resolving to the payment and whether it already existed
+ * @throws {AppError} If the transaction fails (not for duplicate detection)
+ *
+ * @example
+ * ```typescript
+ * const { payment, alreadyExists } = await createPaymentIdempotent(uid, paymentData);
+ * if (alreadyExists) {
+ *   console.log('Payment was already processed');
+ * } else {
+ *   // Add credits only for new payments
+ *   await addCredits jpuid, creditsAmount);
+ * }
+ * ```
+ */
+export async function createPaymentIdempotent(
+  uid: string,
+  payment: PaymentInput,
+): Promise<CreatePaymentIdempotentResult> {
+  const validatedUid = validateUserId(uid);
+  const paymentsCollectionPath = getUserPaymentsPath(validatedUid);
+
+  return firestoreWrite(
+    async () => {
+      // Ensure Firebase auth is ready
+      const { auth } = await import("@/firebase/firebaseClient");
+      if (!auth.currentUser) {
+        throw new Error("Firebase auth not initialized - user not authenticated");
+      }
+
+      // Use a transaction to atomically check-and-create
+      const result = await runTransaction(db, async (transaction) => {
+        // Check if payment already exists
+        const q = query(
+          collection(db, paymentsCollectionPath),
+          where("id", "==", payment.id),
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty && querySnapshot.docs[0]) {
+          // Payment already exists - return it
+          const existingDoc = querySnapshot.docs[0];
+          return {
+            payment: mapDocumentToPayment(existingDoc.data()),
+            alreadyExists: true,
+          };
+        }
+
+        // Payment doesn't exist - create it atomically
+        const createdAt = Timestamp.now();
+        const newPaymentData = {
+          id: payment.id,
+          amount: payment.amount,
+          createdAt,
+          status: payment.status,
+          mode: payment.mode,
+          currency: payment.currency,
+          platform: payment.platform,
+          productId: payment.productId,
+        };
+
+        // Create a new document reference
+        const newDocRef = doc(collection(db, paymentsCollectionPath));
+        transaction.set(newDocRef, newPaymentData);
+
+        return {
+          payment: {
+            id: payment.id,
+            amount: payment.amount,
+            createdAt,
+            status: payment.status,
+            mode: payment.mode,
+            currency: payment.currency,
+            platform: payment.platform,
+            productId: payment.productId,
+          } as Payment,
+          alreadyExists: false,
+        };
+      });
+
+      return result;
+    },
+    "Failed to create payment record",
+    { userId: validatedUid, paymentId: payment.id },
   );
 }

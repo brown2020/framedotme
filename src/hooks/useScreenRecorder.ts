@@ -141,13 +141,13 @@ export const useScreenRecorder = () => {
 
   const stopRecording = useCallback(async () => {
     const currentRecordingManager = recordingManager.current;
-    
+
     // Guard: only stop if recording is actually in progress
     if (!currentRecordingManager.isRecording) {
       logger.warn("Attempted to stop recording when no recording is in progress");
       return;
     }
-    
+
     try {
       updateStatus("saving");
       const finalBlob = await currentRecordingManager.stopRecording();
@@ -160,7 +160,7 @@ export const useScreenRecorder = () => {
 
   const initializeRecorder = useCallback(async () => {
     if (isRecordingWindowOpen) return;
-    
+
     if (!uid) {
       // Not an exceptional condition during initial render / redirect.
       // Show a friendly message and bail without triggering the Next.js error overlay.

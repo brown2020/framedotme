@@ -17,7 +17,7 @@ export class MediaStreamManager {
 
   /**
    * Creates a new MediaStreamManager instance
-   * 
+   *
    * @param statusCallback - Optional callback to receive recorder status updates
    */
   constructor(statusCallback?: (status: RecorderStatusType) => void) {
@@ -30,10 +30,10 @@ export class MediaStreamManager {
 
   /**
    * Initializes screen capture with video and optional audio
-   * 
+   *
    * @returns Promise resolving to the screen capture MediaStream
    * @throws {MediaStreamError} If permission denied or device access fails
-   * 
+   *
    * @example
    * ```typescript
    * const manager = new MediaStreamManager();
@@ -73,7 +73,7 @@ export class MediaStreamManager {
 
   /**
    * Initializes microphone capture with echo cancellation and noise suppression
-   * 
+   *
    * @returns Promise resolving to the microphone MediaStream
    * @throws {MediaStreamError} If permission denied or microphone access fails
    */
@@ -131,12 +131,12 @@ export class MediaStreamManager {
 
   /**
    * Creates a combined stream from screen and microphone audio
-   * 
+   *
    * Audio handling strategy:
    * - ALWAYS attempts to add microphone audio for voice narration
    * - Mixes microphone with screen audio (if present) using Web Audio API
    * - If microphone unavailable, continues with screen audio only
-   * 
+   *
    * This ensures both system audio AND microphone are captured together
    */
   async createCombinedStream(): Promise<MediaStream> {
@@ -160,7 +160,7 @@ export class MediaStreamManager {
    * Creates stream with mixed audio from screen and microphone
    * ALWAYS attempts to add microphone for voice narration
    * Mixes microphone + screen audio (if present) via Web Audio API
-   * 
+   *
    * Note: Caller ensures screenStream is non-null before calling this method
    */
   private async createStreamWithMixedAudio(): Promise<MediaStream> {
@@ -179,7 +179,7 @@ export class MediaStreamManager {
         logger.warn("AudioContext close error (continuing)", error);
       });
     }
-    
+
     this.audioContext = new AudioContext();
     const audioContext = this.audioContext; // Local reference for TypeScript
     const destination = audioContext.createMediaStreamDestination();
@@ -192,7 +192,7 @@ export class MediaStreamManager {
     // We need fresh microphone input for EVERY recording
     logger.info(`[Audio] Screen audio detected: ${hasScreenAudio ? 'YES' : 'NO'}`);
     logger.info("[Audio] Requesting microphone for voice narration...");
-    
+
     try {
       // Always request fresh microphone access
       const micStream = await this.initializeMicrophoneCapture();
@@ -207,7 +207,7 @@ export class MediaStreamManager {
 
     // Connect ALL audio sources using Web Audio API
     logger.info(`[Audio] Mixing ${streams.length} audio source(s)...`);
-    
+
     streams.forEach((stream, index) => {
       const audioTracks = stream.getAudioTracks();
       if (audioTracks.length > 0) {
@@ -278,7 +278,7 @@ export class MediaStreamManager {
 
   /**
    * Checks if any media stream is currently active
-   * 
+   *
    * @returns True if screen or combined stream is active
    */
   get isActive(): boolean {
@@ -287,7 +287,7 @@ export class MediaStreamManager {
 
   /**
    * Gets the current screen capture stream
-   * 
+   *
    * @returns The screen MediaStream or null if not initialized
    */
   get currentScreenStream(): MediaStream | null {
