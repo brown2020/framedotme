@@ -6,7 +6,6 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  signOut,
 } from "firebase/auth";
 import toast from "react-hot-toast";
 
@@ -16,7 +15,7 @@ import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
 import { handleError } from "@/lib/errors";
 import { browserStorage } from "@/services/browserStorageService";
-import { clearServerSessionCookie } from "@/services/sessionCookieService";
+import { useSignOut } from "@/hooks/useSignOut";
 import { AUTH_PENDING_TIMEOUT_MS, AUTH_STORAGE_KEYS } from "@/constants/auth";
 
 /**
@@ -26,8 +25,8 @@ import { AUTH_PENDING_TIMEOUT_MS, AUTH_STORAGE_KEYS } from "@/constants/auth";
  */
 export function useAuthHandlers(hideModal: () => void) {
   const setAuthDetails = useAuthStore((s) => s.setAuthDetails);
-  const clearAuthDetails = useAuthStore((s) => s.clearAuthDetails);
-  
+  const { performSignOutQuiet } = useSignOut();
+
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [name, setName] = useState<string>("");
@@ -60,19 +59,16 @@ export function useAuthHandlers(hideModal: () => void) {
   }, [acceptTerms, hideModal]);
 
   /**
-   * Handles user sign-out
+   * Handles user sign-out (quiet version for modal context)
    */
   const handleSignOut = useCallback(async () => {
     try {
-      // Clear server-side session cookie before client sign out for security
-      await clearServerSessionCookie();
-      await signOut(auth);
-      clearAuthDetails();
+      await performSignOutQuiet();
       hideModal();
     } catch (error) {
       handleError("Sign out", error, { showToast: true });
     }
-  }, [clearAuthDetails, hideModal]);
+  }, [performSignOutQuiet, hideModal]);
 
   /**
    * Helper function to save email to storage after successful auth

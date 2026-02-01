@@ -2,12 +2,12 @@
 
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 
 import { auth } from "@/firebase/firebaseClient";
 import { useIAPHandler } from "@/hooks/useIAPHandler";
+import { useSignOut } from "@/hooks/useSignOut";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
@@ -16,13 +16,12 @@ import useProfileStore from "@/zustand/useProfileStore";
 
 export function ProfileComponent(): ReactElement {
   const profile = useProfileStore((state) => state.profile);
-  const router = useRouter();
-
   const [showCreditsSection, setShowCreditsSection] = useState(true);
   const deleteAccount = useProfileStore((state) => state.deleteAccount);
-  const clearAuthDetails = useAuthStore((s) => s.clearAuthDetails);
   const uid = useAuthStore((s) => s.uid);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const { performSignOut, resetAllStores, clearAllCookies, clearAllStorage } = useSignOut();
 
   // Handle IAP messages from React Native WebView
   useIAPHandler(uid);
@@ -45,109 +44,28 @@ export function ProfileComponent(): ReactElement {
   };
 
   const handleSignOut = useCallback(async () => {
-    try {
-      // 1. Sign out from Firebase
-      await signOut(auth);
-
-      // 2. Clear all Zustand stores
-      clearAuthDetails();
-      useProfileStore.setState({
-        profile: {
-          email: "",
-          contactEmail: "",
-          displayName: "",
-          photoUrl: "",
-          emailVerified: false,
-          credits: 0,
-          selectedAvatar: "",
-          selectedTalkingPhoto: "",
-          useCredits: true,
-        },
-      });
-
-      // 3. Clear all cookies
-      const cookies = document.cookie.split(";");
-      for (const cookie of cookies) {
-        const eqPos = cookie.indexOf("=");
-        const name =
-          eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
-        // Delete cookie for all paths
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
-      }
-
-      // 4. Clear all localStorage
-      try {
-        localStorage.clear();
-      } catch (error) {
-        logger.error("Error clearing localStorage", error);
-      }
-
-      // 5. Clear all sessionStorage
-      try {
-        sessionStorage.clear();
-      } catch (error) {
-        logger.error("Error clearing sessionStorage", error);
-      }
-
-      toast.success("Signed out successfully");
-
-      // 6. Force a full page reload to pristine state
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 500);
-    } catch (error) {
-      logger.error("Error signing out", error);
-      toast.error("Failed to sign out. Please try again.");
-    }
-  }, [clearAuthDetails]);
+    await performSignOut();
+  }, [performSignOut]);
 
   const onDeleteConfirm = useCallback(async () => {
     if (!uid) return;
 
     setShowDeleteModal(false);
     try {
-      // 1. Delete account and sign out
+      // 1. Delete account from Firestore
       await deleteAccount(uid);
+
+      // 2. Sign out from Firebase
       await signOut(auth);
 
-      // 2. Clear all Zustand stores
-      clearAuthDetails();
-      useProfileStore.setState({
-        profile: {
-          email: "",
-          contactEmail: "",
-          displayName: "",
-          photoUrl: "",
-          emailVerified: false,
-          credits: 0,
-          selectedAvatar: "",
-          selectedTalkingPhoto: "",
-          useCredits: true,
-        },
-      });
-
-      // 3. Clear all cookies
-      const cookies = document.cookie.split(";");
-      for (const cookie of cookies) {
-        const eqPos = cookie.indexOf("=");
-        const name =
-          eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
-      }
-
-      // 4. Clear localStorage and sessionStorage
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-      } catch (error) {
-        logger.error("Error clearing storage", error);
-      }
+      // 3. Clear all state and storage using shared utilities
+      resetAllStores();
+      clearAllCookies();
+      clearAllStorage();
 
       toast.success("Account deleted successfully.");
 
-      // 5. Force a full page reload
+      // 4. Force a full page reload
       setTimeout(() => {
         window.location.href = "/";
       }, 500);
@@ -155,7 +73,7 @@ export function ProfileComponent(): ReactElement {
       logger.error("Error on deletion of account", error);
       toast.error("Failed to delete account. Please try again.");
     }
-  }, [deleteAccount, clearAuthDetails, uid]);
+  }, [deleteAccount, uid, resetAllStores, clearAllCookies, clearAllStorage]);
 
   return (
     <div className="flex flex-col gap-6">

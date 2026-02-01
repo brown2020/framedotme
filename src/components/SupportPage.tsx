@@ -2,14 +2,7 @@
 
 import type { ReactElement } from "react";
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
-import toast from "react-hot-toast";
-import { auth } from "@/firebase/firebaseClient";
-import { useAuthStore } from "@/zustand/useAuthStore";
-import useProfileStore from "@/zustand/useProfileStore";
-import { usePaymentsStore } from "@/zustand/usePaymentsStore";
-import { logger } from "@/utils/logger";
+import { useSignOut } from "@/hooks/useSignOut";
 import { ConfirmDialog } from "./ui/confirm-dialog";
 
 interface Props {
@@ -27,73 +20,23 @@ export function SupportPage({
   companyLocation,
   updatedAt,
 }: Props): ReactElement {
-  const router = useRouter();
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-
-  const clearAuthDetails = useAuthStore((s) => s.clearAuthDetails);
-  const resetProfile = useProfileStore((s) => s.resetProfile);
+  const { performSignOut } = useSignOut();
 
   const handleHardReset = useCallback(async () => {
     setShowResetDialog(false);
     setIsResetting(true);
 
     try {
-      // 1. Sign out from Firebase
-      try {
-        await signOut(auth);
-      } catch (error) {
-        logger.error("Error signing out during hard reset", error);
-      }
-
-      // 2. Clear all Zustand stores
-      clearAuthDetails();
-      resetProfile();
-      usePaymentsStore.setState({
-        payments: [],
-        paymentsLoading: false,
-        paymentsError: null,
+      await performSignOut({
+        successMessage: "Application reset complete. Redirecting...",
+        redirectDelay: 1000,
       });
-
-      // 3. Clear all cookies
-      const cookies = document.cookie.split(";");
-      for (const cookie of cookies) {
-        const eqPos = cookie.indexOf("=");
-        const name =
-          eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
-        // Delete cookie for all paths
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
-      }
-
-      // 4. Clear all localStorage
-      try {
-        localStorage.clear();
-      } catch (error) {
-        logger.error("Error clearing localStorage", error);
-      }
-
-      // 5. Clear all sessionStorage
-      try {
-        sessionStorage.clear();
-      } catch (error) {
-        logger.error("Error clearing sessionStorage", error);
-      }
-
-      toast.success("Application reset complete. Redirecting...");
-
-      // 6. Wait a moment then redirect and reload
-      setTimeout(() => {
-        router.push("/");
-        // Force a full page reload to ensure everything is cleared
-        window.location.href = "/";
-      }, 1000);
-    } catch (error) {
-      logger.error("Error during hard reset", error);
-      toast.error("Reset failed. Please refresh the page manually.");
+    } catch {
       setIsResetting(false);
     }
-  }, [clearAuthDetails, resetProfile, router]);
+  }, [performSignOut]);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-linear-to-br from-blue-50 via-white to-purple-50">
