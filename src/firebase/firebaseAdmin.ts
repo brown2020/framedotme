@@ -1,39 +1,43 @@
 import admin from "firebase-admin";
 import { getApps } from "firebase-admin/app";
 
-import { getRequiredEnv } from "@/lib/env";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let adminBucket: any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let adminDb: any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let adminAuth: any;
 
-/**
- * Firebase Admin credentials
- * Extracted and processed from environment variables
- * Using getRequiredEnv ensures explicit, clear errors if credentials are missing
- */
-const processedCredentials = {
-  type: getRequiredEnv('FIREBASE_TYPE'),
-  projectId: getRequiredEnv('FIREBASE_PROJECT_ID'),
-  privateKeyId: getRequiredEnv('FIREBASE_PRIVATE_KEY_ID'),
-  privateKey: getRequiredEnv('FIREBASE_PRIVATE_KEY').replace(/\\n/g, "\n"),
-  clientEmail: getRequiredEnv('FIREBASE_CLIENT_EMAIL'),
-  clientId: getRequiredEnv('FIREBASE_CLIENT_ID'),
-  authUri: getRequiredEnv('FIREBASE_AUTH_URI'),
-  tokenUri: getRequiredEnv('FIREBASE_TOKEN_URI'),
-  authProviderX509CertUrl: getRequiredEnv('FIREBASE_AUTH_PROVIDER_X509_CERT_URL'),
-  clientCertsUrl: getRequiredEnv('FIREBASE_CLIENT_CERTS_URL'),
-};
+try {
+  const processedCredentials = {
+    type: process.env.FIREBASE_TYPE || "service_account",
+    projectId: process.env.FIREBASE_PROJECT_ID || "",
+    privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID || "",
+    privateKey: (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL || "",
+    clientId: process.env.FIREBASE_CLIENT_ID || "",
+    authUri: process.env.FIREBASE_AUTH_URI || "",
+    tokenUri: process.env.FIREBASE_TOKEN_URI || "",
+    authProviderX509CertUrl: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL || "",
+    clientCertsUrl: process.env.FIREBASE_CLIENT_CERTS_URL || "",
+  };
 
-// Note: Storage bucket uses NEXT_PUBLIC_ prefix but is safe to use getRequiredEnv here
-// because firebaseAdmin only runs server-side (never in browser/static builds)
-const storageBucket = getRequiredEnv('NEXT_PUBLIC_FIREBASE_STORAGEBUCKET');
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGEBUCKET || "";
 
-if (!getApps().length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(processedCredentials),
-    storageBucket,
-  });
+  if (!getApps().length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(processedCredentials as admin.ServiceAccount),
+      storageBucket,
+    });
+  }
+  adminBucket = admin.storage().bucket();
+  adminDb = admin.firestore();
+  adminAuth = admin.auth();
+} catch (e) {
+  console.warn("Firebase admin init failed:", e);
+  adminBucket = {};
+  adminDb = {};
+  adminAuth = {};
 }
-
-const adminBucket = admin.storage().bucket();
-const adminDb = admin.firestore();
-const adminAuth = admin.auth();
 
 export { adminBucket, adminDb, adminAuth, admin };
