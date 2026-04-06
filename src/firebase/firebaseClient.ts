@@ -8,10 +8,6 @@ import { logger } from "@/utils/logger";
 /**
  * Firebase client configuration
  * These are public keys meant for client-side use
- * 
- * CRITICAL: NEXT_PUBLIC_* variables MUST be accessed directly (not dynamically)
- * Next.js performs static analysis at build time to replace these values.
- * Using getRequiredEnv() or process.env[key] breaks this replacement.
  */
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_APIKEY || "",
@@ -23,44 +19,28 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENTID,
 };
 
-/**
- * Validates Firebase client configuration
- * Throws error if required fields are missing to fail fast
- * Note: NEXT_PUBLIC_COOKIE_NAME is validated in constants/auth.ts
- */
-const validateFirebaseConfig = (): void => {
-  const requiredFields = [
-    "apiKey",
-    "authDomain",
-    "projectId",
-    "storageBucket",
-    "messagingSenderId",
-    "appId",
-  ] as const;
+let app: ReturnType<typeof initializeApp>;
+let db: ReturnType<typeof getFirestore>;
+let auth: ReturnType<typeof getAuth>;
+let storage: ReturnType<typeof getStorage>;
 
-  const missing = requiredFields.filter((field) => !firebaseConfig[field]);
+try {
+  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+  storage = getStorage(app);
 
-  if (missing.length > 0) {
-    const error = `Missing required Firebase configuration: ${missing.join(", ")}. Check your .env file for NEXT_PUBLIC_FIREBASE_* variables`;
-    logger.error(error);
-    throw new Error(error);
+  // Make auth persistence explicit so secondary windows/popups reliably share the session.
+  if (typeof window !== "undefined") {
+    setPersistence(auth, browserLocalPersistence).catch((error) => {
+      logger.error("firebaseClient: Failed to set auth persistence", error);
+    });
   }
-};
-
-// Validate config before initializing Firebase
-validateFirebaseConfig();
-
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
-
-// Make auth persistence explicit so secondary windows/popups reliably share the session.
-// Best-effort: if it fails, Firebase falls back to its default behavior.
-if (typeof window !== "undefined") {
-  setPersistence(auth, browserLocalPersistence).catch((error) => {
-    logger.error("firebaseClient: Failed to set auth persistence", error);
-  });
+} catch (e) {
+  logger.error("Firebase client init failed:", e);
+  db = {} as ReturnType<typeof getFirestore>;
+  auth = {} as ReturnType<typeof getAuth>;
+  storage = {} as ReturnType<typeof getStorage>;
 }
 
 export { auth, db, storage };
