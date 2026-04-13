@@ -105,7 +105,6 @@ type SessionData = {
 function getJwtSecret(): Uint8Array {
   const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
   if (!secret) {
-    console.error("[Proxy] JWT_SECRET not configured");
     throw new Error("JWT_SECRET not configured");
   }
   return new TextEncoder().encode(secret);
@@ -136,7 +135,10 @@ async function validateSessionToken(
     if (error instanceof Error) {
       const msg = error.message.toLowerCase();
       if (!msg.includes("expired") && !msg.includes("signature")) {
-        console.error("[Proxy] Unexpected JWT validation error:", error);
+        // Unexpected JWT error — log in dev only
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Proxy] Unexpected JWT validation error:", error);
+        }
       }
     }
     return null;

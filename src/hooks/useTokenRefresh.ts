@@ -44,54 +44,27 @@ export function useTokenRefresh(
     // Only leader tab should perform token refresh to prevent race conditions
     // across multiple tabs. Force bypasses leader check for initial setup.
     if (!force && !tabLeaderRef.current.isLeader()) {
-      console.log("[useTokenRefresh] Not leader tab, skipping refresh");
       return;
     }
 
     try {
       if (!auth.currentUser) {
-        console.error("[useTokenRefresh] No user found during token refresh");
         throw new Error("No user found");
       }
 
-      console.log(
-        "[useTokenRefresh] Getting ID token for user:",
-        auth.currentUser.uid,
-      );
       const idTokenResult = await getIdToken(auth.currentUser, true);
-      console.log(
-        "[useTokenRefresh] Got ID token, length:",
-        idTokenResult.length,
-      );
 
-      console.log("[useTokenRefresh] Setting cookie:", cookieName);
       setCookie(cookieName, idTokenResult, {
         path: "/",
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
       });
 
-      // Verify cookie was set
-      const cookieCheck = document.cookie.includes(cookieName);
-      console.log("[useTokenRefresh] Cookie set verification:", cookieCheck);
-      if (!cookieCheck) {
-        console.error(
-          "[useTokenRefresh] Cookie was NOT set! All cookies:",
-          document.cookie,
-        );
-      }
-
       // Upgrade to a secure httpOnly session cookie for server-side route protection.
       // Treat as transaction: if session cookie fails, rollback client cookie
       try {
-        console.log("[useTokenRefresh] Setting server session cookie");
         await setServerSessionCookie(idTokenResult);
-        console.log("[useTokenRefresh] Server session cookie set successfully");
       } catch (sessionError) {
-        console.error(
-          "[useTokenRefresh] Failed to set server session cookie:",
-          sessionError,
-        );
         deleteCookie(cookieName);
         throw new Error("Failed to set session cookie", {
           cause: sessionError,
@@ -103,10 +76,7 @@ export function useTokenRefresh(
         // Broadcast to other tabs that token was refreshed
         tabLeaderRef.current.broadcast("token-refreshed");
       }
-
-      console.log("[useTokenRefresh] ✅ Token refresh complete");
     } catch (error: unknown) {
-      console.error("[useTokenRefresh] ❌ Error refreshing token:", error);
       logger.error("Error refreshing token", error);
       deleteCookie(cookieName);
       // Fire-and-forget: best-effort cleanup of server-side session cookie
@@ -158,8 +128,6 @@ export function useTokenRefresh(
     // Listen for token refresh broadcasts from leader tab
     const unsubscribeBroadcast = tabLeader.onBroadcast((message) => {
       if (message === "token-refreshed") {
-        console.log("[useTokenRefresh] Received token-refreshed broadcast from leader");
-        // Reschedule our local refresh timer since leader just refreshed
         scheduleTokenRefresh();
       }
     });
@@ -177,14 +145,10 @@ export function useTokenRefresh(
 
         // If no recent refresh (> 1 minute ago), try to become leader and refresh
         if (timeSinceLastRefresh > 60000) {
-          // Try to become leader for initial refresh
           if (tabLeader.tryBecomeLeader()) {
-            await refreshAuthToken(true); // Force refresh as we just became leader
-          } else {
-            // Not leader, but still need initial cookie - force refresh once
-            console.log("[useTokenRefresh] Not leader, but forcing initial token refresh");
             await refreshAuthToken(true);
           }
+          // Non-leader tabs rely on the leader's broadcast to stay in sync
         }
 
         // Then schedule periodic refresh (only leader will actually execute)
