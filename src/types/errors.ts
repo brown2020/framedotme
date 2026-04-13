@@ -1,4 +1,4 @@
-import type { ErrorCategory, ErrorMetadata, ErrorStage } from "./error-metadata";
+import type { ErrorCategory, ErrorMetadata } from "./error-metadata";
 
 /**
  * Unified application error class

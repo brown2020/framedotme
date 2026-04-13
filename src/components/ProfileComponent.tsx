@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 
@@ -16,7 +16,7 @@ import useProfileStore from "@/zustand/useProfileStore";
 
 export function ProfileComponent(): ReactElement {
   const profile = useProfileStore((state) => state.profile);
-  const [showCreditsSection, setShowCreditsSection] = useState(true);
+  const showCreditsSection = !isReactNativeWebView();
   const deleteAccount = useProfileStore((state) => state.deleteAccount);
   const uid = useAuthStore((s) => s.uid);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -25,11 +25,6 @@ export function ProfileComponent(): ReactElement {
 
   // Handle IAP messages from React Native WebView
   useIAPHandler(uid);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShowCreditsSection(!isReactNativeWebView());
-  }, []);
 
   const handleBuyClick = useCallback(() => {
     if (showCreditsSection) {

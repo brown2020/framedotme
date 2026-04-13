@@ -32,7 +32,7 @@ export default function LoginFinish() {
           throw new Error("Sign in link is not valid");
         }
 
-        let email = window.localStorage.getItem("frameEmail");
+        const email = window.localStorage.getItem("frameEmail");
         const name = window.localStorage.getItem("frameName") || "";
 
         logger.debug("Attempting sign in with email:", email, name);

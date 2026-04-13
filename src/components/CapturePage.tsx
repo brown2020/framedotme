@@ -193,7 +193,7 @@ export function CapturePage() {
                   Check Audio
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Select "Share system audio" in the browser prompt to include
+                  Select &quot;Share system audio&quot; in the browser prompt to include
                   sound
                 </p>
               </div>

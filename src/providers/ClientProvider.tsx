@@ -40,11 +40,9 @@ if (process.env.NODE_ENV === 'development') {
   const isCorrectOrder = expectedProviders.every((name, i) => actualProviders[i] === name);
   
   if (!isCorrectOrder) {
-    console.error('Provider order validation failed!');
-    console.error('Expected:', expectedProviders);
-    console.error('Actual:', actualProviders);
     throw new Error(
-      'Provider order has been modified. This will break dependency chain. ' +
+      `Provider order has been modified. Expected: [${expectedProviders.join(", ")}], ` +
+      `Actual: [${actualProviders.join(", ")}]. This will break dependency chain. ` +
       'See ClientProvider.tsx documentation for correct order.'
     );
   }

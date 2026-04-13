@@ -2,7 +2,6 @@ import type { RecorderStatusType } from "@/types/recorder";
 
 import { useCallback, useRef, useState, useEffect, type MutableRefObject } from "react";
 
-import { MediaStreamError } from "@/types/mediaStreamTypes";
 import { getErrorMessage } from "@/lib/errors";
 import { MediaStreamManager } from "@/lib/media-stream-manager";
 import { RecordingManager } from "@/lib/recording-manager";

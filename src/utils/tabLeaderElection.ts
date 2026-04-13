@@ -105,9 +105,8 @@ export class TabLeaderElection {
 
     try {
       localStorage.setItem(this.key, JSON.stringify(leaderData));
-    } catch (error) {
+    } catch {
       // localStorage might be full or disabled
-      console.warn("[TabLeaderElection] Failed to set leader:", error);
     }
   }
 
@@ -268,8 +267,8 @@ export class TabLeaderElection {
     for (const listener of this.listeners) {
       try {
         listener(message);
-      } catch (error) {
-        console.error("[TabLeaderElection] Listener error:", error);
+      } catch {
+        // Listener threw — swallow to avoid breaking other listeners
       }
     }
   }

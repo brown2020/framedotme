@@ -4,9 +4,6 @@ import type { ReactElement } from "react";
 import { useEffect, useRef } from "react";
 import { VideoIcon } from "lucide-react";
 import { useRecorderStatus } from "@/hooks/useRecorderStatus";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { getRecorderButtonClass } from "@/utils/recorderStyles";
 import {
   VIDEO_CONTROLS_WINDOW_WIDTH,
   VIDEO_CONTROLS_WINDOW_HEIGHT,

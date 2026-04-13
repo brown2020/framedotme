@@ -91,7 +91,7 @@ export function AuthenticatedDashboard({
                 1. Start Recording
               </h4>
               <p className="text-sm text-gray-600">
-                Click "Start Recording" to capture your screen
+                Click &quot;Start Recording&quot; to capture your screen
               </p>
             </div>
           </div>
