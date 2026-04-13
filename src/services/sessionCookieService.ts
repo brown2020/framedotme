@@ -19,11 +19,14 @@ export async function setServerSessionCookie(idToken: string): Promise<void> {
       headers[CSRF_HEADER_NAME] = csrfToken;
     }
 
-    await fetch("/api/session", {
+    const response = await fetch("/api/session", {
       method: "POST",
       headers,
       body: JSON.stringify({ idToken }),
     });
+    if (!response.ok) {
+      throw new Error(`Session cookie request failed: ${response.status}`);
+    }
   } catch (error: unknown) {
     logger.error("Failed to set session cookie", error);
     throw error;

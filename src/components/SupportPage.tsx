@@ -10,7 +10,6 @@ interface Props {
   companyEmail: string;
   companyAddress: string;
   companyLocation: string;
-  updatedAt: string;
 }
 
 export function SupportPage({
@@ -18,7 +17,6 @@ export function SupportPage({
   companyEmail,
   companyAddress,
   companyLocation,
-  updatedAt,
 }: Props): ReactElement {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [isResetting, setIsResetting] = useState(false);

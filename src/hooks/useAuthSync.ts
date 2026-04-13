@@ -11,7 +11,7 @@
  * This prevents race conditions where users can't access protected routes
  */
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { deleteCookie, setCookie } from "cookies-next";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { getIdToken } from "firebase/auth";
@@ -43,16 +43,13 @@ async function createSessionCookie(idToken: string): Promise<boolean> {
     });
 
     if (!response.ok) {
-      console.error(
-        "[createSessionCookie] API returned error:",
-        response.status,
-      );
+      logger.error("Session cookie API returned error:", response.status);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error("[createSessionCookie] Request failed:", error);
+    logger.error("Session cookie request failed", error);
     return false;
   }
 }
@@ -111,14 +108,11 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
     if (user?.uid) {
       const setupUserSession = async () => {
         try {
-          console.log("[useAuthSync] Setting up session for user:", user.uid, "version:", currentVersion);
-
           // Get ID token
           const idToken = await getIdToken(user, true);
 
           // Check if this operation is still valid (no new auth changes)
           if (currentVersion !== sessionVersionRef.current) {
-            console.log("[useAuthSync] Stale session setup, aborting (expected:", sessionVersionRef.current, "got:", currentVersion, ")");
             return;
           }
 
@@ -134,15 +128,10 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
 
           // Check again after async operation
           if (currentVersion !== sessionVersionRef.current) {
-            console.log("[useAuthSync] Stale session after cookie creation, aborting");
             return;
           }
 
           if (sessionCreated) {
-            console.log(
-              "[useAuthSync] ✅ Session ready, setting authReady=true",
-            );
-
             // Only mark as ready AFTER session cookie is created
             setAuthDetails({
               uid: user.uid,
@@ -154,10 +143,7 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
               authPending: false,
             });
           } else {
-            console.error(
-              "[useAuthSync] ❌ Failed to create session, keeping authReady=false",
-            );
-
+            logger.error("Failed to create session cookie");
             // Session failed - keep pending
             setAuthDetails({
               uid: user.uid,
@@ -172,11 +158,9 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
         } catch (error) {
           // Only update state if this version is still current
           if (currentVersion !== sessionVersionRef.current) {
-            console.log("[useAuthSync] Stale error handler, ignoring");
             return;
           }
 
-          console.error("[useAuthSync] Session setup error:", error);
           logger.error("Session setup error", error);
 
           setAuthDetails({
@@ -194,7 +178,6 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
       void setupUserSession();
     } else {
       // No user: clear everything and mark ready
-      console.log("[useAuthSync] No user, clearing session");
 
       setAuthDetails({
         uid: "",

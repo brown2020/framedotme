@@ -217,7 +217,7 @@ export function TermsPage({
                       Important Notice:
                     </p>
                     <p className="text-gray-700 leading-relaxed">
-                      The services are provided "as is" without warranties of
+                      The services are provided &quot;as is&quot; without warranties of
                       any kind. {companyName} shall not be liable for any
                       indirect, incidental, special, or consequential damages
                       arising from your use of the services.
