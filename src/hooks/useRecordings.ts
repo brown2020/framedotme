@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useReducer, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
 import type { VideoMetadata } from "@/types/video";
@@ -11,6 +11,46 @@ import {
 } from "@/services/storageService";
 import { logger } from "@/utils/logger";
 
+type RecordingsState = {
+  videos: VideoMetadata[] | null;
+  loading: boolean;
+  featuredVideo: VideoMetadata | null;
+};
+
+type RecordingsAction =
+  | { type: "FETCH_START" }
+  | { type: "FETCH_SUCCESS"; payload: VideoMetadata[] }
+  | { type: "FETCH_ERROR" }
+  | { type: "SET_FEATURED"; payload: VideoMetadata | null };
+
+function recordingsReducer(
+  state: RecordingsState,
+  action: RecordingsAction,
+): RecordingsState {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true };
+    case "FETCH_SUCCESS":
+      return {
+        ...state,
+        loading: false,
+        videos: action.payload,
+        featuredVideo:
+          state.featuredVideo === null &&
+          action.payload.length > 0 &&
+          action.payload[0]
+            ? action.payload[0]
+            : state.featuredVideo,
+      };
+    case "FETCH_ERROR":
+      return { ...state, loading: false };
+    case "SET_FEATURED":
+      return { ...state, featuredVideo: action.payload };
+    default:
+      return state;
+  }
+}
+
 /**
  * Custom hook for managing recordings data and operations
  * Handles fetching, deleting, and downloading recordings for a user
@@ -20,30 +60,28 @@ import { logger } from "@/utils/logger";
  * @returns Recordings data, operations, and loading state
  */
 export function useRecordings(uid: string, authReady = true) {
-  const [videos, setVideos] = useState<VideoMetadata[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [featuredVideo, setFeaturedVideo] = useState<VideoMetadata | null>(
-    null,
-  );
+  const [state, dispatch] = useReducer(recordingsReducer, {
+    videos: null,
+    loading: false,
+    featuredVideo: null,
+  });
+  const { videos, loading, featuredVideo } = state;
 
   const fetchVideos = useCallback(async () => {
     // Only fetch if we have uid AND auth is ready (Firebase SDK initialized)
     if (!uid || !authReady) return;
 
-    try {
-      setLoading(true);
-      const videosData = await fetchUserRecordings(uid);
-      setVideos(videosData);
-      if (videosData.length > 0 && videosData[0]) {
-        setFeaturedVideo(videosData[0]);
-      }
-    } catch (error) {
-      const message = getErrorMessage(error, "Failed to fetch recordings");
-      logger.error("Error fetching recordings", error);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
+    dispatch({ type: "FETCH_START" });
+    fetchUserRecordings(uid)
+      .then((videosData) => {
+        dispatch({ type: "FETCH_SUCCESS", payload: videosData });
+      })
+      .catch((error: unknown) => {
+        const message = getErrorMessage(error, "Failed to fetch recordings");
+        logger.error("Error fetching recordings", error);
+        toast.error(message);
+        dispatch({ type: "FETCH_ERROR" });
+      });
   }, [uid, authReady]);
 
   useEffect(() => {
@@ -61,7 +99,7 @@ export function useRecordings(uid: string, authReady = true) {
 
         // If the deleted video is the featured video, reset it
         if (featuredVideo?.id === video.id) {
-          setFeaturedVideo(null);
+          dispatch({ type: "SET_FEATURED", payload: null });
         }
       } catch (error) {
         const message = getErrorMessage(error, "Failed to delete recording");
@@ -84,11 +122,11 @@ export function useRecordings(uid: string, authReady = true) {
   }, []);
 
   const handleFeaturedVideoChange = useCallback((video: VideoMetadata) => {
-    setFeaturedVideo(video);
+    dispatch({ type: "SET_FEATURED", payload: video });
   }, []);
 
   const clearFeaturedVideo = useCallback(() => {
-    setFeaturedVideo(null);
+    dispatch({ type: "SET_FEATURED", payload: null });
   }, []);
 
   return {
