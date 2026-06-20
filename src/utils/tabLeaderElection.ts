@@ -295,14 +295,23 @@ export class TabLeaderElection {
    * Cleanup resources
    */
   destroy(): void {
-    this.destroyed = true;
+    if (this.destroyed) return;
+
     this.resign();
+    this.destroyed = true;
     this.listeners = [];
 
     if (this.storageListener && typeof window !== "undefined") {
       window.removeEventListener("storage", this.storageListener);
       this.storageListener = null;
     }
+  }
+
+  /**
+   * Returns whether this instance has been destroyed.
+   */
+  isDestroyed(): boolean {
+    return this.destroyed;
   }
 }
 
@@ -312,7 +321,8 @@ export class TabLeaderElection {
 const leaders = new Map<string, TabLeaderElection>();
 
 export function getTabLeader(namespace: string): TabLeaderElection {
-  if (!leaders.has(namespace)) {
+  const existingLeader = leaders.get(namespace);
+  if (!existingLeader || existingLeader.isDestroyed()) {
     leaders.set(namespace, new TabLeaderElection(namespace));
   }
   return leaders.get(namespace)!;
