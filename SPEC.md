@@ -47,7 +47,6 @@ No package-defined unit, integration, e2e, or standalone typecheck script exists
 
 ## Quality Risks
 
-- The README dependency version notes appear older than the current `package.json` ranges, so docs should be kept aligned with package metadata.
 - There is no automated test suite for auth, media recording, payment, or route-protection flows.
 - Firebase Admin initialization falls back to cast empty objects on configuration failure, which can defer failures until runtime call sites.
 - Media capture and recording rely on browser APIs that require browser-level validation beyond lint/build.
