@@ -11,25 +11,24 @@
 
 ## Current State
 
-- Phase: Stabilization Loop
-- Task: T-009 / R-001
+- Phase: Integrator
+- Task: T-010
 - Status: Ready to commit
-- Last command: `npm run build`
-- Last result: passed
-- Last pushed commit: e2de085
-- Branch sync: `dev...origin/dev`, clean before stabilization edits
-- Working tree: dirty with in-scope stabilization source/report updates
-- Next action: inspect diff, commit and push stabilization checkpoint
+- Last command: `npm run lint`
+- Last result: passed; audit remains deferred with 2 moderate advisories
+- Last pushed commit: 52e09bf
+- Branch sync: `dev...origin/dev`, clean before final report edits
+- Working tree: dirty with in-scope final report updates
+- Next action: inspect diff, commit and push final report checkpoint
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| `src/components/PaymentSuccess.tsx` | In-scope source | R-001 local payment credit sync |
-| `src/zustand/useProfileStore.ts` | In-scope source | R-001 local-only credit action |
-| `agent-runs/2026-06-20-codebase-pass/07-stabilization-loop.md` | Safe-to-commit | Stabilization report |
+| `agent-runs/2026-06-20-codebase-pass/08-integrator.md` | Safe-to-commit | Integrator report |
+| `agent-runs/2026-06-20-codebase-pass/final-report.md` | Safe-to-commit | Final report |
 | `agent-runs/2026-06-20-codebase-pass/run-state.md` | Safe-to-commit | Resume ledger update |
-| `agent-runs/2026-06-20-codebase-pass/task-queue.md` | Safe-to-commit | T-009/T-010 status update |
+| `agent-runs/2026-06-20-codebase-pass/task-queue.md` | Safe-to-commit | T-010 status update |
 
 ## Blockers
 
