@@ -8,11 +8,12 @@ import {
   Timestamp,
   runTransaction,
   doc,
+  increment,
 } from "firebase/firestore";
 
 import type { Payment, PaymentInput } from "@/types/payment";
 import { db } from "@/firebase/firebaseClient";
-import { getUserPaymentsPath } from "@/lib/firestore";
+import { getUserPaymentsPath, getUserProfilePath } from "@/lib/firestore";
 import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
 import { PaymentSchema, validateUserId } from "@/lib/validation";
 
@@ -200,50 +201,61 @@ export function sortPayments(payments: Payment[]): Payment[] {
   );
 }
 
+const buildPaymentRecord = (
+  payment: PaymentInput,
+  createdAt: Timestamp,
+): Payment => ({
+  id: payment.id,
+  amount: payment.amount,
+  createdAt,
+  status: payment.status,
+  mode: payment.mode,
+  currency: payment.currency,
+  platform: payment.platform,
+  productId: payment.productId,
+});
+
 /**
- * Result of an idempotent payment creation operation
+ * Result of an idempotent payment processing operation
  */
-export interface CreatePaymentIdempotentResult {
+export interface ProcessPaymentWithCreditsResult {
   /** The payment record (either newly created or existing) */
   payment: Payment;
   /** Whether the payment already existed (true) or was just created (false) */
   alreadyExists: boolean;
+  /** Credits added by this call. Existing payments add zero credits. */
+  creditsAdded: number;
 }
 
 /**
- * Creates a payment record atomically using Firestore transactions.
+ * Records a successful payment and adds credits atomically.
  *
- * This function is IDEMPOTENT - it will safely handle concurrent calls
- * for the same payment ID. If the payment already exists, it returns
- * the existing payment without creating a duplicate.
- *
- * USE THIS instead of createPayment() when:
- * - Processing payment webhooks that may be delivered multiple times
- * - Handling payment success pages that may be loaded in multiple tabs
- * - Any scenario where concurrent duplicate requests are possible
+ * This function is idempotent for a payment ID. If the payment already exists,
+ * it returns the existing record and does not add credits again. If it is new,
+ * the payment document and credit increment are committed in the same transaction.
  *
  * @param uid - The user's unique identifier
  * @param payment - Payment data (without createdAt, will be added automatically)
- * @returns Promise resolving to the payment and whether it already existed
+ * @param creditsToAdd - Number of credits to add for a newly processed payment
+ * @returns Promise resolving to the payment, duplicate status, and credits added
  * @throws {AppError} If the transaction fails (not for duplicate detection)
- *
- * @example
- * ```typescript
- * const { payment, alreadyExists } = await createPaymentIdempotent(uid, paymentData);
- * if (alreadyExists) {
- *   console.log('Payment was already processed');
- * } else {
- *   // Add credits only for new payments
- *   await addCredits jpuid, creditsAmount);
- * }
- * ```
  */
-export async function createPaymentIdempotent(
+export async function processPaymentWithCreditsIdempotent(
   uid: string,
   payment: PaymentInput,
-): Promise<CreatePaymentIdempotentResult> {
+  creditsToAdd: number,
+): Promise<ProcessPaymentWithCreditsResult> {
   const validatedUid = validateUserId(uid);
   const paymentsCollectionPath = getUserPaymentsPath(validatedUid);
+  const profilePath = getUserProfilePath(validatedUid);
+
+  if (
+    !Number.isFinite(creditsToAdd) ||
+    !Number.isInteger(creditsToAdd) ||
+    creditsToAdd <= 0
+  ) {
+    throw new Error("creditsToAdd must be a positive integer");
+  }
 
   return firestoreWrite(
     async () => {
@@ -253,59 +265,54 @@ export async function createPaymentIdempotent(
         throw new Error("Firebase auth not initialized - user not authenticated");
       }
 
-      // Use a transaction to atomically check-and-create
-      const result = await runTransaction(db, async (transaction) => {
-        // Check if payment already exists
-        const q = query(
-          collection(db, paymentsCollectionPath),
-          where("id", "==", payment.id),
-        );
-        const querySnapshot = await getDocs(q);
+      // Backward compatibility: older code wrote payment records under random
+      // Firestore IDs, so check those before the deterministic transaction path.
+      const legacyPaymentQuery = query(
+        collection(db, paymentsCollectionPath),
+        where("id", "==", payment.id),
+      );
+      const legacyPaymentSnapshot = await getDocs(legacyPaymentQuery);
+      if (!legacyPaymentSnapshot.empty && legacyPaymentSnapshot.docs[0]) {
+        return {
+          payment: mapDocumentToPayment(legacyPaymentSnapshot.docs[0].data()),
+          alreadyExists: true,
+          creditsAdded: 0,
+        };
+      }
 
-        if (!querySnapshot.empty && querySnapshot.docs[0]) {
-          // Payment already exists - return it
-          const existingDoc = querySnapshot.docs[0];
+      const result = await runTransaction(db, async (transaction) => {
+        // Prefer deterministic document IDs for new Stripe payment records.
+        const paymentDocRef = doc(db, paymentsCollectionPath, payment.id);
+        const existingByDocId = await transaction.get(paymentDocRef);
+        if (existingByDocId.exists()) {
           return {
-            payment: mapDocumentToPayment(existingDoc.data()),
+            payment: mapDocumentToPayment(existingByDocId.data()),
             alreadyExists: true,
+            creditsAdded: 0,
           };
         }
 
-        // Payment doesn't exist - create it atomically
         const createdAt = Timestamp.now();
-        const newPaymentData = {
-          id: payment.id,
-          amount: payment.amount,
-          createdAt,
-          status: payment.status,
-          mode: payment.mode,
-          currency: payment.currency,
-          platform: payment.platform,
-          productId: payment.productId,
-        };
+        const newPaymentData = buildPaymentRecord(payment, createdAt);
+        const profileRef = doc(db, profilePath);
 
-        // Create a new document reference
-        const newDocRef = doc(collection(db, paymentsCollectionPath));
-        transaction.set(newDocRef, newPaymentData);
+        transaction.set(paymentDocRef, newPaymentData);
+        transaction.set(
+          profileRef,
+          { credits: increment(creditsToAdd) },
+          { merge: true },
+        );
 
         return {
-          payment: {
-            id: payment.id,
-            amount: payment.amount,
-            createdAt,
-            status: payment.status,
-            mode: payment.mode,
-            currency: payment.currency,
-            platform: payment.platform,
-            productId: payment.productId,
-          } as Payment,
+          payment: newPaymentData,
           alreadyExists: false,
+          creditsAdded: creditsToAdd,
         };
       });
 
       return result;
     },
-    "Failed to create payment record",
+    "Failed to process payment and credits",
     { userId: validatedUid, paymentId: payment.id },
   );
 }

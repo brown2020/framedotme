@@ -2,12 +2,11 @@
 
 import { validatePaymentIntent } from "@/actions/paymentActions";
 import { useAuthStore } from "@/zustand/useAuthStore";
-import useProfileStore from "@/zustand/useProfileStore";
 import { BONUS_CREDITS } from "@/constants/payment";
 import Link from "next/link";
 import { useEffect, useReducer, useRef } from "react";
 import { logger } from "@/utils/logger";
-import { createPaymentIdempotent } from "@/services/paymentsService";
+import { processPaymentWithCreditsIdempotent } from "@/services/paymentsService";
 
 interface Props {
   payment_intent: string;
@@ -56,7 +55,6 @@ export function PaymentSuccess({ payment_intent }: Props) {
   // Ref to track if this payment_intent has been handled (prevents re-processing on re-renders)
   const handledPaymentRef = useRef<string | null>(null);
 
-  const addCredits = useProfileStore((state) => state.addCredits);
   const uid = useAuthStore((state) => state.uid);
 
   useEffect(() => {
@@ -84,17 +82,21 @@ export function PaymentSuccess({ payment_intent }: Props) {
         const data = await validatePaymentIntent(payment_intent);
 
         if (data.status === "succeeded") {
-          // Use idempotent payment creation - this atomically checks and creates
-          // preventing race conditions from multiple tabs or rapid reloads
-          const { payment, alreadyExists } = await createPaymentIdempotent(uid, {
-            id: data.id,
-            amount: data.amount,
-            status: data.status,
-            mode: "one-time",
-            platform: "stripe",
-            productId: "payment_gateway",
-            currency: "usd",
-          });
+          const creditsToAdd = Math.floor(data.amount / 100) + BONUS_CREDITS;
+          const { payment, alreadyExists } =
+            await processPaymentWithCreditsIdempotent(
+              uid,
+              {
+                id: data.id,
+                amount: data.amount,
+                status: data.status,
+                mode: "one-time",
+                platform: "stripe",
+                productId: "payment_gateway",
+                currency: data.currency,
+              },
+              creditsToAdd,
+            );
 
           // Mark this payment_intent as handled
           handledPaymentRef.current = payment_intent;
@@ -113,10 +115,6 @@ export function PaymentSuccess({ payment_intent }: Props) {
             });
             return;
           }
-
-          // Only add credits for NEW payments (not duplicates)
-          const creditsToAdd = Math.floor(data.amount / 100) + BONUS_CREDITS;
-          await addCredits(uid, creditsToAdd);
 
           dispatch({
             type: "SET_SUCCESS",
@@ -141,7 +139,7 @@ export function PaymentSuccess({ payment_intent }: Props) {
     };
 
     if (uid) handlePaymentSuccess();
-  }, [payment_intent, addCredits, uid]);
+  }, [payment_intent, uid]);
 
   return (
     <main className="max-w-6xl flex flex-col gap-2.5 mx-auto p-10 text-black text-center border m-10 rounded-md border-black">
