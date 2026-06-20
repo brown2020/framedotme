@@ -28,6 +28,7 @@ interface ProfileState {
   updateProfile: (uid: string, newProfile: Partial<Profile>) => Promise<void>;
   minusCredits: (uid: string, amount: number) => Promise<boolean>;
   addCredits: (uid: string, amount: number) => Promise<void>;
+  applyCreditsLocally: (amount: number) => void;
   deleteAccount: (uid: string) => Promise<void>;
   resetProfile: () => void;
 }
@@ -244,6 +245,21 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       throw error;
     }
   },
+
+  /**
+   * Applies a local-only credit adjustment after another service has already
+   * committed the persisted credit change.
+   */
+  applyCreditsLocally: (amount: number) => {
+    if (!Number.isFinite(amount) || amount <= 0) return;
+
+    set((state) => ({
+      profile: {
+        ...state.profile,
+        credits: state.profile.credits + amount,
+      },
+    }));
+  },
 }));
 
 export default useProfileStore;
@@ -265,5 +281,6 @@ export const useFetchProfile = () => useProfileStore((state) => state.fetchProfi
 export const useUpdateProfile = () => useProfileStore((state) => state.updateProfile);
 export const useMinusCredits = () => useProfileStore((state) => state.minusCredits);
 export const useAddCredits = () => useProfileStore((state) => state.addCredits);
+export const useApplyCreditsLocally = () => useProfileStore((state) => state.applyCreditsLocally);
 export const useDeleteAccount = () => useProfileStore((state) => state.deleteAccount);
 export const useResetProfile = () => useProfileStore((state) => state.resetProfile);

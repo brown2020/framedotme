@@ -2,6 +2,7 @@
 
 import { validatePaymentIntent } from "@/actions/paymentActions";
 import { useAuthStore } from "@/zustand/useAuthStore";
+import useProfileStore from "@/zustand/useProfileStore";
 import { BONUS_CREDITS } from "@/constants/payment";
 import Link from "next/link";
 import { useEffect, useReducer, useRef } from "react";
@@ -55,6 +56,7 @@ export function PaymentSuccess({ payment_intent }: Props) {
   // Ref to track if this payment_intent has been handled (prevents re-processing on re-renders)
   const handledPaymentRef = useRef<string | null>(null);
 
+  const applyCreditsLocally = useProfileStore((state) => state.applyCreditsLocally);
   const uid = useAuthStore((state) => state.uid);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export function PaymentSuccess({ payment_intent }: Props) {
 
         if (data.status === "succeeded") {
           const creditsToAdd = Math.floor(data.amount / 100) + BONUS_CREDITS;
-          const { payment, alreadyExists } =
+          const { payment, alreadyExists, creditsAdded } =
             await processPaymentWithCreditsIdempotent(
               uid,
               {
@@ -116,6 +118,8 @@ export function PaymentSuccess({ payment_intent }: Props) {
             return;
           }
 
+          applyCreditsLocally(creditsAdded);
+
           dispatch({
             type: "SET_SUCCESS",
             message: "Payment successful",
@@ -139,7 +143,7 @@ export function PaymentSuccess({ payment_intent }: Props) {
     };
 
     if (uid) handlePaymentSuccess();
-  }, [payment_intent, uid]);
+  }, [payment_intent, applyCreditsLocally, uid]);
 
   return (
     <main className="max-w-6xl flex flex-col gap-2.5 mx-auto p-10 text-black text-center border m-10 rounded-md border-black">
