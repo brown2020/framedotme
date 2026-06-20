@@ -13,15 +13,15 @@ Frame.me is a streamlined screen recording application built with Next.js and Ty
 
 ## Tech Stack
 
-- Next.js 16 (locked: 16.1.1)
-- React 19 (locked: 19.2.3)
+- Next.js 16
+- React 19
 - TypeScript
-- Firebase (client SDK; locked: 12.7.0) + Firebase Admin SDK (locked: 13.6.0)
-- Zustand (locked: 5.0.9)
-- Tailwind CSS 4 (locked: 4.1.18)
+- Firebase client SDK and Firebase Admin SDK
+- Zustand
+- Tailwind CSS 4
 - Radix UI primitives/icons
-- shadcn/ui Components
-- Stripe (server SDK locked: 20.1.0; Stripe.js locked: 8.6.0)
+- shadcn/ui components
+- Stripe server SDK and Stripe.js
 
 ## Firebase Security Rules (Firestore + Storage)
 
