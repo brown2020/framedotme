@@ -11,26 +11,23 @@
 
 ## Current State
 
-- Phase: Package and Dead-Code Cleanup
-- Task: T-007 / F-002 / F-006
+- Phase: Review
+- Task: T-008 / R-001
 - Status: Ready to commit
 - Last command: `npm run lint`
-- Last result: passed
-- Last pushed commit: 313d6ce
-- Branch sync: `dev...origin/dev`, clean before package cleanup
-- Working tree: dirty with in-scope lockfile, README/SPEC, and package cleanup report updates
-- Next action: inspect diff, commit and push package cleanup checkpoint
+- Last result: passed; review found R-001 local credit-state sync regression
+- Last pushed commit: cf61eb9
+- Branch sync: `dev...origin/dev`, clean before review report edits
+- Working tree: dirty with in-scope review report and task/run-state updates
+- Next action: inspect diff, commit and push review checkpoint
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| `package-lock.json` | In-scope package update | F-002 safe semver-range dependency update |
-| `README.md` | Safe-to-commit | F-006 stale version wording cleanup |
-| `SPEC.md` | Safe-to-commit | Current-state risk update after README cleanup |
-| `agent-runs/2026-06-20-codebase-pass/05-package-and-dead-code-cleanup.md` | Safe-to-commit | Package cleanup report |
+| `agent-runs/2026-06-20-codebase-pass/06-review.md` | Safe-to-commit | Review report |
 | `agent-runs/2026-06-20-codebase-pass/run-state.md` | Safe-to-commit | Resume ledger update |
-| `agent-runs/2026-06-20-codebase-pass/task-queue.md` | Safe-to-commit | T-007 status update |
+| `agent-runs/2026-06-20-codebase-pass/task-queue.md` | Safe-to-commit | T-008/T-009 status update |
 
 ## Blockers
 
