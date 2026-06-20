@@ -11,23 +11,23 @@
 
 ## Current State
 
-- Phase: Baseline Validation
-- Task: T-002
+- Phase: Findings Backlog
+- Task: T-003
 - Status: Ready to commit
-- Last command: `npm audit --audit-level=low`
-- Last result: failed with baseline dependency advisories: 10 vulnerabilities (1 low, 3 moderate, 6 high)
-- Last pushed commit: 0b071b6
-- Branch sync: `dev...origin/dev`, clean before baseline report edits
-- Working tree: dirty with in-scope baseline report, run-state, and task-queue updates
-- Next action: inspect diff, commit and push baseline validation checkpoint
+- Last command: `npm run lint`
+- Last result: passed
+- Last pushed commit: 6a7c04d
+- Branch sync: `dev...origin/dev`, clean before findings report edits
+- Working tree: dirty with in-scope findings report, run-state, and task-queue updates
+- Next action: inspect diff, commit and push findings backlog checkpoint
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| `agent-runs/2026-06-20-codebase-pass/02-baseline-validation.md` | Safe-to-commit | Baseline Validation report |
+| `agent-runs/2026-06-20-codebase-pass/03-findings-backlog.md` | Safe-to-commit | Findings Backlog report |
 | `agent-runs/2026-06-20-codebase-pass/run-state.md` | Safe-to-commit | Resume ledger update |
-| `agent-runs/2026-06-20-codebase-pass/task-queue.md` | Safe-to-commit | T-002 status update |
+| `agent-runs/2026-06-20-codebase-pass/task-queue.md` | Safe-to-commit | T-003 status and execution queue updates |
 
 ## Blockers
 
