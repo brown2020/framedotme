@@ -11,23 +11,23 @@
 
 ## Current State
 
-- Phase: Preflight and Repo Docs
-- Task: T-001
+- Phase: Baseline Validation
+- Task: T-002
 - Status: Ready to commit
-- Last command: `npm run lint`
-- Last result: passed after `npm ci` refreshed stale local dependencies
-- Last pushed commit: none for this run yet; `origin/dev` was established from `origin/main` at e7b39fe279f46c9930a1d1808e1866de9e6dde2b
-- Branch sync: `dev...origin/dev`, clean before run-report edits
-- Working tree: dirty with only in-scope untracked run reports and repo docs created by this phase
-- Next action: inspect diff, commit and push preflight docs/report checkpoint
+- Last command: `npm audit --audit-level=low`
+- Last result: failed with baseline dependency advisories: 10 vulnerabilities (1 low, 3 moderate, 6 high)
+- Last pushed commit: 0b071b6
+- Branch sync: `dev...origin/dev`, clean before baseline report edits
+- Working tree: dirty with in-scope baseline report, run-state, and task-queue updates
+- Next action: inspect diff, commit and push baseline validation checkpoint
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| `AGENTS.md` | Safe-to-commit | Repo guidance created by Preflight and Repo Docs |
-| `SPEC.md` | Safe-to-commit | Current-state spec created by Preflight and Repo Docs |
-| `agent-runs/2026-06-20-codebase-pass/*` | Safe-to-commit | Run reports and resume ledger created by this workflow |
+| `agent-runs/2026-06-20-codebase-pass/02-baseline-validation.md` | Safe-to-commit | Baseline Validation report |
+| `agent-runs/2026-06-20-codebase-pass/run-state.md` | Safe-to-commit | Resume ledger update |
+| `agent-runs/2026-06-20-codebase-pass/task-queue.md` | Safe-to-commit | T-002 status update |
 
 ## Blockers
 
