@@ -81,6 +81,13 @@ sed reads of README, CLAUDE.md, package/config files, provider/proxy/session/rec
 
 Workflow scaffolding validation passed with `validate_skill.py`. Git remote read and dry-run push passed. The first lint attempt failed before source analysis because local dependencies were stale/incomplete (`@eslint/compat` could not resolve). `npm ci` refreshed dependencies from the lockfile, and `npm run lint` then passed.
 
+## Rerun Sync Addendum
+
+- User-requested rerun startup synced local `main` with `origin/main` by fast-forwarding `3843f3d..e7b39fe`.
+- Existing local/remote `dev` was reused instead of destructively recreated; `main` is an ancestor of `dev`, and `dev` matched `origin/dev` before rerun edits.
+- Rerun Git preflight passed: `git ls-remote --exit-code origin HEAD`, `git push --dry-run origin dev`, and `git status --short --branch`.
+- Workflow scaffolding validation passed again with `validate_skill.py`.
+
 ## Architecture and Lean Code Scorecard
 
 | Area | Status | Evidence | Action |
@@ -119,6 +126,7 @@ Workflow scaffolding validation passed with `validate_skill.py`. Git remote read
 
 - Branch bootstrap behavior for a missing `origin/dev` was inferred to keep the requested workflow moving; recorded as a skill-improvement proposal.
 - Docs/spec are based on source inspection, not runtime validation yet.
+- On rerun, `dev` already existed and was not deleted or reset; recreating it from scratch would require explicit destructive-history approval.
 
 ## Open Questions
 

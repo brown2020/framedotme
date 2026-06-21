@@ -12,23 +12,27 @@
 ## Current State
 
 - Phase: Integrator
-- Task: T-010
-- Status: Ready to commit
-- Last command: `npm run lint`
-- Last result: passed; audit remains deferred with 2 moderate advisories
-- Last pushed commit: 52e09bf
-- Branch sync: `dev...origin/dev`, clean before final report edits
-- Working tree: dirty with in-scope final report updates
-- Next action: inspect diff, commit and push final report checkpoint
+- Task: T-011
+- Status: Ready for rerun commit-push checkpoint
+- Last command: `npm audit --audit-level=low`
+- Last result: lint/build passed after `lucide-react` update; audit remains deferred with 2 moderate advisories
+- Last pushed commit: 7ec071f before rerun edits
+- Branch sync: `main` matches `origin/main` at e7b39fe; `dev` matched `origin/dev` before rerun package/report edits
+- Working tree: dirty with in-scope rerun package/report updates
+- Next action: inspect diff, run diff check, commit, dry-run push, push, fetch, and confirm clean sync
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| `agent-runs/2026-06-20-codebase-pass/08-integrator.md` | Safe-to-commit | Integrator report |
-| `agent-runs/2026-06-20-codebase-pass/final-report.md` | Safe-to-commit | Final report |
+| `package.json` | In-scope source | Safe pinned `lucide-react` update |
+| `package-lock.json` | In-scope source | Safe pinned `lucide-react` update |
+| `agent-runs/2026-06-20-codebase-pass/01-preflight-and-repo-docs.md` | Safe-to-commit | Rerun sync evidence |
+| `agent-runs/2026-06-20-codebase-pass/05-package-and-dead-code-cleanup.md` | Safe-to-commit | Rerun package cleanup report |
+| `agent-runs/2026-06-20-codebase-pass/08-integrator.md` | Safe-to-commit | Rerun integrator report |
+| `agent-runs/2026-06-20-codebase-pass/final-report.md` | Safe-to-commit | Rerun final report |
 | `agent-runs/2026-06-20-codebase-pass/run-state.md` | Safe-to-commit | Resume ledger update |
-| `agent-runs/2026-06-20-codebase-pass/task-queue.md` | Safe-to-commit | T-010 status update |
+| `agent-runs/2026-06-20-codebase-pass/task-queue.md` | Safe-to-commit | T-011 status update |
 
 ## Blockers
 
@@ -39,4 +43,4 @@
 - Product roadmap decisions are deferred to `$sb-prd` or `$sb-pip`.
 - Remaining dependency vulnerability remediation is deferred because npm's available fix is a breaking force path.
 - F-004 Firebase initialization hard-fail behavior deferred to an environment/runtime policy follow-up.
-- Major package upgrades are deferred.
+- Major package upgrades for `firebase-admin` and `@types/node` are deferred.
