@@ -9,7 +9,7 @@
 
 ## Server Verification
 
-- `sessionService` now verifies the custom JWT using the same secret/algorithm as `proxy.ts`; it no longer treats the custom JWT as a Firebase session cookie.
+- `sessionService` now verifies the custom JWT using the same minimum-length secret and HS256-only policy as `proxy.ts`; it no longer treats the custom JWT as a Firebase session cookie.
 - Both Stripe server actions call `requireAuthenticatedSession` before accessing Stripe.
 - New PaymentIntents include `metadata.userId`; validation rejects a session whose UID does not match.
 
@@ -17,8 +17,8 @@
 
 | Scenario | Result | Evidence | Notes |
 | --- | --- | --- | --- |
-| Protected page signed out | Pass by source/build | `proxy.ts` validates signature and redirects protected route list | Manual browser QA still useful |
+| Protected page signed out | Pass by source/build/smoke | `/capture` and `/profile` return 307 to `/` | Manual authenticated browser QA still useful |
 | Protected server action signed out | Pass by source/Doctor | both exports call `requireAuthenticatedSession` | React Doctor changed scope: no issues |
 | Authenticated action owns resource | Pass by source | PaymentIntent metadata UID checked on validation | Existing pre-change intents without metadata are denied |
-| Initial session mutation CSRF | Pass by source/build | GET bootstrap + unconditional POST validation | Manual request QA deferred |
+| Initial session mutation CSRF | Pass by source/build/smoke | GET bootstrap 200 + POST without token 403 | Authenticated exchange still needs provider browser QA |
 | Admin route | N/A | no admin routes found | no policy invented |

@@ -2,40 +2,25 @@
 
 ## Provider Verdict
 
-- Verdict:
-- Evidence:
-- Replacement needed:
+- Verdict: preserve the existing Firebase Auth provider; no competing provider or migration target exists.
+- Evidence: Firebase client/admin SDKs, Google/password/email-link handlers, `/loginfinish`, and Firebase ID-token exchange are the only auth system.
+- Replacement needed: no.
 
-## Old Auth Surfaces
+## Existing Surfaces
 
-| Surface | Evidence | Firebase Replacement | Remove/Keep/Defer | Notes |
-| --- | --- | --- | --- | --- |
-| Packages | TBD | TBD | TBD | TBD |
-| Routes/callbacks | TBD | TBD | TBD | TBD |
-| Middleware/proxy | TBD | TBD | TBD | TBD |
-| Cookies/storage | TBD | TBD | TBD | TBD |
-| Env vars | TBD | TBD | TBD | No secret values |
-| UI components | TBD | TBD | TBD | TBD |
-| Tests/mocks | TBD | TBD | TBD | TBD |
-
-## Firebase Setup Checklist
-
-| Item | Status | Evidence Or User Action |
+| Surface | Evidence | Result |
 | --- | --- | --- |
-| Firebase project selected/created | Unknown | TBD |
-| Web app registered | Unknown | TBD |
-| Client env names documented | Unknown | TBD |
-| Authentication enabled | Unknown | TBD |
-| Google provider enabled | Unknown | TBD |
-| Email/password enabled | Unknown | TBD |
-| Email link enabled if needed | Unknown | TBD |
-| Authorized domains set | Unknown | TBD |
-| Email action URLs set | Unknown | TBD |
-| Admin SDK server env ready | Unknown | TBD |
-| ADMIN_UID/ADMIN_UIDS server env ready | Unknown | TBD |
+| Packages | `firebase`, `firebase-admin`, `react-firebase-hooks` | Kept and upgraded |
+| Routes/callbacks | `/loginfinish`, `/api/session` | Kept and hardened |
+| Proxy | `src/proxy.ts` custom JWT verification | Kept and aligned with server verification |
+| Cookies/storage | Firebase client token plus HttpOnly `frame_session` | Kept; CSRF handshake hardened |
+| Environment | Static Firebase public vars; server-only Admin/JWT secrets | Kept; initialization now fails clearly |
+| UI | Google, password, and email-link paths | Out of protection-only change scope |
 
-## Migration Plan
+## Firebase Setup Gate
 
-## User Setup Handoff
+Build-time environment names are present locally and documented in `.env.example`. Console-only provider enablement and authorized-domain state cannot be proven from repository source and remain deployment checks rather than code blockers.
 
 ## Result
+
+No provider migration performed. The existing Firebase-to-custom-session boundary is now internally consistent.

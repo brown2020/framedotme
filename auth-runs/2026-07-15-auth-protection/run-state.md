@@ -2,27 +2,27 @@
 
 ## Current Phase
 
-- Phase: Protection validation
-- Status: AUTH-001/AUTH-002 verified; commit/push pending
-- Active task: AUTH-001/AUTH-002
-- Next action: checkpoint the verified auth security repair, then finalize protection reports after the broader pass
+- Phase: Finalization
+- Status: protection-only scope complete; AUTH-003 blocked on external/product authority
+- Active task: AUTH-003 blocker handoff
+- Next action: include blocker and required inputs in the repository final report
 
 ## Branch And Sync
 
 - Repository root: `/Users/stephenbrown/Code/OPENSOURCE/framedotme`
 - Branch: `dev`
-- Origin/dev status: matched at `647d351` before source edits
-- Working tree: AUTH-001/AUTH-002-owned source and reports
+- Last pushed source/review commit: `541c736`
+- Origin/dev status: matched before final report edits
+- Working tree: final auth/CBI reports only
 
 ## Auth State
 
-- Current auth provider: Firebase
-- Firebase present: client and admin SDKs
-- Auth state model: unknown/loading, signed out, signed in/session ready, session pending/error, signing out
-- Session truth model: server-created custom HS256 `frame_session`; Firebase ID token verified at exchange
-- Admin UID env: none/admin routes not found
-- Protected route policy: proxy-listed app routes plus required checks at server actions
+- Provider: Firebase.
+- Session truth: Admin-verified ID token exchanged for HS256-only HttpOnly `frame_session`.
+- Route truth: proxy for protected pages plus session guard for Stripe server actions.
+- Admin policy: N/A; no admin routes or configured UID gate found.
+- Validation: lint/build/Doctor/local HTTP smoke pass.
 
-## Blockers
+## Blocker
 
 - AUTH-003/F-101: provider-verifiable IAP receipt and server-authoritative credit migration require product/external input.
