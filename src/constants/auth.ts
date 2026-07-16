@@ -16,12 +16,6 @@ if (!CLIENT_ID_TOKEN_COOKIE_NAME) {
   throw new Error("Missing required NEXT_PUBLIC_COOKIE_NAME environment variable. Check your .env file");
 }
 
-// Token refresh
-// Refresh tokens every 50 minutes (10 minutes before Firebase's 1-hour token expiry)
-// This ensures tokens are always valid for server-side authentication
-export const TOKEN_REFRESH_INTERVAL_MS = 50 * 60 * 1000; // 50 minutes
-export const TOKEN_REFRESH_DEBOUNCE_MS = 1000; // 1 second debounce for cross-tab sync
-
 // Auth pending timeout
 export const AUTH_PENDING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -30,6 +24,3 @@ export const AUTH_STORAGE_KEYS = {
   EMAIL: "frameEmail",
   NAME: "frameName",
 } as const;
-
-// Token refresh storage key prefix
-export const TOKEN_REFRESH_KEY_PREFIX = "lastTokenRefresh_";

@@ -150,11 +150,3 @@ export class OperationQueue<T> {
     });
   }
 }
-
-/**
- * Creates a simple operation queue for credit operations.
- * Use this for all credit modifications to prevent race conditions.
- */
-export function createCreditOperationQueue(): OperationQueue<number> {
-  return new OperationQueue<number>();
-}

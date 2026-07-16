@@ -43,16 +43,6 @@ The dual-cookie approach solves platform constraints:
 5. Server creates session cookie and stores in `SESSION_COOKIE_NAME` (httpOnly)
 6. Both cookies now active
 
-### Token Refresh
-
-Token refresh is handled by `useTokenRefresh` hook:
-
-1. Every 50 minutes (10 min before Firebase's 1-hour expiry)
-2. Get fresh token from Firebase SDK
-3. Update `CLIENT_ID_TOKEN_COOKIE_NAME`
-4. Call `/api/session` to refresh `SESSION_COOKIE_NAME`
-5. **Transaction guarantee**: If server session creation fails, client cookie is rolled back
-
 ### Route Protection (Edge Runtime)
 
 `src/proxy.ts` validates session JWT (full signature verification):
@@ -129,6 +119,5 @@ To debug authentication issues:
 
 1. Check both cookies exist in browser DevTools → Application → Cookies
 2. Verify `SESSION_COOKIE_NAME` is httpOnly
-3. Check console for token refresh logs (development only)
-4. Monitor `/api/session` network calls
-5. Check middleware logs in server console
+3. Monitor `/api/session` network calls
+4. Check proxy logs in the server console

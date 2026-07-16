@@ -171,14 +171,6 @@ export function logError(context: string, error: unknown): void {
 }
 
 /**
- * Displays an error toast notification with context
- */
-export function showErrorToast(error: unknown, defaultMessage?: string, operation?: string): void {
-  const message = getErrorMessage(error, defaultMessage, operation);
-  toast.error(message);
-}
-
-/**
  * Handles an error by logging it and optionally showing a toast
  */
 export function handleError(

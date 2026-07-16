@@ -23,7 +23,7 @@ const validate = <T>(
 /**
  * User ID validation schema
  */
-export const UserIdSchema = z.string().min(1, "User ID is required");
+const UserIdSchema = z.string().min(1, "User ID is required");
 
 /**
  * Allowed file extensions for uploads
@@ -33,19 +33,7 @@ const ALLOWED_EXTENSIONS = [".webm"] as const;
 /**
  * File name validation schema
  */
-export const FileNameSchema = z.string().min(1, "Filename is required");
-
-/**
- * Video metadata validation schema
- */
-export const VideoMetadataSchema = z.object({
-  id: z.string().min(1),
-  downloadUrl: z.url(),
-  storagePath: z.string().min(1),
-  filename: z.string().min(1),
-  createdAt: z.instanceof(Timestamp),
-  showOnProfile: z.boolean().optional(),
-});
+const FileNameSchema = z.string().min(1, "Filename is required");
 
 /**
  * Payment validation schema

@@ -235,11 +235,11 @@ const createFirestoreRecord = async (
 
   // CRITICAL: Refresh token before Firestore write in multi-window scenarios
   //
-  // Race condition: Video controls popup may have stale auth token while parent window
-  // has already refreshed. Without this refresh, Firestore write fails with permission denied.
+  // Race condition: Video controls popup may hold an older credential while the parent
+  // window has already received a refreshed token from Firebase Auth.
   //
   // Why this happens:
-  // 1. Parent window refreshes token (every 50min via useTokenRefresh)
+  // 1. Firebase Auth refreshes credentials in the parent window
   // 2. Popup window opens with old Firebase auth state
   // 3. Popup attempts Firestore write with stale token
   // 4. Firestore rejects write (token expired or mismatch)

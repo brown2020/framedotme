@@ -29,7 +29,7 @@ export const ROUTES = {
  * Usage:
  * - base: Default layer for content
  * - header: Header component (fixed navigation)
- * - modal: AuthModal component
+ * - modal: Modal surfaces
  * - dialog: ConfirmDialog component
  * - toast: Toast notifications (managed by react-hot-toast library)
  */

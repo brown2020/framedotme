@@ -74,20 +74,3 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
     return await findProcessedPayment(uid, paymentId);
   },
 }));
-
-/**
- * Optimized selectors for payment state
- * Use these instead of directly accessing the store to prevent unnecessary re-renders
- */
-
-// Individual payment data
-export const usePayments = () => usePaymentsStore((state) => state.payments);
-export const usePaymentsLoading = () => usePaymentsStore((state) => state.paymentsLoading);
-export const usePaymentsError = () => usePaymentsStore((state) => state.paymentsError);
-
-// Grouped selector for payment state
-export const usePaymentsState = () => usePaymentsStore((state) => ({
-  payments: state.payments,
-  loading: state.paymentsLoading,
-  error: state.paymentsError,
-}));

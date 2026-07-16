@@ -182,32 +182,3 @@ export function useSignOut() {
     resetAllStores,
   };
 }
-
-/**
- * Standalone function for sign-out (useful outside of React components)
- * Note: Prefer useSignOut hook when inside a React component
- */
-export async function performSignOutStandalone(options: SignOutOptions = {}): Promise<void> {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-
-  try {
-    await clearServerSessionCookie();
-  } catch (error) {
-    logger.warn("Failed to clear server session cookie", error);
-  }
-
-  await signOut(auth);
-  resetAllStores();
-  clearAllCookies();
-  clearAllStorage();
-
-  if (opts.showToast) {
-    toast.success(opts.successMessage);
-  }
-
-  if (opts.redirectUrl) {
-    setTimeout(() => {
-      window.location.href = opts.redirectUrl;
-    }, opts.redirectDelay);
-  }
-}
