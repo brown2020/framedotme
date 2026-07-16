@@ -21,7 +21,10 @@ import { auth } from "@/firebase/firebaseClient";
 import { updateUserDetailsInFirestore } from "@/services/userService";
 import { logger } from "@/utils/logger";
 import { CLIENT_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
-import { getClientCsrfToken, CSRF_HEADER_NAME } from "@/lib/security/csrf";
+import {
+  clearServerSessionCookie,
+  setServerSessionCookie,
+} from "@/services/sessionCookieService";
 
 /**
  * Create server session cookie from Firebase ID token
@@ -29,50 +32,11 @@ import { getClientCsrfToken, CSRF_HEADER_NAME } from "@/lib/security/csrf";
  */
 async function createSessionCookie(idToken: string): Promise<boolean> {
   try {
-    // Include CSRF token if available (for token refresh, not initial login)
-    const csrfToken = getClientCsrfToken();
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (csrfToken) {
-      headers[CSRF_HEADER_NAME] = csrfToken;
-    }
-
-    const response = await fetch("/api/session", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ idToken }),
-    });
-
-    if (!response.ok) {
-      logger.error("Session cookie API returned error:", response.status);
-      return false;
-    }
-
+    await setServerSessionCookie(idToken);
     return true;
   } catch (error) {
     logger.error("Session cookie request failed", error);
     return false;
-  }
-}
-
-/**
- * Clear server session cookie
- */
-async function clearSessionCookie(): Promise<void> {
-  try {
-    // Include CSRF token for DELETE request
-    const csrfToken = getClientCsrfToken();
-    const headers: Record<string, string> = {};
-    if (csrfToken) {
-      headers[CSRF_HEADER_NAME] = csrfToken;
-    }
-
-    await fetch("/api/session", {
-      method: "DELETE",
-      headers,
-    });
-  } catch (error) {
-    // Best-effort cleanup, don't block on failure
-    logger.error("Failed to clear session cookie", error);
   }
 }
 
@@ -195,7 +159,7 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
       });
 
       deleteCookie(cookieName);
-      void clearSessionCookie();
+      void clearServerSessionCookie();
     }
   }, [cookieName, loading, setAuthDetails, user]);
 

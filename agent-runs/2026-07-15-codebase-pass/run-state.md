@@ -12,24 +12,23 @@
 
 ## Current State
 
-- Phase: Findings Backlog
-- Task: T-003
-- Status: Verified; findings/auth-ledger checkpoint pending
-- Last command: React Doctor, source/rules/import searches, and direct high-risk flow inspection
-- Last result: locally executable backlog created; F-101 isolated as product/external security blocker
-- Last pushed commit: `439eed5`
-- Branch sync: matched `origin/dev` before findings/auth-ledger edits
-- Working tree: only T-003-owned reports and `auth-runs/2026-07-15-auth-protection/`
-- Next action: commit/push T-003, then execute F-102/F-103
+- Phase: Execute Fixes and Improvements
+- Task: T-004 / F-102 / F-103
+- Status: Auth security batch verified; commit/push pending
+- Last command: `npx react-doctor@latest . --verbose --scope changed`
+- Last result: pass; no changed-scope issues, lint/build pass
+- Last pushed commit: `647d351`
+- Branch sync: matched `origin/dev` before auth source edits
+- Working tree: F-102/F-103-owned source and reports only
+- Next action: commit/push auth security batch, then execute popup F-104
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| `agent-runs/2026-07-15-codebase-pass/03-findings-backlog.md` | In-scope source | T-003 findings report |
-| `agent-runs/2026-07-15-codebase-pass/run-state.md` | In-scope source | T-003 resume ledger |
-| `agent-runs/2026-07-15-codebase-pass/task-queue.md` | In-scope source | T-003 task evidence |
-| `auth-runs/2026-07-15-auth-protection/` | In-scope source | Protection-focused F-102/F-103 auth ledger |
+| Auth/session/payment source files | In-scope source | F-102/F-103 security repair |
+| `agent-runs/2026-07-15-codebase-pass/04-execute-fixes-and-improvements.md` | In-scope source | T-004 execution report |
+| CBI/auth run state, queue, and protection reports | In-scope source | F-102/F-103 verification ledger |
 
 ## Blockers
 

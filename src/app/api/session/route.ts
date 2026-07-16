@@ -28,20 +28,22 @@ function getJwtSecret(): Uint8Array {
 
 const SESSION_DURATION_SECONDS = Math.floor(SESSION_EXPIRES_IN_MS / 1000);
 
+export async function GET() {
+  const response = NextResponse.json({ ok: true });
+  response.headers.set("Cache-Control", "no-store");
+  setCsrfTokenCookie(response);
+  return response;
+}
+
 export async function POST(request: Request) {
   try {
-    // CSRF Protection: Validate token for all POST requests
-    // Skip validation only for initial session creation (when no CSRF cookie exists)
-    const hasCsrfCookie = request.headers.get("cookie")?.includes(CSRF_COOKIE_NAME);
-    if (hasCsrfCookie) {
-      const csrfResult = validateCsrfToken(request);
-      if (!csrfResult.valid) {
-        logger.warn("CSRF validation failed", { error: csrfResult.error });
-        return NextResponse.json(
-          { error: csrfResult.error },
-          { status: 403 }
-        );
-      }
+    const csrfResult = validateCsrfToken(request);
+    if (!csrfResult.valid) {
+      logger.warn("CSRF validation failed", { error: csrfResult.error });
+      return NextResponse.json(
+        { error: csrfResult.error },
+        { status: 403 }
+      );
     }
 
     let body: { idToken?: unknown } | null;
@@ -101,17 +103,13 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  // CSRF Protection: Validate token for DELETE requests
-  const hasCsrfCookie = request.headers.get("cookie")?.includes(CSRF_COOKIE_NAME);
-  if (hasCsrfCookie) {
-    const csrfResult = validateCsrfToken(request);
-    if (!csrfResult.valid) {
-      logger.warn("CSRF validation failed on DELETE", { error: csrfResult.error });
-      return NextResponse.json(
-        { error: csrfResult.error },
-        { status: 403 }
-      );
-    }
+  const csrfResult = validateCsrfToken(request);
+  if (!csrfResult.valid) {
+    logger.warn("CSRF validation failed on DELETE", { error: csrfResult.error });
+    return NextResponse.json(
+      { error: csrfResult.error },
+      { status: 403 }
+    );
   }
 
   const response = NextResponse.json({ ok: true });

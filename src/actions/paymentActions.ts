@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { logger } from "@/utils/logger";
 import { AppError } from "@/types/errors";
 import { MINIMUM_PAYMENT_AMOUNT_CENTS } from "@/constants/payment";
+import { requireAuthenticatedSession } from "@/services/sessionService";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 if (!STRIPE_SECRET_KEY) {
@@ -17,12 +18,12 @@ interface PaymentIntentResult {
   amount: number;
   created: number;
   status: string;
-  client_secret: string | null;
   currency: string;
   description: string | null;
 }
 
 export async function createPaymentIntent(amount: number): Promise<string | null> {
+  const session = await requireAuthenticatedSession();
   const product = process.env.NEXT_PUBLIC_STRIPE_PRODUCT_NAME;
 
   // Validate amount parameter
@@ -40,7 +41,7 @@ export async function createPaymentIntent(amount: number): Promise<string | null
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "usd",
-      metadata: { product },
+      metadata: { product, userId: session.uid },
       description: `Payment for product ${process.env.NEXT_PUBLIC_STRIPE_PRODUCT_NAME}`,
     });
 
@@ -53,8 +54,20 @@ export async function createPaymentIntent(amount: number): Promise<string | null
 }
 
 export async function validatePaymentIntent(paymentIntentId: string): Promise<PaymentIntentResult> {
+  const session = await requireAuthenticatedSession();
+
+  if (!/^pi_[A-Za-z0-9]+$/.test(paymentIntentId)) {
+    throw new AppError("Invalid payment intent", "payment");
+  }
+
   try {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.metadata.userId !== session.uid) {
+      throw new AppError("Payment intent does not belong to this account", "payment", {
+        paymentId: paymentIntentId,
+      });
+    }
 
     if (paymentIntent.status === "succeeded") {
       // Convert the Stripe object to a plain object
@@ -63,7 +76,6 @@ export async function validatePaymentIntent(paymentIntentId: string): Promise<Pa
         amount: paymentIntent.amount,
         created: paymentIntent.created,
         status: paymentIntent.status,
-        client_secret: paymentIntent.client_secret,
         currency: paymentIntent.currency,
         description: paymentIntent.description,
       };

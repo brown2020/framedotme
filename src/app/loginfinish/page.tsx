@@ -4,7 +4,7 @@ import { useAuthStore } from "@/zustand/useAuthStore";
 import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 import { auth } from "@/firebase/firebaseClient";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FirebaseError } from "firebase/app";
 import useProfileStore from "@/zustand/useProfileStore";
 import { deleteCookie, getCookie } from "cookies-next";
@@ -18,13 +18,16 @@ export default function LoginFinish() {
   const router = useRouter();
   const setAuthDetails = useAuthStore((s) => s.setAuthDetails);
   const updateProfile = useProfileStore((s) => s.updateProfile);
-  const uid = useAuthStore((s) => s.uid);
+  const processingRef = useRef(false);
   
   const [status, setStatus] = useState<"loading" | "needEmail" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [emailInput, setEmailInput] = useState("");
 
   useEffect(() => {
+    if (status !== "loading" || processingRef.current) return;
+    processingRef.current = true;
+
     async function attemptSignIn() {
       let redirectPath = "/capture";
       try {
@@ -37,6 +40,7 @@ export default function LoginFinish() {
 
         logger.debug("Attempting sign in with email:", email, name);
         if (!email) {
+          processingRef.current = false;
           setStatus("needEmail");
           return;
         }
@@ -49,34 +53,37 @@ export default function LoginFinish() {
 
         const user = userCredential.user;
         const authEmail = user?.email;
-        const uid = user?.uid;
+        const signedInUid = user?.uid;
         const selectedName = name || user?.displayName || "";
 
-        logger.debug("User auth data:", authEmail, uid, selectedName);
+        logger.debug("User auth data:", authEmail, signedInUid, selectedName);
 
-        if (!uid || !authEmail) {
+        if (!signedInUid || !authEmail) {
           throw new Error("No user found");
         }
 
         logger.info(
           "User signed in successfully:",
           authEmail,
-          uid,
+          signedInUid,
           selectedName
         );
 
         setAuthDetails({
-          uid,
+          uid: signedInUid,
           authEmail,
           authDisplayName: selectedName,
         });
         
-        if (uid) {
-          updateProfile(uid, { displayName: selectedName });
-        }
+        updateProfile(signedInUid, { displayName: selectedName });
 
         const cookieRedirect = getCookie(REDIRECT_URL_COOKIE_NAME);
-        if (typeof cookieRedirect === "string" && cookieRedirect.startsWith("/")) {
+        if (
+          typeof cookieRedirect === "string" &&
+          cookieRedirect.startsWith("/") &&
+          !cookieRedirect.startsWith("//") &&
+          !cookieRedirect.includes("\\")
+        ) {
           redirectPath = cookieRedirect;
         }
         
@@ -93,10 +100,6 @@ export default function LoginFinish() {
         setErrorMessage(message);
         setStatus("error");
         
-        setTimeout(() => {
-          redirectPath = "/";
-          router.replace(redirectPath);
-        }, 3000);
       } finally {
         window.localStorage.removeItem("frameEmail");
         window.localStorage.removeItem("frameName");
@@ -104,10 +107,18 @@ export default function LoginFinish() {
       }
     }
 
-    if (status === "loading") {
-      attemptSignIn();
-    }
-  }, [router, setAuthDetails, updateProfile, uid, status]);
+    void attemptSignIn();
+  }, [router, setAuthDetails, updateProfile, status]);
+
+  useEffect(() => {
+    if (status !== "error") return;
+
+    const timeoutId = window.setTimeout(() => {
+      router.replace("/");
+    }, 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [router, status]);
 
   const handleEmailSubmit = async () => {
     if (!emailInput.trim()) return;
@@ -133,7 +144,7 @@ export default function LoginFinish() {
             className="border border-gray-300 rounded-md px-3 py-2 w-full mb-4"
             autoFocus
           />
-          <Button onClick={handleEmailSubmit} className="w-full">
+          <Button type="button" onClick={handleEmailSubmit} className="w-full">
             Continue
           </Button>
         </div>
