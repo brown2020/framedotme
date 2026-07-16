@@ -1,22 +1,22 @@
 # Navigation, Account, And Sign-Out
 
-## Navbar
+## Navigation
 
-## Account Menu
+The header remains state-neutral; protected navigation is authorized by the proxy, not client presentation. No admin UI/routes exist.
 
-## Avatar
+## Account And Sign-Out
 
-## Footer Hard Sign-Out
+- Profile sign-out and support reset use the shared `useSignOut` boundary.
+- Sign-out best-effort deletes the server session through the CSRF-protected endpoint, signs out Firebase, resets Zustand stores, clears readable cookies/storage, and redirects/reloads.
+- Server/proxy authorization does not rely on the client store.
 
-## Navbar And Footer State Matrix
+## State Matrix
 
-| State | Navbar Result | Footer Hard Logout Result | Evidence |
-| --- | --- | --- | --- |
-| Unknown/bootstrap | TBD | TBD | TBD |
-| Signed out | TBD | TBD | TBD |
-| Signed in unverified | TBD | TBD | TBD |
-| Signed in verified | TBD | TBD | TBD |
-| Non-admin | TBD | TBD | TBD |
-| Admin | TBD | TBD | TBD |
-| Stale/invalid | TBD | TBD | TBD |
-| After logout | TBD | TBD | TBD |
+| State | Result | Evidence |
+| --- | --- | --- |
+| Unknown/bootstrap | Client provider waits for Firebase state | `useAuthSync` loading guard |
+| Signed out | Protected routes redirect to `/` | proxy smoke: 307 |
+| Signed in/session ready | Protected UI/store may personalize | session created before `authReady=true` |
+| Session pending/error | Client remains not ready | `authPending=true`, `authReady=false` |
+| Stale/invalid session | Proxy fails closed on protected routes | signed JWT verification/cookie clear |
+| After logout | Server and client state cleared | shared sign-out flow |

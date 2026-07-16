@@ -11,24 +11,22 @@
 
 ## Current State
 
-- Phase: Review
-- Task: T-006 / R-001 / R-002
-- Status: cumulative review passed after one bounded fix batch; commit/push pending
-- Last command: `npx react-doctor@latest . --verbose --scope changed`
-- Last result: pass, no changed-scope issues; lint/build also pass
-- Last pushed commit: `0a96697`
-- Branch sync: matched `origin/dev` before review fixes
-- Working tree: review-owned popup/JWT adjustments and review/run reports
-- Next action: commit/push review fixes, then stabilization and final smoke
+- Phase: Stabilization
+- Task: T-007 plus auth finalization
+- Status: all locally executable stabilization gates pass; report checkpoint pending
+- Last command: skill validators plus `git diff --check`
+- Last result: both validators `ok`; install/audit/lint/build/Doctor/local HTTP smoke pass
+- Last pushed commit: `541c736`
+- Branch sync: matched `origin/dev` before report finalization
+- Working tree: auth protection final reports and CBI stabilization/run reports only
+- Next action: commit/push stabilization ledger, then final integration/sync report
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| `src/components/VideoControlsLauncher.tsx` | In-scope review fix | R-001 preserve active popup behavior |
-| `src/proxy.ts`, `src/services/sessionService.ts` | In-scope review fix | R-002 constrain JWT algorithm/secret policy |
-| `src/hooks/useScreenRecorder.ts` | In-scope cleanup | Review formatting correction |
-| CBI review/run state/queue | In-scope source | Review verification ledger |
+| Auth protection reports | In-scope source | Final protection-only validation and blocker handoff |
+| CBI stabilization/run reports | In-scope source | Final gate evidence |
 
 ## Blockers
 

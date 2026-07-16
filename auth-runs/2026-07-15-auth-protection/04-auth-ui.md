@@ -1,18 +1,16 @@
 # Auth UI
 
-## Sign-In And Sign-Up Layout
+## Scope Result
 
-## Password Visibility Controls
+Protection-only mode preserved the existing Google, email/password, password-reset, and magic-link UI. No auth UI redesign was required for AUTH-001/AUTH-002.
 
-| Field | Eye Toggle Present | Hidden By Default | Accessible Label Updates | Independent State | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| Sign-in password | TBD | TBD | TBD | TBD | TBD |
-| Sign-up password | TBD | TBD | TBD | TBD | TBD |
-| Confirm password | TBD | TBD | TBD | TBD | TBD |
-| Reset/change password | TBD | TBD | TBD | TBD | TBD |
+## Existing State
 
-## Forgot Password And Email Action States
-
-## Verify Email State
+- Password inputs are hidden by `type="password"`; a visibility toggle is not implemented and is an existing optional UX enhancement, not a regression.
+- Google and form buttons have explicit button semantics.
+- Email-link completion exposes loading, missing-email, and error states.
+- Redirect errors return to `/` with a cleanup-owned timer.
 
 ## Accessibility And Responsive QA
+
+Static lint/React Doctor passed. Full keyboard, viewport, provider-popup, and screen-reader QA remains manual because the repository has no browser test suite.

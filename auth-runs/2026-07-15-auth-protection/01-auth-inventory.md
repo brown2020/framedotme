@@ -12,7 +12,7 @@
 - Public: `/`, `/about`, `/privacy`, `/terms`, `/support`, `/loginfinish` while completing email-link auth.
 - Protected in proxy: `/capture`, `/recordings`, `/profile`, `/payment-attempt`, `/payment-success`, `/videocontrols`.
 - Admin: none found.
-- Protected server actions: Stripe payment actions exist but lack server-session verification (AUTH-001).
+- Protected server actions: Stripe payment actions now require the shared server-session verifier (AUTH-001 fixed).
 
 ## Session And State Evidence
 
@@ -20,12 +20,12 @@
 - `proxy.ts` verifies the custom JWT signature and expiration before protected pages render.
 - `useAuthSync` coordinates Firebase client state, server session creation, and Zustand state with a version counter.
 - Sign-out clears server session, Firebase state, Zustand stores, cookies, storage, and reloads/redirects.
-- Initial session creation currently skips CSRF when no cookie exists; login redirect validation permits `//...` (AUTH-002).
+- Initial session creation now bootstraps and validates CSRF; login redirect validation rejects protocol-relative/backslash paths (AUTH-002 fixed).
 
 ## Security Gaps
 
-- AUTH-001: unauthenticated/unowned Stripe server actions.
-- AUTH-002: incomplete initial CSRF handshake and insufficient relative redirect validation.
+- AUTH-001: fixed; Stripe actions require session and intent ownership.
+- AUTH-002: fixed; CSRF handshake and redirect validation hardened.
 - AUTH-003: client-authoritative credits/IAP receipt validation is blocked pending provider/server policy.
 
 ## Baseline

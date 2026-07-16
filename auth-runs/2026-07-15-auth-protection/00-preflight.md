@@ -8,4 +8,4 @@
 - Branch sync: local `dev` matched `origin/dev` at `439eed5`
 - Dry-run push: passed
 - Auth run validation: passed (`ok`)
-- Blockers: none for F-102/F-103; F-101 is separately blocked on product/external receipt validation.
+- Final result: AUTH-001/AUTH-002 fixed and pushed; AUTH-003/F-101 remains blocked on product/external receipt validation.
