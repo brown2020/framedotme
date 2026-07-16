@@ -93,14 +93,6 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   'auth/network-request-failed': 'Network error. Please check your connection.',
 };
 
-/** Media stream error type to user-friendly message mapping */
-const MEDIA_STREAM_ERROR_MESSAGES: Record<string, string> = {
-  'permission': 'Permission denied. Please allow access to continue.',
-  'device': 'Failed to access recording device. Please check your settings.',
-  'stream': 'Failed to process media stream. Please try again.',
-  'unknown': 'An unexpected error occurred. Please try again.',
-};
-
 /** Gets a user-friendly message for storage errors */
 const getStorageErrorMessage = (error: AppError, operation?: string): string => {
   const op = operation || 'complete the operation';
@@ -127,7 +119,7 @@ const getPaymentErrorMessage = (error: AppError): string => {
 
 /** Gets a user-friendly message for media stream errors */
 const getMediaStreamErrorMessage = (error: MediaStreamError): string => {
-  return MEDIA_STREAM_ERROR_MESSAGES[error.type] || error.message;
+  return error.message;
 };
 
 /** Gets context-aware error message for standard errors */

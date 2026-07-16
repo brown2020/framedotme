@@ -25,17 +25,6 @@ export function VideoControls(): ReactElement {
     error,
   } = useScreenRecorder();
   const screenVideoElem = useRef<HTMLVideoElement | null>(null);
-  const hasInitialized = useRef(false);
-
-  // Auto-initialize only once when component mounts
-  useEffect(() => {
-    if (!uid || hasInitialized.current) return;
-    
-    if (recorderStatus === "idle") {
-      hasInitialized.current = true;
-      initializeRecorder();
-    }
-  }, [uid, recorderStatus, initializeRecorder]);
 
   useEffect(() => {
     const currentScreenVideoElem = screenVideoElem.current;
@@ -74,19 +63,25 @@ export function VideoControls(): ReactElement {
     };
   }, [screenStream]);
 
+  // A persisted cross-window "ready" status does not mean this document owns
+  // a capture stream. A failed attempt is also safe to retry from this button.
+  const needsScreenStream =
+    !screenStream && ["idle", "ready", "error"].includes(recorderStatus);
+  const controlStatus = needsScreenStream ? "idle" : recorderStatus;
+
   const handleRecordingControl = () => {
     if (!uid) return;
-    if (recorderStatus === "idle") {
-      initializeRecorder();
+    if (needsScreenStream) {
+      void initializeRecorder();
     } else if (recorderStatus === "ready") {
-      updateStatus("shouldStart");
+      void updateStatus("shouldStart");
     } else if (recorderStatus === "recording") {
-      updateStatus("shouldStop");
+      void updateStatus("shouldStop");
     }
   };
 
   const isRecordButtonDisabled = !["idle", "ready", "recording"].includes(
-    recorderStatus
+    controlStatus,
   );
 
   return (
@@ -104,11 +99,11 @@ export function VideoControls(): ReactElement {
       <div className="flex gap-2">
         <Button
           variant="default"
-          className={cn(getRecorderButtonClass(recorderStatus, "controls"))}
+          className={cn(getRecorderButtonClass(controlStatus, "controls"))}
           onClick={handleRecordingControl}
           disabled={isRecordButtonDisabled}
         >
-          {getRecorderButtonText(recorderStatus)}
+          {getRecorderButtonText(controlStatus)}
         </Button>
 
         <Button

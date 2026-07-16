@@ -5,6 +5,7 @@ import { useCallback, useRef, useState, useEffect, type MutableRefObject } from 
 import { getErrorMessage } from "@/lib/errors";
 import { MediaStreamManager } from "@/lib/media-stream-manager";
 import { RecordingManager } from "@/lib/recording-manager";
+import { MediaStreamError } from "@/types/mediaStreamTypes";
 import { uploadRecording } from "@/services/storageService";
 import { downloadBlob } from "@/utils/downloadUtils";
 import { logger } from "@/utils/logger";
@@ -87,7 +88,15 @@ export const useScreenRecorder = () => {
     (error: unknown) => {
       const message = getErrorMessage(error, "An unexpected error occurred", "save recording");
       setError(message);
-      logger.error("Recording error", error);
+      if (error instanceof MediaStreamError) {
+        logger.warn("Recording could not start", {
+          type: error.type,
+          message: error.message,
+          cause: error.originalError?.name,
+        });
+      } else {
+        logger.error("Recording error", error);
+      }
       updateStatus("error");
     },
     [updateStatus]
