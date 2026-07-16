@@ -13,22 +13,22 @@
 ## Current State
 
 - Phase: Execute Fixes and Improvements
-- Task: T-004 / F-102 / F-103
-- Status: Auth security batch verified; commit/push pending
+- Task: T-004 / F-104
+- Status: Popup lifecycle batch verified; commit/push pending
 - Last command: `npx react-doctor@latest . --verbose --scope changed`
 - Last result: pass; no changed-scope issues, lint/build pass
-- Last pushed commit: `647d351`
-- Branch sync: matched `origin/dev` before auth source edits
-- Working tree: F-102/F-103-owned source and reports only
-- Next action: commit/push auth security batch, then execute popup F-104
+- Last pushed commit: `0c2f811`
+- Branch sync: matched `origin/dev` before popup source edit
+- Working tree: F-104-owned launcher and execution reports only
+- Next action: commit/push F-104, then execute F-105 through F-107
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| Auth/session/payment source files | In-scope source | F-102/F-103 security repair |
+| `src/components/VideoControlsLauncher.tsx` | In-scope source | F-104 popup lifecycle repair |
 | `agent-runs/2026-07-15-codebase-pass/04-execute-fixes-and-improvements.md` | In-scope source | T-004 execution report |
-| CBI/auth run state, queue, and protection reports | In-scope source | F-102/F-103 verification ledger |
+| CBI run state, queue, and execution report | In-scope source | F-104 verification ledger |
 
 ## Blockers
 
