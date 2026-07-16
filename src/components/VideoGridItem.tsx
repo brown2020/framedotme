@@ -27,6 +27,7 @@ export const VideoGridItem = memo(function VideoGridItem({ video, onSelect }: Vi
   return (
     <div className="flex flex-col items-center">
       <button
+        type="button"
         onClick={handleClick}
         aria-label={`Select ${video.filename} as featured video`}
         className="focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"

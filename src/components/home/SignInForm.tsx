@@ -60,6 +60,7 @@ export function SignInForm({
                     src={googleLogo}
                     alt="Google logo"
                     fill
+                    sizes="24px"
                     className="object-contain"
                   />
                 </div>

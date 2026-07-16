@@ -63,6 +63,7 @@ export function PrivacyPage({
                   const Icon = section.icon;
                   return (
                     <button
+                      type="button"
                       key={section.id}
                       onClick={() => {
                         setActiveSection(section.id);

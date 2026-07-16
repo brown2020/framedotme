@@ -32,9 +32,9 @@ export function Header() {
     <header
       className="flex items-center justify-between h-16 px-4 bg-blue-800"
       style={{ zIndex: Z_INDEX.header }}
-      role="banner"
     >
       <button
+        type="button"
         className="flex items-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-white rounded-md px-2 py-1"
         onClick={handleLogoClick}
         aria-label="Go to home page"
@@ -46,7 +46,6 @@ export function Header() {
       </button>
       <nav
         className="flex h-full gap-1 md:gap-2 items-center"
-        role="navigation"
         aria-label="Main navigation"
       >
         {navItems.map((item) => {
@@ -54,6 +53,7 @@ export function Header() {
 
           return (
             <button
+              type="button"
               key={item.path}
               className={`flex items-center gap-1 px-2 md:px-3 h-full transition duration-300 text-white hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
                 isActive ? "opacity-100 bg-white/30" : "opacity-50"

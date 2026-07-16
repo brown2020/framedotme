@@ -29,6 +29,7 @@ export function ConfirmDialog({
     <div className="fixed inset-0 bg-black/60 flex justify-center items-center" style={{ zIndex: Z_INDEX.dialog }}>
       <div className="relative bg-white text-black p-6 rounded-lg shadow-lg w-full max-w-md mx-4">
         <button
+          type="button"
           onClick={onCancel}
           className="absolute top-0 right-0 p-2 hover:bg-gray-200 bg-gray-100 rounded-full m-2"
           aria-label="Close"
