@@ -263,24 +263,3 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 }));
 
 export default useProfileStore;
-
-/**
- * Optimized selectors for profile state.
- * Use these instead of directly accessing the store to prevent unnecessary re-renders.
- */
-
-// Individual profile data selectors
-export const useProfile = () => useProfileStore((state) => state.profile);
-export const useCredits = () => useProfileStore((state) => state.profile.credits);
-export const useDisplayName = () => useProfileStore((state) => state.profile.displayName);
-export const usePhotoUrl = () => useProfileStore((state) => state.profile.photoUrl);
-export const useEmail = () => useProfileStore((state) => state.profile.email);
-
-// Action selectors
-export const useFetchProfile = () => useProfileStore((state) => state.fetchProfile);
-export const useUpdateProfile = () => useProfileStore((state) => state.updateProfile);
-export const useMinusCredits = () => useProfileStore((state) => state.minusCredits);
-export const useAddCredits = () => useProfileStore((state) => state.addCredits);
-export const useApplyCreditsLocally = () => useProfileStore((state) => state.applyCreditsLocally);
-export const useDeleteAccount = () => useProfileStore((state) => state.deleteAccount);
-export const useResetProfile = () => useProfileStore((state) => state.resetProfile);

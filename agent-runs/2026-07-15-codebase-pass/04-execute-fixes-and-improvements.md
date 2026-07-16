@@ -73,10 +73,9 @@ Findings backlog, auth protection inventory/plan, payment actions/callers, custo
 
 ## Remaining Work
 
-- F-108 proven dead-code/metadata work and remaining unused exports.
 - F-109 package and dependency warnings.
 - F-101 remains blocked on provider receipt/server-credit policy.
 
 ## Recommended Next Step
 
-Commit/push F-110, then execute the proof-backed dead-code/metadata cleanup batch F-108/F-111.
+Commit/push the verified F-108/F-111 cleanup, then execute the isolated F-109 package update phase.

@@ -10,8 +10,6 @@ export const RECORDING_MIME_TYPE = "video/webm;codecs=vp8,opus";
 
 // Video dimensions
 export const VIDEO_DIMENSION_UPDATE_INTERVAL_MS = 500;
-export const DEFAULT_VIDEO_WIDTH = 512;
-export const DEFAULT_VIDEO_HEIGHT = 512;
 
 // Video Controls Window
 export const VIDEO_CONTROLS_WINDOW_WIDTH = 400;
