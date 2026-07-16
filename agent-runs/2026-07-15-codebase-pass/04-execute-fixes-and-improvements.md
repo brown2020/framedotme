@@ -6,7 +6,7 @@ Name: Codex
 
 ## Scope
 
-Executed three confirmed-fix batches: F-102 Stripe server-action authorization, F-103 session CSRF/redirect hardening, F-104 login/popup lifecycle cleanup, and F-105 through F-107 React correctness/accessibility/hydration/recorder performance.
+Executed four confirmed-fix batches: F-102 Stripe server-action authorization, F-103 session CSRF/redirect hardening, F-104 login/popup lifecycle cleanup, F-105 through F-107 React correctness/accessibility/hydration/recorder performance, and F-110 Firebase initialization reliability.
 
 ## Inputs
 
@@ -16,8 +16,8 @@ Findings backlog, auth protection inventory/plan, payment actions/callers, custo
 
 - Branch: `dev`
 - Upstream: `origin/dev`
-- Commits: auth security `0c2f811`; popup lifecycle `f987bf2`; React correctness checkpoint pending
-- Sync status: matched `origin/dev` at `f987bf2` before React correctness edits
+- Commits: auth security `0c2f811`; popup lifecycle `f987bf2`; React correctness `814871d`; Firebase reliability checkpoint pending
+- Sync status: matched `origin/dev` at `814871d` before Firebase reliability edits
 
 ## Loop
 
@@ -25,8 +25,8 @@ Findings backlog, auth protection inventory/plan, payment actions/callers, custo
 - Goal: require authoritative server auth at Stripe actions and make the initial session exchange/redirect lifecycle safe.
 - Verify gate: both actions require a valid custom JWT; intents are UID-bound; every session mutation has a CSRF pair; redirect/timer race fixed; lint/build/Doctor pass.
 - Stop condition: F-102/F-103 are fixed or blocked with evidence.
-- Attempt: 3 bounded batches; lint-guided corrections resolved the React batch on its second gate run
-- Result: pass; the first two batches are pushed and the React correctness batch is verified for checkpoint.
+- Attempt: 4 bounded batches; lint-guided corrections resolved the React batch on its second gate run
+- Result: pass; the first three batches are pushed and the Firebase reliability batch is verified for checkpoint.
 
 ## Changes Made
 
@@ -41,6 +41,7 @@ Findings backlog, auth protection inventory/plan, payment actions/callers, custo
 - Added a reusable hydration-safe local date/time component using `useSyncExternalStore`, deterministic UTC server snapshots, local client formatting, and hoisted formatters; replaced all four render-time locale calls.
 - Lazily created media/recording managers once per hook instance while preserving cleanup ownership.
 - Migrated the deprecated Zod URL schema and narrowed the UI button runtime export.
+- Replaced Firebase initialization catch-and-cast fallbacks with explicit required-variable validation and real SDK instances; narrowed the Admin surface to the only used export.
 
 ## Verification
 
@@ -48,7 +49,7 @@ Findings backlog, auth protection inventory/plan, payment actions/callers, custo
 | --- | --- |
 | `git diff --check` | Pass |
 | `npm run lint` | Pass; no warnings/errors |
-| `npm run build` | Pass; compile, TypeScript, and 16-page generation complete |
+| `npm run build` | Pass outside the sandbox after its local-port restriction blocked Turbopack; compile, TypeScript, and 16-page generation complete |
 | `npx react-doctor@latest . --verbose --scope changed` | Pass; no issues found, score 90/100 |
 
 ## Architecture and Lean Code Scorecard
@@ -72,10 +73,10 @@ Findings backlog, auth protection inventory/plan, payment actions/callers, custo
 
 ## Remaining Work
 
-- F-108/F-110 proven dead-code/metadata/Firebase reliability work and remaining unused exports.
+- F-108 proven dead-code/metadata work and remaining unused exports.
 - F-109 package and dependency warnings.
 - F-101 remains blocked on provider receipt/server-credit policy.
 
 ## Recommended Next Step
 
-Commit/push F-105 through F-107, then execute the proof-backed dead-code/metadata/reliability batch F-108/F-110/F-111.
+Commit/push F-110, then execute the proof-backed dead-code/metadata cleanup batch F-108/F-111.
