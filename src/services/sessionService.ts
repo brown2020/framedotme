@@ -1,13 +1,35 @@
-import { adminAuth } from "@/firebase/firebaseAdmin";
+import "server-only";
+
+import { jwtVerify } from "jose";
+import { cookies } from "next/headers";
+
+import { SESSION_COOKIE_NAME } from "@/constants/auth";
+import { AppError } from "@/types/errors";
 
 /**
  * Session verification service
- * Handles server-side token verification for authentication in Node.js runtime
- *
- * NOTE: This service is used by API routes (Node.js runtime) for proper signature verification.
- * The Edge runtime proxy (src/proxy.ts) cannot use this service and instead validates JWT
- * expiry without signature verification. Returns null on failures for graceful handling.
+ * Verifies the app's custom HS256 session JWT in the Node.js runtime.
+ * The token is created by /api/session and is also verified by src/proxy.ts.
  */
+
+export interface AuthenticatedSession {
+  uid: string;
+  email: string;
+  emailVerified: boolean;
+}
+
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      "JWT_SECRET or NEXTAUTH_SECRET environment variable not configured",
+    );
+  }
+  if (secret.length < 32) {
+    throw new Error("JWT_SECRET must be at least 32 characters for security");
+  }
+  return new TextEncoder().encode(secret);
+}
 
 /**
  * Verifies a session cookie and returns user information
@@ -17,30 +39,39 @@ import { adminAuth } from "@/firebase/firebaseAdmin";
  */
 export async function verifySessionToken(
   sessionCookie: string,
-): Promise<{ uid: string; email?: string | null } | null> {
+): Promise<AuthenticatedSession | null> {
   if (!sessionCookie) return null;
+
   try {
-    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
-    return { uid: decoded.uid, email: decoded.email ?? null };
+    const { payload } = await jwtVerify(sessionCookie, getJwtSecret());
+    if (!payload.sub) return null;
+
+    return {
+      uid: payload.sub,
+      email: typeof payload.email === "string" ? payload.email : "",
+      emailVerified: payload.email_verified === true,
+    };
   } catch {
     return null;
   }
 }
 
 /**
- * Verifies an ID token and returns user information
- *
- * @param idToken - The ID token to verify
- * @returns User info if valid, null if invalid or missing
+ * Reads and verifies the current request's HttpOnly app session cookie.
  */
-export async function verifyIdToken(
-  idToken: string,
-): Promise<{ uid: string; email?: string | null } | null> {
-  if (!idToken) return null;
-  try {
-    const decoded = await adminAuth.verifyIdToken(idToken, true);
-    return { uid: decoded.uid, email: decoded.email ?? null };
-  } catch {
-    return null;
+export async function getAuthenticatedSession(): Promise<AuthenticatedSession | null> {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value ?? "";
+  return verifySessionToken(sessionCookie);
+}
+
+/**
+ * Requires an authenticated app session for protected server work.
+ */
+export async function requireAuthenticatedSession(): Promise<AuthenticatedSession> {
+  const session = await getAuthenticatedSession();
+  if (!session) {
+    throw new AppError("Authentication required", "authentication");
   }
+  return session;
 }

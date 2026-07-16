@@ -2,13 +2,11 @@
 
 | Check | Command Or Manual Path | Result | Evidence | Notes |
 | --- | --- | --- | --- | --- |
-| Sign in | TBD | Not run | TBD | TBD |
-| Password visibility toggles | TBD | Not run | TBD | TBD |
-| Protected route | TBD | Not run | TBD | TBD |
-| Admin route | TBD | Not run | TBD | TBD |
-| Hard sign-out | TBD | Not run | TBD | TBD |
-| Auth state matrix | TBD | Not run | TBD | TBD |
-| Route protection matrix | TBD | Not run | TBD | TBD |
-| Navbar state matrix | TBD | Not run | TBD | TBD |
-| Footer hard logout while signed out | TBD | Not run | TBD | TBD |
-| Client/server mismatch | TBD | Not run | TBD | TBD |
+| Static quality | `npm run lint` | Pass | no output warnings/errors | Full repo |
+| Type/routing integration | `npm run build` | Pass | compile, TypeScript, 16 pages | Full repo |
+| Server action auth | React Doctor changed scope | Pass | no issues; 90/100 | Previously two errors |
+| Session verifier | Source review/build | Pass | custom HS256 `jwtVerify`, cookie reader, required guard | Firebase session-cookie mismatch removed |
+| CSRF initial login | Source review/build | Pass | GET bootstrap and unconditional POST check | Manual request QA not run |
+| Safe return path | Source review/build | Pass | `//` and backslash values rejected | Normal `/path?...` preserved |
+| Email-link error timer | React Doctor/source review | Pass | timeout cleanup returned | Manual browser QA not run |
+| Credit/IAP authority | Architecture review | Blocked | AUTH-003 | Requires provider receipt/server policy |

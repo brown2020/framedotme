@@ -1,38 +1,24 @@
 # Session And Proxy
 
-## Auth State Model
-
-| State | Source Of Truth | UI Behavior | Server Behavior | Verification |
-| --- | --- | --- | --- | --- |
-| Unknown/bootstrap | TBD | TBD | TBD | TBD |
-| Signed out | TBD | TBD | TBD | TBD |
-| Signed in unverified | TBD | TBD | TBD | TBD |
-| Signed in verified | TBD | TBD | TBD | TBD |
-| Admin | TBD | TBD | TBD | TBD |
-| Stale/invalid | TBD | TBD | TBD | TBD |
-| Signing out | TBD | TBD | TBD | TBD |
-
 ## Session Endpoints
 
-## Bootstrap And Refresh
+- `GET /api/session`: creates a fresh readable double-submit CSRF cookie and is `no-store`.
+- `POST /api/session`: always validates CSRF, verifies a Firebase ID token with Admin, and creates the HttpOnly custom HS256 `frame_session` JWT.
+- `DELETE /api/session`: always validates CSRF and clears both session and CSRF cookies.
+- Client exchange/clear calls are centralized in `sessionCookieService`, which bootstraps CSRF before either mutation.
 
 ## Server Verification
 
-## proxy.ts
+- `sessionService` now verifies the custom JWT using the same secret/algorithm as `proxy.ts`; it no longer treats the custom JWT as a Firebase session cookie.
+- Both Stripe server actions call `requireAuthenticatedSession` before accessing Stripe.
+- New PaymentIntents include `metadata.userId`; validation rejects a session whose UID does not match.
 
 ## Route Protection Matrix
 
 | Scenario | Result | Evidence | Notes |
 | --- | --- | --- | --- |
-| Public route signed out | Not run | TBD | TBD |
-| Auth-only route signed in | Not run | TBD | TBD |
-| Protected page signed out | Not run | TBD | TBD |
-| Protected API/server action signed out | Not run | TBD | TBD |
-| Protected data not public/static cached | Not run | TBD | TBD |
-| Admin route non-admin | Not run | TBD | TBD |
-| Admin route admin | Not run | TBD | TBD |
-| Stale/revoked session | Not run | TBD | TBD |
-
-## Admin Routes
-
-## Drift And Cache Cleanup
+| Protected page signed out | Pass by source/build | `proxy.ts` validates signature and redirects protected route list | Manual browser QA still useful |
+| Protected server action signed out | Pass by source/Doctor | both exports call `requireAuthenticatedSession` | React Doctor changed scope: no issues |
+| Authenticated action owns resource | Pass by source | PaymentIntent metadata UID checked on validation | Existing pre-change intents without metadata are denied |
+| Initial session mutation CSRF | Pass by source/build | GET bootstrap + unconditional POST validation | Manual request QA deferred |
+| Admin route | N/A | no admin routes found | no policy invented |

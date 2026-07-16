@@ -2,17 +2,17 @@
 
 ## Current Phase
 
-- Phase: Protection planning
-- Status: Verified; setup/findings checkpoint pending
-- Active task: AUTH-001
-- Next action: implement shared custom-JWT session verification and bind Stripe intents to the session UID
+- Phase: Protection validation
+- Status: AUTH-001/AUTH-002 verified; commit/push pending
+- Active task: AUTH-001/AUTH-002
+- Next action: checkpoint the verified auth security repair, then finalize protection reports after the broader pass
 
 ## Branch And Sync
 
 - Repository root: `/Users/stephenbrown/Code/OPENSOURCE/framedotme`
 - Branch: `dev`
-- Origin/dev status: matched at `439eed5` before auth-ledger edits
-- Working tree: auth run reports only
+- Origin/dev status: matched at `647d351` before source edits
+- Working tree: AUTH-001/AUTH-002-owned source and reports
 
 ## Auth State
 
