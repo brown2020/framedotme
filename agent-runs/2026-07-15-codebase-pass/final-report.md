@@ -10,8 +10,8 @@ The branch is testable and locally clean. One pre-existing P0 security boundary 
 
 - Branch/upstream: `dev` / `origin/dev`.
 - Baseline: `ccff558`.
-- Pushed implementation series: `06b79eb`, `439eed5`, `647d351`, `0c2f811`, `f987bf2`, `814871d`, `cb53fe7`, `901b965`, `0a96697`, `541c736`, `0b7b388`.
-- Pre-final-report sync: clean, 0 ahead / 0 behind at `0b7b388`.
+- Pushed implementation/report series: `06b79eb`, `439eed5`, `647d351`, `0c2f811`, `f987bf2`, `814871d`, `cb53fe7`, `901b965`, `0a96697`, `541c736`, `0b7b388`, `9c32fba`.
+- Post-final-report sync: clean, 0 ahead / 0 behind at `9c32fba`.
 
 ## Major Changes
 
@@ -56,8 +56,8 @@ The branch is testable and locally clean. One pre-existing P0 security boundary 
 
 - Remote read: pass.
 - Dry-run push: pass.
-- Working tree: clean before final report edits.
-- Branch sync: 0 ahead / 0 behind before final report edits.
+- Working tree: clean after final report push, before closure-state edits.
+- Branch sync: 0 ahead / 0 behind at `9c32fba` after final report push.
 - Executable P1 findings: none.
 - Introduced regressions: none after R-001 review repair.
 - Confirmed races/resource leaks in changed scope: none.

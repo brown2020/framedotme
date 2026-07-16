@@ -58,4 +58,4 @@ Choose/provide the Apple/Google or native wrapper receipt payload and verificati
 | Auth UI optional enhancements | Deferred | password visibility/browser automation outside protection-only scope |
 | Provider browser QA | Manual | Firebase/Stripe external state required |
 | Credit authority | Blocked | AUTH-003/F-101 |
-| Working tree and remote sync | Pending final CBI report commit | finalization phase |
+| Working tree and remote sync | Pass | final report `9c32fba` pushed; clean and 0 ahead/behind before closure-state edits |
