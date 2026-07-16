@@ -11,6 +11,8 @@ Frame.me is a Next.js 16 App Router application for browser-based screen recordi
 - Run production build: `npm run build`
 - Start built app: `npm run start`
 - Run lint: `npm run lint`
+- Check dependency drift: `npm outdated --long`
+- Check dependency advisories: `npm audit --audit-level=low`
 
 There is no dedicated `test` or `typecheck` script in `package.json` at the time of this note. Use `npm run lint` as the required pre-push quality gate and `npm run build` when changes touch routing, server code, config, or type-sensitive boundaries.
 
@@ -37,6 +39,7 @@ There is no dedicated `test` or `typecheck` script in `package.json` at the time
 - Auth changes must preserve the server-side session cookie flow and edge proxy validation. Client state may personalize UI, but server/proxy checks authorize protected routes.
 - Firestore and Storage rules use a default-deny posture scoped by authenticated UID; do not weaken this without explicit product/security approval.
 - Keep bug fixes separate from dependency updates and broad refactors.
+- Keep `package.json` and `package-lock.json` changes together, and run both lint and build after dependency upgrades.
 
 ## Current Validation Gaps
 

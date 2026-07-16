@@ -58,3 +58,4 @@ No package-defined unit, integration, e2e, or standalone typecheck script exists
 - Record baseline lint/build/dependency status.
 - Build an evidence-backed backlog of bugs, race risks, dead code, package drift, architecture risks, and lean-code opportunities.
 - Execute only locally verifiable codebase-health improvements while preserving product behavior.
+- Apply user-approved dependency upgrades and any required compatibility fixes in isolated, verifiable commits.
