@@ -39,6 +39,7 @@ export function AuthenticatedDashboard({
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <button
+          type="button"
           onClick={() => router.push("/capture")}
           className="group relative overflow-hidden bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-200"
         >
@@ -52,6 +53,7 @@ export function AuthenticatedDashboard({
         </button>
 
         <button
+          type="button"
           onClick={() => router.push("/recordings")}
           className="group relative overflow-hidden bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-200"
         >
@@ -65,6 +67,7 @@ export function AuthenticatedDashboard({
         </button>
 
         <button
+          type="button"
           onClick={() => router.push("/profile")}
           className="group relative overflow-hidden bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-200"
         >

@@ -37,7 +37,9 @@ if (process.env.NODE_ENV === 'development') {
   ];
   
   const actualProviders = PROVIDER_ORDER.map(p => p.component.name);
-  const isCorrectOrder = expectedProviders.every((name, i) => actualProviders[i] === name);
+  const isCorrectOrder =
+    expectedProviders.length === actualProviders.length &&
+    expectedProviders.every((name, i) => actualProviders[i] === name);
   
   if (!isCorrectOrder) {
     throw new Error(

@@ -40,7 +40,7 @@ export const FileNameSchema = z.string().min(1, "Filename is required");
  */
 export const VideoMetadataSchema = z.object({
   id: z.string().min(1),
-  downloadUrl: z.string().url(),
+  downloadUrl: z.url(),
   storagePath: z.string().min(1),
   filename: z.string().min(1),
   createdAt: z.instanceof(Timestamp),

@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { usePaymentsStore } from "@/zustand/usePaymentsStore";
 import { useEffect } from "react";
+import { LocalDateTime } from "@/components/ui/local-date-time";
 
 export function PaymentsSection(): ReactElement {
   const uid = useAuthStore((state) => state.uid);
@@ -69,15 +70,11 @@ export function PaymentsSection(): ReactElement {
                   <div>
                     <div className="text-sm text-gray-500 mb-1">Date</div>
                     <div className="text-base text-gray-900">
-                      {payment.createdAt
-                        ? payment.createdAt.toDate().toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit"
-                          })
-                        : "N/A"}
+                      {payment.createdAt ? (
+                        <LocalDateTime value={payment.createdAt.toDate()} />
+                      ) : (
+                        "N/A"
+                      )}
                     </div>
                   </div>
                   <div>

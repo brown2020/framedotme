@@ -7,6 +7,7 @@ import { BONUS_CREDITS } from "@/constants/payment";
 import Link from "next/link";
 import { useEffect, useReducer, useRef } from "react";
 import { logger } from "@/utils/logger";
+import { LocalDateTime } from "@/components/ui/local-date-time";
 import { processPaymentWithCreditsIdempotent } from "@/services/paymentsService";
 
 interface Props {
@@ -158,7 +159,9 @@ export function PaymentSuccess({ payment_intent }: Props) {
           </div>
           <div>Uid: {uid}</div>
           <div>Id: {state.paymentData.id}</div>
-          <div>Created: {new Date(state.paymentData.created).toLocaleString()}</div>
+          <div>
+            Created: <LocalDateTime value={state.paymentData.created} />
+          </div>
           <div>Status: {state.paymentData.status}</div>
         </div>
       ) : (

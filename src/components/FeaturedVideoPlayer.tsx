@@ -2,6 +2,7 @@
 
 import { memo, useCallback } from "react";
 import type { VideoMetadata } from "@/types/video";
+import { LocalDateTime } from "@/components/ui/local-date-time";
 
 interface FeaturedVideoPlayerProps {
   video: VideoMetadata;
@@ -31,7 +32,8 @@ export const FeaturedVideoPlayer = memo(function FeaturedVideoPlayer({
     <article className="flex flex-col mb-4" aria-label="Featured video player">
       <div className="flex gap-2 flex-wrap text-xs mb-2" role="region" aria-label="Video metadata">
         <span>
-          <strong>Created:</strong> {video.createdAt.toDate().toLocaleString()}
+          <strong>Created:</strong>{" "}
+          <LocalDateTime value={video.createdAt.toDate()} />
         </span>
         <span>
           <strong>Filename:</strong> {video.filename || "No filename"}
@@ -59,6 +61,7 @@ export const FeaturedVideoPlayer = memo(function FeaturedVideoPlayer({
           Open in new window
         </a>
         <button
+          type="button"
           className="text-white bg-blue-500 p-2 rounded-md w-max my-2 hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           onClick={onClear}
           aria-label="Clear featured video"
@@ -66,6 +69,7 @@ export const FeaturedVideoPlayer = memo(function FeaturedVideoPlayer({
           Clear Featured
         </button>
         <button
+          type="button"
           className="text-white bg-blue-500 p-2 rounded-md w-max my-2 hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           onClick={handleDownload}
           aria-label={`Download ${video.filename}`}
@@ -73,6 +77,7 @@ export const FeaturedVideoPlayer = memo(function FeaturedVideoPlayer({
           Download
         </button>
         <button
+          type="button"
           className="text-white bg-red-500 p-2 rounded-md w-max my-2 hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
           onClick={handleDelete}
           aria-label={`Delete ${video.filename}`}

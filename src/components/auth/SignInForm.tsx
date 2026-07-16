@@ -27,6 +27,7 @@ function AuthButton({ label, logo, onClick }: AuthButtonProps) {
           src={logo}
           alt={`${label} logo`}
           fill
+          sizes="24px"
           className="object-contain"
         />
       </div>

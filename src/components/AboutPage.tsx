@@ -183,10 +183,11 @@ export function AboutPage(): ReactElement {
           <div className="space-y-4">
             {FAQ_DATA.map((faq, index) => (
               <div
-                key={index}
+                key={faq.question}
                 className="border-b border-gray-200 pb-4 last:border-0"
               >
                 <button
+                  type="button"
                   className="flex justify-between items-center w-full text-left py-3 hover:text-blue-600 transition-colors"
                   onClick={() => toggleFAQ(index)}
                   aria-expanded={openFAQ === index}
@@ -220,6 +221,7 @@ export function AboutPage(): ReactElement {
               Join thousands of users who trust Frame.me
             </p>
             <button
+              type="button"
               onClick={() => (window.location.href = "/")}
               className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-all hover:scale-105"
             >

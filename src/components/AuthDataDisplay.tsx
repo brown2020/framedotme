@@ -2,6 +2,7 @@
 
 import type { ReactElement } from "react";
 import Image from "next/image";
+import { LocalDateTime } from "@/components/ui/local-date-time";
 import { useAuthStore } from "@/zustand/useAuthStore";
 
 export function AuthDataDisplay(): ReactElement {
@@ -70,13 +71,11 @@ export function AuthDataDisplay(): ReactElement {
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="text-sm text-gray-500 mb-1">Last Sign In</div>
           <div className="font-semibold text-gray-900">
-            {lastSignIn
-              ? lastSignIn.toDate().toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })
-              : "N/A"}
+            {lastSignIn ? (
+              <LocalDateTime value={lastSignIn.toDate()} dateOnly />
+            ) : (
+              "N/A"
+            )}
           </div>
         </div>
 
