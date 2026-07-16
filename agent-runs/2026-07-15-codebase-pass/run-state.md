@@ -11,22 +11,21 @@
 
 ## Current State
 
-- Phase: Stabilization
-- Task: T-007 plus auth finalization
-- Status: all locally executable stabilization gates pass; report checkpoint pending
-- Last command: skill validators plus `git diff --check`
-- Last result: both validators `ok`; install/audit/lint/build/Doctor/local HTTP smoke pass
-- Last pushed commit: `541c736`
-- Branch sync: matched `origin/dev` before report finalization
-- Working tree: auth protection final reports and CBI stabilization/run reports only
-- Next action: commit/push stabilization ledger, then final integration/sync report
+- Phase: Integrator / Finalization
+- Task: T-008
+- Status: integration passes; overall goal blocked only by F-101/AUTH-003
+- Last command: fetch, SHA comparison, ahead/behind, and dry-run push
+- Last result: clean, identical at `0b7b388`; 0 ahead/0 behind; everything up to date
+- Last pushed commit: `0b7b388`
+- Branch sync: matched `origin/dev` before final integration report edits
+- Working tree: final integration/run reports only
+- Next action: commit/push final reports, recheck clean remote sync, hand off blocker
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| Auth protection reports | In-scope source | Final protection-only validation and blocker handoff |
-| CBI stabilization/run reports | In-scope source | Final gate evidence |
+| CBI integrator/final/run reports | In-scope source | Final Git and blocker handoff |
 
 ## Blockers
 
