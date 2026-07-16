@@ -12,26 +12,27 @@
 
 ## Current State
 
-- Phase: Preflight and Repo Docs
-- Task: T-001
-- Status: T-001 verified; commit/push checkpoint pending
-- Last command: `npm run lint`
-- Last result: pass with no warnings or errors
-- Last pushed commit: `ccff558`
-- Branch sync: matched `origin/dev` before run-folder creation
-- Working tree: only T-001-owned documentation and run-report changes
-- Next action: commit/push T-001, then establish the T-002 baseline
+- Phase: Baseline Validation
+- Task: T-002
+- Status: Verified; report checkpoint pending
+- Last command: `npm run lint`; `npm run build`; npm audit/outdated/tree diagnostics
+- Last result: lint/build pass; audit/outdated/extraneous installed-tree findings classified
+- Last pushed commit: `06b79eb`
+- Branch sync: matched `origin/dev` before baseline report edits
+- Working tree: only T-002-owned run-report changes
+- Next action: commit/push T-002, then build the T-003 findings backlog
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| `AGENTS.md`, `SPEC.md` | In-scope source | T-001 repository guidance/current-state docs |
-| `agent-runs/2026-07-15-codebase-pass/` | In-scope source | T-001 resumable run reports |
+| `agent-runs/2026-07-15-codebase-pass/02-baseline-validation.md` | In-scope source | T-002 baseline report |
+| `agent-runs/2026-07-15-codebase-pass/run-state.md` | In-scope source | T-002 resume ledger |
+| `agent-runs/2026-07-15-codebase-pass/task-queue.md` | In-scope source | T-002 task evidence |
 
 ## Blockers
 
-- None.
+- Unsafe `npm audit fix --force` path is explicitly deferred; package cleanup will seek an upstream-safe resolution.
 
 ## Deferred Items
 
