@@ -107,6 +107,9 @@ function getJwtSecret(): Uint8Array {
   if (!secret) {
     throw new Error("JWT_SECRET not configured");
   }
+  if (secret.length < 32) {
+    throw new Error("JWT_SECRET must be at least 32 characters for security");
+  }
   return new TextEncoder().encode(secret);
 }
 
@@ -119,7 +122,9 @@ async function validateSessionToken(
 ): Promise<SessionData | null> {
   try {
     const secret = getJwtSecret();
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret, {
+      algorithms: ["HS256"],
+    });
 
     if (!payload.sub) {
       return null;
