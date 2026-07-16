@@ -33,15 +33,13 @@ export function VideoControlsLauncher(): ReactElement {
       // Reset status before opening window
       updateStatus("idle");
 
-      videoControlsWindowRef.current = window.open(
+      const popup = window.open(
         "/videocontrols",
         "videoControlsWindow",
         features,
       );
+      videoControlsWindowRef.current = popup;
 
-      videoControlsWindowRef.current?.addEventListener("beforeunload", () => {
-        videoControlsWindowRef.current = null;
-      });
     }
   };
 
@@ -60,6 +58,12 @@ export function VideoControlsLauncher(): ReactElement {
 
     return () => {
       clearInterval(intervalId);
+
+      const popup = videoControlsWindowRef.current;
+      if (popup && !popup.closed) {
+        popup.close();
+      }
+      videoControlsWindowRef.current = null;
     };
   }, [updateStatus]);
 
@@ -91,6 +95,7 @@ export function VideoControlsLauncher(): ReactElement {
 
   return (
     <button
+      type="button"
       onClick={openVideoControls}
       disabled={recorderStatus === "saving"}
       className={`
