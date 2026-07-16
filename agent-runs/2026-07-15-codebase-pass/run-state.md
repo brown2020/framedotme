@@ -12,22 +12,21 @@
 ## Current State
 
 - Phase: Execute Fixes and Improvements
-- Task: T-004 / F-105 / F-106 / F-107 / F-111 partial
-- Status: React correctness batch verified; commit/push pending
-- Last command: `npx react-doctor@latest . --verbose --scope changed`
-- Last result: pass; no changed-scope issues, lint/build pass
-- Last pushed commit: `f987bf2`
-- Branch sync: matched `origin/dev` before React correctness edits
-- Working tree: F-105/F-106/F-107/F-111-owned source and execution reports only
-- Next action: commit/push React correctness, then execute F-108/F-110/F-111 remaining
+- Task: T-004 / F-110
+- Status: Firebase initialization reliability batch verified; commit/push pending
+- Last command: `npm run build`
+- Last result: pass outside the sandbox after a sandbox-only Turbopack port restriction; lint also passes
+- Last pushed commit: `814871d`
+- Branch sync: matched `origin/dev` before Firebase reliability edits
+- Working tree: F-110-owned Firebase initialization and execution reports only
+- Next action: commit/push F-110, then execute F-108/F-111 remaining cleanup
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| UI components/providers/recorder hook/validation | In-scope source | F-105/F-106/F-107/F-111 repair |
-| `agent-runs/2026-07-15-codebase-pass/04-execute-fixes-and-improvements.md` | In-scope source | T-004 execution report |
-| CBI run state, queue, and execution report | In-scope source | React correctness verification ledger |
+| `src/firebase/firebaseAdmin.ts`, `src/firebase/firebaseClient.ts` | In-scope source | F-110 fail-fast initialization repair |
+| CBI run state and execution report | In-scope source | F-110 verification ledger |
 
 ## Blockers
 
