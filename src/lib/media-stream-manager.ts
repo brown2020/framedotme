@@ -41,6 +41,13 @@ export class MediaStreamManager {
    * ```
    */
   async initializeScreenCapture(): Promise<MediaStream> {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      throw new MediaStreamError(
+        "Screen sharing is not supported in this browser. Use a current Chrome, Edge, or other Chromium-based browser.",
+        "unsupported",
+      );
+    }
+
     try {
       this.screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
@@ -54,20 +61,45 @@ export class MediaStreamManager {
       this.setupTrackListeners(this.screenStream);
       return this.screenStream;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      if (message.includes("Permission")) {
+      const originalError = error instanceof Error ? error : undefined;
+
+      if (originalError?.name === "NotAllowedError") {
         throw new MediaStreamError(
-          "Failed to access screen capture: permission denied",
+          "Screen sharing was canceled or blocked. Click Initialize Recording and choose a screen, window, or tab.",
           "permission",
-          error as Error
-        );
-      } else {
-        throw new MediaStreamError(
-          "Failed to initialize screen capture",
-          "device",
-          error as Error
+          originalError,
         );
       }
+
+      if (originalError?.name === "InvalidStateError") {
+        throw new MediaStreamError(
+          "Screen sharing must be started from the Initialize Recording button.",
+          "interaction",
+          originalError,
+        );
+      }
+
+      if (originalError?.name === "NotFoundError") {
+        throw new MediaStreamError(
+          "No screen, window, or browser tab is available to share.",
+          "device",
+          originalError,
+        );
+      }
+
+      if (originalError?.name === "NotReadableError") {
+        throw new MediaStreamError(
+          "The selected screen could not be captured. Check your browser and system screen-recording permissions, then try again.",
+          "device",
+          originalError,
+        );
+      }
+
+      throw new MediaStreamError(
+        "Screen sharing could not start. Please try again.",
+        "unknown",
+        originalError,
+      );
     }
   }
 
@@ -89,18 +121,18 @@ export class MediaStreamManager {
 
       return this.micStream;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      if (message.includes("Permission")) {
+      const originalError = error instanceof Error ? error : undefined;
+      if (originalError?.name === "NotAllowedError") {
         throw new MediaStreamError(
-          "Failed to access microphone: permission denied",
+          "Microphone access was canceled or blocked. The recording will continue without microphone audio.",
           "permission",
-          error as Error
+          originalError,
         );
       } else {
         throw new MediaStreamError(
-          "Failed to initialize microphone",
+          "Microphone audio could not be started. The recording will continue without it.",
           "device",
-          error as Error
+          originalError,
         );
       }
     }
@@ -201,7 +233,9 @@ export class MediaStreamManager {
       micAdded = true;
       logger.info("✅ [Audio] Microphone stream acquired");
     } catch (error) {
-      logger.error("❌ [Audio] Microphone permission denied:", error);
+      logger.warn("[Audio] Microphone unavailable; continuing without it", {
+        message: error instanceof Error ? error.message : String(error),
+      });
       // Continue without mic if user denies permission
     }
 

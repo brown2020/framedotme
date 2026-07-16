@@ -7,6 +7,8 @@
  */
 export type MediaStreamErrorType =
   | "permission"  // User denied permission to access media device
+  | "interaction" // Capture was not started from a direct user gesture
+  | "unsupported" // Browser does not expose the required media API
   | "device"      // Hardware/device access failure
   | "stream"      // Stream processing or combination error
   | "unknown";    // Unclassified error
