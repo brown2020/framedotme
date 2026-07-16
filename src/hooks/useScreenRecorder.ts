@@ -78,7 +78,7 @@ export const useScreenRecorder = () => {
   const [mediaManager] = useState(
     () =>
       new MediaStreamManager((status) => {
-      setRecorderStatus(status);
+        setRecorderStatus(status);
       }),
   );
   const [recordingManager] = useState(() => new RecordingManager());

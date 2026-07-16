@@ -11,22 +11,24 @@
 
 ## Current State
 
-- Phase: Package and Dead-Code Cleanup
-- Task: T-005 / F-109
-- Status: package upgrade verified; commit/push pending
-- Last command: `npm install`
-- Last result: clean install, no warnings, 0 vulnerabilities; lint/build/full Doctor also complete
-- Last pushed commit: `901b965`
-- Branch sync: matched `origin/dev` before package edits
-- Working tree: package manifest/lockfile and package-phase reports only
-- Next action: commit/push F-109, then run cumulative review
+- Phase: Review
+- Task: T-006 / R-001 / R-002
+- Status: cumulative review passed after one bounded fix batch; commit/push pending
+- Last command: `npx react-doctor@latest . --verbose --scope changed`
+- Last result: pass, no changed-scope issues; lint/build also pass
+- Last pushed commit: `0a96697`
+- Branch sync: matched `origin/dev` before review fixes
+- Working tree: review-owned popup/JWT adjustments and review/run reports
+- Next action: commit/push review fixes, then stabilization and final smoke
 
 ## Dirty File Classification
 
 | Path | Classification | Owner/Reason |
 | --- | --- | --- |
-| `package.json`, `package-lock.json` | In-scope package update | F-109 compatible upgrades, removals, audit override, script approvals |
-| CBI findings/package report/run state/queue | In-scope source | Package verification ledger |
+| `src/components/VideoControlsLauncher.tsx` | In-scope review fix | R-001 preserve active popup behavior |
+| `src/proxy.ts`, `src/services/sessionService.ts` | In-scope review fix | R-002 constrain JWT algorithm/secret policy |
+| `src/hooks/useScreenRecorder.ts` | In-scope cleanup | Review formatting correction |
+| CBI review/run state/queue | In-scope source | Review verification ledger |
 
 ## Blockers
 

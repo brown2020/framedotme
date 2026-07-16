@@ -43,7 +43,9 @@ export async function verifySessionToken(
   if (!sessionCookie) return null;
 
   try {
-    const { payload } = await jwtVerify(sessionCookie, getJwtSecret());
+    const { payload } = await jwtVerify(sessionCookie, getJwtSecret(), {
+      algorithms: ["HS256"],
+    });
     if (!payload.sub) return null;
 
     return {

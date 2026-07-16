@@ -58,11 +58,6 @@ export function VideoControlsLauncher(): ReactElement {
 
     return () => {
       clearInterval(intervalId);
-
-      const popup = videoControlsWindowRef.current;
-      if (popup && !popup.closed) {
-        popup.close();
-      }
       videoControlsWindowRef.current = null;
     };
   }, [updateStatus]);
