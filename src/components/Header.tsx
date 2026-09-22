@@ -1,23 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useCallback } from "react";
 import { navItems } from "@/constants/menuItems";
 import { ScanIcon } from "lucide-react";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";
 import { Z_INDEX } from "@/constants/config";
+import { useAuthStore } from "@/zustand/useAuthStore";
 
 /**
- * Header component that displays the app logo and navigation menu
- * Shows navigation items on desktop and handles React Native WebView interactions
- *
- * @returns The header component with logo and navigation
+ * Header: logo + authenticated app nav, or Sign in / Create account when signed out.
  */
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  const uid = useAuthStore((s) => s.uid);
+  const authReady = useAuthStore((s) => s.authReady);
+  const isAuthenticated = authReady && !!uid;
 
   const handleLogoClick = useCallback(() => {
     if (isReactNativeWebView()) {
@@ -48,32 +49,61 @@ export function Header() {
         className="flex h-full gap-1 md:gap-2 items-center"
         aria-label="Main navigation"
       >
-        {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.path) && pathname !== "/";
+        {isAuthenticated
+          ? navItems.map((item) => {
+              const isActive =
+                pathname.startsWith(item.path) && pathname !== "/";
 
-          return (
-            <button
-              type="button"
-              key={item.path}
-              className={`flex items-center gap-1 px-2 md:px-3 h-full transition duration-300 text-white hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
-                isActive ? "opacity-100 bg-white/30" : "opacity-50"
-              }`}
-              onClick={() => router.push(item.path)}
-              aria-label={`Navigate to ${item.label}`}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <div className="h-7 md:h-9 aspect-square" aria-hidden="true">
-                <item.icon
-                  size={28}
-                  className="h-full w-full object-cover md:w-auto md:h-auto"
-                />
-              </div>
-              <span className="hidden md:inline text-xl font-bold">
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
+              return (
+                <button
+                  type="button"
+                  key={item.path}
+                  className={`flex items-center gap-1 px-2 md:px-3 h-full transition duration-300 text-white hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
+                    isActive ? "opacity-100 bg-white/30" : "opacity-50"
+                  }`}
+                  onClick={() => router.push(item.path)}
+                  aria-label={`Navigate to ${item.label}`}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <div
+                    className="h-7 md:h-9 aspect-square"
+                    aria-hidden="true"
+                  >
+                    <item.icon
+                      size={28}
+                      className="h-full w-full object-cover md:w-auto md:h-auto"
+                    />
+                  </div>
+                  <span className="hidden md:inline text-xl font-bold">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })
+          : (
+              <>
+                <Link
+                  href="/login"
+                  className={`flex items-center px-3 h-full text-white font-semibold hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
+                    pathname.startsWith("/login")
+                      ? "opacity-100 bg-white/30"
+                      : "opacity-80"
+                  }`}
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className={`flex items-center px-3 h-full text-white font-semibold hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
+                    pathname.startsWith("/signup")
+                      ? "opacity-100 bg-white/30"
+                      : "opacity-80"
+                  }`}
+                >
+                  Create account
+                </Link>
+              </>
+            )}
       </nav>
     </header>
   );

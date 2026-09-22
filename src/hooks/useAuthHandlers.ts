@@ -9,19 +9,17 @@ import {
 } from "firebase/auth";
 import toast from "react-hot-toast";
 
-import { isFirebaseError } from "@/types/guards";
-
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
 import { handleError } from "@/lib/errors";
+import { mapFirebaseAuthError } from "@/lib/firebaseAuthErrors";
 import { browserStorage } from "@/services/browserStorageService";
 import { useSignOut } from "@/hooks/useSignOut";
 import { AUTH_PENDING_TIMEOUT_MS, AUTH_STORAGE_KEYS } from "@/constants/auth";
 
 /**
- * Custom hook that provides all authentication handlers
- * @param hideModal - Callback to hide the modal after auth actions
- * @returns Authentication handler functions and form state
+ * Custom hook that provides authentication handlers (legacy home/modal paths).
+ * Dedicated /login /signup /forgot-password pages are preferred (Auth UX).
  */
 export function useAuthHandlers(hideModal: () => void) {
   const setAuthDetails = useAuthStore((s) => s.setAuthDetails);
@@ -32,48 +30,35 @@ export function useAuthHandlers(hideModal: () => void) {
   const [name, setName] = useState<string>("");
   const [acceptTerms, setAcceptTerms] = useState<boolean>(true);
   const [isEmailLinkLogin, setIsEmailLinkLogin] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
 
-  /**
-   * Handles Google OAuth sign-in
-   */
   const signInWithGoogle = useCallback(async () => {
     if (!acceptTerms) return;
-
+    setAuthBusy(true);
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       hideModal();
     } catch (error) {
-      if (isFirebaseError(error)) {
-        if (error.code === "auth/account-exists-with-different-credential") {
-          toast.error(
-            "An account with the same email exists with a different sign-in provider."
-          );
-        } else {
-          toast.error(
-            "Something went wrong signing in with Google\n" + error.message
-          );
-        }
-      }
+      toast.error(mapFirebaseAuthError(error));
+    } finally {
+      setAuthBusy(false);
     }
   }, [acceptTerms, hideModal]);
 
-  /**
-   * Handles user sign-out (quiet version for modal context)
-   */
   const handleSignOut = useCallback(async () => {
+    setAuthBusy(true);
     try {
       await performSignOutQuiet();
       hideModal();
     } catch (error) {
-      handleError("Sign out", error, { showToast: true });
+      toast.error(mapFirebaseAuthError(error, "Failed to sign out. Please try again."));
+    } finally {
+      setAuthBusy(false);
     }
   }, [performSignOutQuiet, hideModal]);
 
-  /**
-   * Helper function to save email to storage after successful auth
-   */
-   const saveEmailToStorage = useCallback(() => {
+  const saveEmailToStorage = useCallback(() => {
     browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
     const emailName = email.split("@")[0];
     if (emailName) {
@@ -81,85 +66,84 @@ export function useAuthHandlers(hideModal: () => void) {
     }
   }, [email]);
 
-  /**
-   * Handles password-based authentication (signup or signin)
-   * Creates new account if email doesn't exist, signs in if it does
-   */
-  const handlePasswordAuth = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      saveEmailToStorage();
-      hideModal();
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        if ((error as { code?: string }).code === "auth/email-already-in-use") {
-          // If email exists, attempt login instead
+  const handlePasswordAuth = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setAuthBusy(true);
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        saveEmailToStorage();
+        hideModal();
+      } catch (error: unknown) {
+        const code =
+          error && typeof error === "object" && "code" in error
+            ? String((error as { code: unknown }).code)
+            : "";
+        if (code === "auth/email-already-in-use") {
           try {
             await signInWithEmailAndPassword(auth, email, password);
             saveEmailToStorage();
             hideModal();
           } catch (loginError) {
-            if (isFirebaseError(loginError)) {
-              toast.error(loginError.message);
-            }
+            toast.error(mapFirebaseAuthError(loginError));
           }
           return;
         }
+        toast.error(mapFirebaseAuthError(error));
+      } finally {
+        setAuthBusy(false);
       }
-      if (isFirebaseError(error)) {
-        toast.error(error.message);
+    },
+    [email, password, hideModal, saveEmailToStorage],
+  );
+
+  const handleEmailLinkSignIn = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setAuthBusy(true);
+
+      const actionCodeSettings = {
+        url: `${window.location.origin}/loginfinish`,
+        handleCodeInApp: true,
+      };
+
+      try {
+        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
+        browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, name);
+        setAuthDetails({ authPending: true });
+
+        setTimeout(() => {
+          setAuthDetails({ authPending: false });
+        }, AUTH_PENDING_TIMEOUT_MS);
+      } catch (error) {
+        handleError("Send sign-in link", error, { showToast: true });
+        toast.error(mapFirebaseAuthError(error));
+      } finally {
+        setAuthBusy(false);
       }
-    }
-  }, [email, password, hideModal, saveEmailToStorage]);
+    },
+    [email, name, setAuthDetails],
+  );
 
-  /**
-   * Handles email link sign-in (passwordless)
-   */
-  const handleEmailLinkSignIn = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const actionCodeSettings = {
-      url: `${window.location.origin}/loginfinish`,
-      handleCodeInApp: true,
-    };
-
-    try {
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
-      browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, name);
-      setAuthDetails({ authPending: true });
-      
-      // Clear pending state if user doesn't complete sign-in
-      setTimeout(() => {
-        setAuthDetails({ authPending: false });
-      }, AUTH_PENDING_TIMEOUT_MS);
-    } catch (error) {
-      handleError("Send sign-in link", error, { showToast: true });
-    }
-  }, [email, name, setAuthDetails]);
-
-  /**
-   * Handles password reset email
-   */
   const handlePasswordReset = useCallback(async () => {
     if (!email) {
       toast.error("Please enter your email to reset your password.");
       return;
     }
 
+    setAuthBusy(true);
     try {
       await sendPasswordResetEmail(auth, email);
       toast.success(`Password reset email sent to ${email}`);
     } catch (error) {
-      if (isFirebaseError(error)) {
-        toast.error(error.message);
-      }
+      toast.error(mapFirebaseAuthError(error));
+    } finally {
+      setAuthBusy(false);
     }
   }, [email]);
 
   return {
-    // Form state
     email,
     setEmail,
     password,
@@ -170,7 +154,7 @@ export function useAuthHandlers(hideModal: () => void) {
     setAcceptTerms,
     isEmailLinkLogin,
     setIsEmailLinkLogin,
-    // Handlers
+    authBusy,
     signInWithGoogle,
     handleSignOut,
     handlePasswordAuth,

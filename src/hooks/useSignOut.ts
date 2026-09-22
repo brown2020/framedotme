@@ -158,7 +158,7 @@ export function useSignOut() {
     } catch (error) {
       logger.error("Error during sign out", error);
       toast.error("Failed to sign out. Please try again.");
-      throw error;
+      // Do not rethrow — Auth UX requires handled failures (no uncaught overlay).
     }
   }, []);
 

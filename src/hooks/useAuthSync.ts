@@ -20,7 +20,10 @@ import { useAuthStore } from "@/zustand/useAuthStore";
 import { auth } from "@/firebase/firebaseClient";
 import { updateUserDetailsInFirestore } from "@/services/userService";
 import { logger } from "@/utils/logger";
-import { CLIENT_ID_TOKEN_COOKIE_NAME } from "@/constants/auth";
+import {
+  CLIENT_ID_TOKEN_COOKIE_NAME,
+  SESSION_SYNC_TIMEOUT_MS,
+} from "@/constants/auth";
 import {
   clearServerSessionCookie,
   setServerSessionCookie,
@@ -108,16 +111,24 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
             });
           } else {
             logger.error("Failed to create session cookie");
-            // Session failed - keep pending
             setAuthDetails({
               uid: user.uid,
               authEmail: user.email || "",
               authDisplayName: user.displayName || "",
               authPhotoUrl: user.photoURL || "",
               authEmailVerified: user.emailVerified || false,
-              authReady: false, // NOT ready because session creation failed
+              authReady: false,
               authPending: true,
             });
+            // Clear stuck pending so UI is not a forever spinner (Auth UX).
+            window.setTimeout(() => {
+              if (currentVersion !== sessionVersionRef.current) return;
+              const state = useAuthStore.getState();
+              if (state.authPending && !state.authReady) {
+                setAuthDetails({ authPending: false, authReady: true });
+                logger.error("Session sync timed out; cleared authPending");
+              }
+            }, SESSION_SYNC_TIMEOUT_MS);
           }
         } catch (error) {
           // Only update state if this version is still current

@@ -19,6 +19,9 @@ if (!CLIENT_ID_TOKEN_COOKIE_NAME) {
 // Auth pending timeout
 export const AUTH_PENDING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
+// Session cookie sync after sign-in (Auth UX — clear forever-spinner)
+export const SESSION_SYNC_TIMEOUT_MS = 15_000;
+
 // Browser storage keys for auth data
 export const AUTH_STORAGE_KEYS = {
   EMAIL: "frameEmail",

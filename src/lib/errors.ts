@@ -83,6 +83,7 @@ export function getErrorMessage(
 
 /** Auth error code to user-friendly message mapping */
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  'auth/invalid-credential': 'Incorrect email or password. Please try again.',
   'auth/user-not-found': 'No account found with this email address.',
   'auth/wrong-password': 'Incorrect password. Please try again.',
   'auth/email-already-in-use': 'An account with this email already exists.',
