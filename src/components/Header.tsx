@@ -84,20 +84,20 @@ export function Header() {
               <>
                 <Link
                   href="/login"
-                  className={`flex items-center px-3 h-full text-white font-semibold hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
+                  className={`flex items-center px-3 py-1 mx-1 rounded-md font-semibold focus:outline-none focus:ring-2 focus:ring-white ${
                     pathname.startsWith("/login")
-                      ? "opacity-100 bg-white/30"
-                      : "opacity-80"
+                      ? "bg-white text-blue-900"
+                      : "text-white hover:bg-white/15"
                   }`}
                 >
                   Sign in
                 </Link>
                 <Link
                   href="/signup"
-                  className={`flex items-center px-3 h-full text-white font-semibold hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white ${
+                  className={`flex items-center px-3 py-1 mx-1 rounded-md font-semibold focus:outline-none focus:ring-2 focus:ring-white ${
                     pathname.startsWith("/signup")
-                      ? "opacity-100 bg-white/30"
-                      : "opacity-80"
+                      ? "bg-white text-blue-900"
+                      : "text-white hover:bg-white/15"
                   }`}
                 >
                   Create account
