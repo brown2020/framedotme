@@ -84,7 +84,7 @@ export function CapturePage() {
 
         {/* Recording Controls */}
         <div className="flex justify-center mb-12">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-gray-200 hover:border-blue-300 transition-all">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-gray-200 hover:border-blue-300 transition-colors">
             <div className="flex flex-col items-center gap-4">
               <p className="text-sm text-gray-600 font-medium">
                 {recorderStatus === "recording"

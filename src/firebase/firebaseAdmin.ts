@@ -1,34 +1,61 @@
-import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
+import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
+import { getAuth, type Auth } from "firebase-admin/auth";
+import { logger } from "@/utils/logger";
 
-function requireServerEnv(name: string, value: string | undefined): string {
-  if (!value) {
-    throw new Error(`Missing required server environment variable: ${name}`);
+/**
+ * Initialize Firebase Admin lazily so `next build` can collect pages in CI
+ * without server credentials present at import time.
+ */
+function initializeAdmin(): App | null {
+  if (getApps().length > 0) {
+    return getApps()[0]!;
   }
 
-  return value;
-}
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-const projectId = requireServerEnv(
-  "FIREBASE_PROJECT_ID",
-  process.env.FIREBASE_PROJECT_ID,
-);
-const clientEmail = requireServerEnv(
-  "FIREBASE_CLIENT_EMAIL",
-  process.env.FIREBASE_CLIENT_EMAIL,
-);
-const privateKey = requireServerEnv(
-  "FIREBASE_PRIVATE_KEY",
-  process.env.FIREBASE_PRIVATE_KEY,
-).replace(/\\n/g, "\n");
+  if (!projectId || !clientEmail || !privateKey) {
+    logger.warn(
+      "firebaseAdmin missing FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY",
+    );
+    return null;
+  }
 
-const app =
-  getApps()[0] ??
-  initializeApp({
-    credential: cert({ projectId, clientEmail, privateKey }),
+  return initializeApp({
+    credential: cert({
+      projectId,
+      clientEmail,
+      privateKey: privateKey.replace(/\\n/g, "\n"),
+    }),
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGEBUCKET,
   });
+}
 
-const adminAuth = getAuth(app);
+function getAdminAuth(): Auth {
+  const app = initializeAdmin();
+  if (!app) {
+    throw new Error(
+      "Firebase Admin is not configured. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.",
+    );
+  }
+  return getAuth(app);
+}
+
+function createLazyAuth(): Auth {
+  let instance: Auth | null = null;
+  return new Proxy({} as Auth, {
+    get(_target, prop, receiver) {
+      if (!instance) {
+        instance = getAdminAuth();
+      }
+      const value = Reflect.get(instance as object, prop, receiver);
+      return typeof value === "function" ? value.bind(instance) : value;
+    },
+  });
+}
+
+/** Lazy Auth accessor — safe to import during build. */
+const adminAuth: Auth = createLazyAuth();
 
 export { adminAuth };

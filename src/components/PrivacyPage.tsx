@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PolicyTocNav } from "@/components/PolicyTocNav";
 import {
   Shield,
   Eye,
@@ -55,36 +56,13 @@ export function PrivacyPage({
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Table of Contents - Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-4 border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Contents</h3>
-              <nav className="space-y-2">
-                {SECTIONS.map((section) => {
-                  const Icon = section.icon;
-                  return (
-                    <button
-                      type="button"
-                      key={section.id}
-                      onClick={() => {
-                        setActiveSection(section.id);
-                        document
-                          .getElementById(section.id)
-                          ?.scrollIntoView({ behavior: "smooth" });
-                      }}
-                      className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                        activeSection === section.id
-                          ? "bg-purple-100 text-purple-700 font-semibold"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <Icon size={16} />
-                      <span className="text-sm">{section.title}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-          </div>
+          <PolicyTocNav
+            sections={SECTIONS}
+            activeSection={activeSection}
+            onSelect={setActiveSection}
+            heading="Contents"
+            activeClassName="bg-purple-100 text-purple-700 font-semibold"
+          />
 
           {/* Content */}
           <div className="lg:col-span-3">

@@ -1,0 +1,32 @@
+name: CI
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_FIREBASE_APIKEY: "REDACTED_BY_HISTORY_PURGE"
+      NEXT_PUBLIC_FIREBASE_AUTHDOMAIN: "framedotme.firebaseapp.com"
+      NEXT_PUBLIC_FIREBASE_PROJECTID: "framedotme"
+      NEXT_PUBLIC_FIREBASE_STORAGEBUCKET: "framedotme.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGINGSENDERID: "953211415152"
+      NEXT_PUBLIC_FIREBASE_APPID: "1:953211415152:web:7b3b8f9ac36106f4ac22b5"
+      NEXT_PUBLIC_FIREBASE_MEASUREMENTID: "G-05J2ZR9XHQ"
+      NEXT_PUBLIC_STRIPE_KEY: "REDACTED_BY_HISTORY_PURGE"
+      NEXT_PUBLIC_STRIPE_PRODUCT_NAME: "framedotme_demo_credits"
+      NEXT_PUBLIC_COOKIE_NAME: "framedotmeAuthToken"
+      JWT_SECRET: "ci-placeholder-jwt-secret-min-32-chars-xx"
+      STRIPE_SECRET_KEY: "REDACTED_BY_HISTORY_PURGE"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

@@ -52,7 +52,7 @@ export function SignInForm({
             <>
               <button
                 type="button"
-                className="flex items-center justify-center gap-3 w-full px-4 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold text-gray-700 shadow-sm hover:shadow-md"
+                className="flex items-center justify-center gap-3 w-full px-4 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-colors transition-shadow font-semibold text-gray-700 shadow-sm hover:shadow-md"
                 onClick={onGoogleSignIn}
               >
                 <div className="w-6 h-6 relative">
@@ -75,12 +75,16 @@ export function SignInForm({
           )}
 
           <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+              autoComplete="email"
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
               required
             />
@@ -88,11 +92,16 @@ export function SignInForm({
 
           {!isEmailLinkLogin && (
             <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
               <input
+                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
+                autoComplete="current-password"
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
                 required
               />
@@ -110,7 +119,7 @@ export function SignInForm({
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all font-bold text-lg shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors transition-shadow font-bold text-lg shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!email || (!isEmailLinkLogin && !password) || !acceptTerms}
           >
             {isEmailLinkLogin ? (

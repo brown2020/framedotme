@@ -223,7 +223,7 @@ export function AboutPage(): ReactElement {
             <button
               type="button"
               onClick={() => (window.location.href = "/")}
-              className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-all hover:scale-105"
+              className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-[box-shadow,transform] hover:scale-105"
             >
               Get Started Free
             </button>

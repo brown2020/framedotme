@@ -28,16 +28,33 @@ type PaymentState = {
 type PaymentAction =
   | { type: "SET_LOADING"; loading: boolean }
   | { type: "SET_ERROR"; message: string }
-  | { type: "SET_SUCCESS"; message: string; data: { id: string; created: number; amount: number; status: string } };
+  | {
+      type: "SET_SUCCESS";
+      message: string;
+      data: { id: string; created: number; amount: number; status: string };
+    };
 
-const paymentReducer = (state: PaymentState, action: PaymentAction): PaymentState => {
+const paymentReducer = (
+  state: PaymentState,
+  action: PaymentAction,
+): PaymentState => {
   switch (action.type) {
     case "SET_LOADING":
       return { ...state, loading: action.loading };
     case "SET_ERROR":
-      return { ...state, loading: false, message: action.message, paymentData: null };
+      return {
+        ...state,
+        loading: false,
+        message: action.message,
+        paymentData: null,
+      };
     case "SET_SUCCESS":
-      return { ...state, loading: false, message: action.message, paymentData: action.data };
+      return {
+        ...state,
+        loading: false,
+        message: action.message,
+        paymentData: action.data,
+      };
     default:
       return state;
   }
@@ -52,13 +69,13 @@ const initialState: PaymentState = {
 export function PaymentSuccess({ payment_intent }: Props) {
   const [state, dispatch] = useReducer(paymentReducer, initialState);
 
-  // Ref to prevent concurrent processing (race condition fix)
   const processingRef = useRef(false);
-  // Ref to track if this payment_intent has been handled (prevents re-processing on re-renders)
   const handledPaymentRef = useRef<string | null>(null);
 
-  const applyCreditsLocally = useProfileStore((state) => state.applyCreditsLocally);
-  const uid = useAuthStore((state) => state.uid);
+  const applyCreditsLocally = useProfileStore(
+    (profileState) => profileState.applyCreditsLocally,
+  );
+  const uid = useAuthStore((authState) => authState.uid);
 
   useEffect(() => {
     if (!payment_intent) {
@@ -66,84 +83,92 @@ export function PaymentSuccess({ payment_intent }: Props) {
       return;
     }
 
-    // Prevent re-processing the same payment intent
     if (handledPaymentRef.current === payment_intent) {
       return;
     }
 
-    const handlePaymentSuccess = async () => {
-      if (!uid) return;
+    if (!uid) return;
 
-      // Prevent concurrent calls (e.g., double-click, multiple tabs)
-      if (processingRef.current) {
-        logger.warn("Payment already being processed, skipping duplicate call");
-        return;
-      }
-      processingRef.current = true;
+    if (processingRef.current) {
+      logger.warn("Payment already being processed, skipping duplicate call");
+      return;
+    }
 
-      try {
-        const data = await validatePaymentIntent(payment_intent);
+    let cancelled = false;
+    processingRef.current = true;
 
-        if (data.status === "succeeded") {
-          const creditsToAdd = Math.floor(data.amount / 100) + BONUS_CREDITS;
-          const { payment, alreadyExists, creditsAdded } =
-            await processPaymentWithCreditsIdempotent(
-              uid,
-              {
-                id: data.id,
-                amount: data.amount,
-                status: data.status,
-                mode: "one-time",
-                platform: "stripe",
-                productId: "payment_gateway",
-                currency: data.currency,
-              },
-              creditsToAdd,
-            );
+    validatePaymentIntent(payment_intent)
+      .then(async (data) => {
+        if (cancelled) return;
 
-          // Mark this payment_intent as handled
-          handledPaymentRef.current = payment_intent;
-
-          if (alreadyExists) {
-            // Payment was already processed - don't add credits again
-            dispatch({
-              type: "SET_SUCCESS",
-              message: "Payment has already been processed.",
-              data: {
-                id: payment.id,
-                created: payment.createdAt?.toMillis() || 0,
-                amount: payment.amount,
-                status: payment.status,
-              },
-            });
-            return;
-          }
-
-          applyCreditsLocally(creditsAdded);
-
-          dispatch({
-            type: "SET_SUCCESS",
-            message: "Payment successful",
-            data: {
-              id: data.id,
-              created: data.created * 1000,
-              amount: data.amount,
-              status: data.status,
-            },
-          });
-        } else {
+        if (data.status !== "succeeded") {
           logger.error(`Payment validation failed: ${data.status}`);
           dispatch({ type: "SET_ERROR", message: "Payment validation failed" });
+          return;
         }
-      } catch (error) {
-        logger.error("Error handling payment success", error);
-        dispatch({ type: "SET_ERROR", message: "Error handling payment success" });
-      } finally {
-        processingRef.current = false;
-      }
-    };
 
-    if (uid) handlePaymentSuccess();
+        const creditsToAdd = Math.floor(data.amount / 100) + BONUS_CREDITS;
+        const { payment, alreadyExists, creditsAdded } =
+          await processPaymentWithCreditsIdempotent(
+            uid,
+            {
+              id: data.id,
+              amount: data.amount,
+              status: data.status,
+              mode: "one-time",
+              platform: "stripe",
+              productId: "payment_gateway",
+              currency: data.currency,
+            },
+            creditsToAdd,
+          );
+
+        if (cancelled) return;
+
+        handledPaymentRef.current = payment_intent;
+
+        if (alreadyExists) {
+          dispatch({
+            type: "SET_SUCCESS",
+            message: "Payment has already been processed.",
+            data: {
+              id: payment.id,
+              created: payment.createdAt?.toMillis() || 0,
+              amount: payment.amount,
+              status: payment.status,
+            },
+          });
+          return;
+        }
+
+        applyCreditsLocally(creditsAdded);
+
+        dispatch({
+          type: "SET_SUCCESS",
+          message: "Payment successful",
+          data: {
+            id: data.id,
+            created: data.created * 1000,
+            amount: data.amount,
+            status: data.status,
+          },
+        });
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        logger.error("Error handling payment success", error);
+        dispatch({
+          type: "SET_ERROR",
+          message: "Error handling payment success",
+        });
+      })
+      .finally(() => {
+        processingRef.current = false;
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [payment_intent, applyCreditsLocally, uid]);
 
   return (

@@ -41,7 +41,7 @@ export function PaymentsSection(): ReactElement {
           ) : (
             payments.map((payment, index) => (
               <div
-                key={payment.docId || `${payment.id}-${index}`}
+                key={payment.docId || payment.id}
                 className="border border-gray-200 p-6 rounded-xl bg-white shadow-md hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center justify-between mb-4">

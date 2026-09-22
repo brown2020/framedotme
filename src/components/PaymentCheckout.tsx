@@ -25,22 +25,27 @@ export function PaymentCheckout({ amount }: Props) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function initializePayment() {
-      try {
-        const secret = await createPaymentIntent(convertToSubcurrency(amount));
-        if (secret) setClientSecret(secret);
-      } catch (error: unknown) {
+    let cancelled = false;
+
+    createPaymentIntent(convertToSubcurrency(amount))
+      .then((secret) => {
+        if (cancelled || !secret) return;
+        setClientSecret(secret);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
         if (error instanceof Error) {
           setErrorMessage(
-            error.message || "Failed to initialize payment. Please try again."
+            error.message || "Failed to initialize payment. Please try again.",
           );
         } else {
           setErrorMessage("An unknown error occurred");
         }
-      }
-    }
+      });
 
-    initializePayment();
+    return () => {
+      cancelled = true;
+    };
   }, [amount]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -56,7 +61,6 @@ export function PaymentCheckout({ amount }: Props) {
       const { error: submitError } = await elements.submit();
       if (submitError) {
         setErrorMessage(submitError.message || "Payment failed");
-        setLoading(false);
         return;
       }
 
@@ -77,16 +81,16 @@ export function PaymentCheckout({ amount }: Props) {
     } catch (error: unknown) {
       if (error instanceof Error) {
         setErrorMessage(
-          error.message || "Payment validation failed. Please try again."
+          error.message || "Payment validation failed. Please try again.",
         );
         logger.error("Payment validation error", error);
       } else {
         setErrorMessage("An unknown error occurred.");
         logger.error("Unknown error occurred during payment validation");
       }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   if (!clientSecret || !stripe || !elements) {

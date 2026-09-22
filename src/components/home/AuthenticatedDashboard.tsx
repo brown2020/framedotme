@@ -41,7 +41,7 @@ export function AuthenticatedDashboard({
         <button
           type="button"
           onClick={() => router.push("/capture")}
-          className="group relative overflow-hidden bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-200"
+          className="group relative overflow-hidden bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-[box-shadow,transform] duration-300 hover:-translate-y-1 border border-gray-200"
         >
           <div className="flex flex-col items-center text-center gap-4">
             <div className="p-4 bg-blue-600 rounded-full text-white group-hover:bg-blue-700 transition-colors">
@@ -55,7 +55,7 @@ export function AuthenticatedDashboard({
         <button
           type="button"
           onClick={() => router.push("/recordings")}
-          className="group relative overflow-hidden bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-200"
+          className="group relative overflow-hidden bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-[box-shadow,transform] duration-300 hover:-translate-y-1 border border-gray-200"
         >
           <div className="flex flex-col items-center text-center gap-4">
             <div className="p-4 bg-indigo-600 rounded-full text-white group-hover:bg-indigo-700 transition-colors">
@@ -69,7 +69,7 @@ export function AuthenticatedDashboard({
         <button
           type="button"
           onClick={() => router.push("/profile")}
-          className="group relative overflow-hidden bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-200"
+          className="group relative overflow-hidden bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-[box-shadow,transform] duration-300 hover:-translate-y-1 border border-gray-200"
         >
           <div className="flex flex-col items-center text-center gap-4">
             <div className="p-4 bg-purple-600 rounded-full text-white group-hover:bg-purple-700 transition-colors">

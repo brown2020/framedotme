@@ -93,7 +93,7 @@ export function ProfileComponent(): ReactElement {
           </div>
           <button
             type="button"
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors transition-shadow font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={handleBuyClick}
             aria-label="Purchase 10,000 credits"
           >
@@ -112,7 +112,7 @@ export function ProfileComponent(): ReactElement {
         </h3>
         <button
           type="button"
-          className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-all font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+          className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors transition-shadow font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
           onClick={handleSignOut}
           aria-label="Sign out of your account"
         >
@@ -133,7 +133,7 @@ export function ProfileComponent(): ReactElement {
         </p>
         <button
           type="button"
-          className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-all font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors transition-shadow font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           onClick={handleDeleteClick}
           aria-label="Delete your account permanently"
         >

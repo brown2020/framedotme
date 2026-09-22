@@ -7,20 +7,21 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { FirebaseError } from "firebase/app";
 import useProfileStore from "@/zustand/useProfileStore";
-import { deleteCookie, getCookie } from "cookies-next";
-import { REDIRECT_URL_COOKIE_NAME } from "@/constants/auth";
 import { logger } from "@/utils/logger";
 import { ClipLoader } from "react-spinners";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { navigateAfterSignIn } from "@/lib/auth/navigateAfterSignIn";
 
 export default function LoginFinish() {
   const router = useRouter();
   const setAuthDetails = useAuthStore((s) => s.setAuthDetails);
   const updateProfile = useProfileStore((s) => s.updateProfile);
   const processingRef = useRef(false);
-  
-  const [status, setStatus] = useState<"loading" | "needEmail" | "error">("loading");
+
+  const [status, setStatus] = useState<"loading" | "needEmail" | "error">(
+    "loading",
+  );
   const [errorMessage, setErrorMessage] = useState("");
   const [emailInput, setEmailInput] = useState("");
 
@@ -28,93 +29,92 @@ export default function LoginFinish() {
     if (status !== "loading" || processingRef.current) return;
     processingRef.current = true;
 
-    async function attemptSignIn() {
-      let redirectPath = "/capture";
-      try {
-        if (!isSignInWithEmailLink(auth, window.location.href)) {
-          throw new Error("Sign in link is not valid");
-        }
+    let cancelled = false;
 
-        const email = window.localStorage.getItem("frameEmail");
-        const name = window.localStorage.getItem("frameName") || "";
+    const fail = (message: string) => {
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setErrorMessage(message);
+        setStatus("error");
+        processingRef.current = false;
+      });
+    };
 
-        logger.debug("Attempting sign in with email:", email, name);
-        if (!email) {
-          processingRef.current = false;
-          setStatus("needEmail");
-          return;
-        }
+    const needEmail = () => {
+      queueMicrotask(() => {
+        if (cancelled) return;
+        processingRef.current = false;
+        setStatus("needEmail");
+      });
+    };
 
-        const userCredential = await signInWithEmailLink(
-          auth,
-          email,
-          window.location.href
-        );
+    const link = window.location.href;
+    if (!isSignInWithEmailLink(auth, link)) {
+      fail("Sign in link is not valid");
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const email = window.localStorage.getItem("frameEmail");
+    const name = window.localStorage.getItem("frameName") || "";
+
+    if (!email) {
+      needEmail();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    signInWithEmailLink(auth, email, link)
+      .then((userCredential) => {
+        if (cancelled) return;
 
         const user = userCredential.user;
         const authEmail = user?.email;
         const signedInUid = user?.uid;
         const selectedName = name || user?.displayName || "";
 
-        logger.debug("User auth data:", authEmail, signedInUid, selectedName);
-
         if (!signedInUid || !authEmail) {
           throw new Error("No user found");
         }
-
-        logger.info(
-          "User signed in successfully:",
-          authEmail,
-          signedInUid,
-          selectedName
-        );
 
         setAuthDetails({
           uid: signedInUid,
           authEmail,
           authDisplayName: selectedName,
         });
-        
         updateProfile(signedInUid, { displayName: selectedName });
-
-        const cookieRedirect = getCookie(REDIRECT_URL_COOKIE_NAME);
-        if (
-          typeof cookieRedirect === "string" &&
-          cookieRedirect.startsWith("/") &&
-          !cookieRedirect.startsWith("//") &&
-          !cookieRedirect.includes("\\")
-        ) {
-          redirectPath = cookieRedirect;
-        }
-        
-        router.replace(redirectPath);
-      } catch (error) {
+        navigateAfterSignIn(router);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
         let message = "Unknown error signing in";
         if (error instanceof FirebaseError) {
           message = error.message;
         } else if (error instanceof Error) {
           message = error.message;
         }
-
         logger.error("Login finish error:", message);
         setErrorMessage(message);
         setStatus("error");
-        
-      } finally {
+      })
+      .finally(() => {
         window.localStorage.removeItem("frameEmail");
         window.localStorage.removeItem("frameName");
-        deleteCookie(REDIRECT_URL_COOKIE_NAME);
-      }
-    }
+        processingRef.current = false;
+      });
 
-    void attemptSignIn();
+    return () => {
+      cancelled = true;
+    };
   }, [router, setAuthDetails, updateProfile, status]);
 
   useEffect(() => {
     if (status !== "error") return;
 
     const timeoutId = window.setTimeout(() => {
-      router.replace("/");
+      router.push("/");
     }, 3000);
 
     return () => window.clearTimeout(timeoutId);
@@ -122,7 +122,6 @@ export default function LoginFinish() {
 
   const handleEmailSubmit = async () => {
     if (!emailInput.trim()) return;
-    
     window.localStorage.setItem("frameEmail", emailInput);
     setStatus("loading");
   };
@@ -135,14 +134,21 @@ export default function LoginFinish() {
           <p className="text-gray-600 mb-4">
             Please enter the email address you used to sign in.
           </p>
+          <label
+            htmlFor="loginfinish-email"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Email
+          </label>
           <input
+            id="loginfinish-email"
             type="email"
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()}
             placeholder="your@email.com"
+            autoComplete="email"
             className="border border-gray-300 rounded-md px-3 py-2 w-full mb-4"
-            autoFocus
           />
           <Button type="button" onClick={handleEmailSubmit} className="w-full">
             Continue

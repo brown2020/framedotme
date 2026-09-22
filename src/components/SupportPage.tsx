@@ -105,7 +105,7 @@ export function SupportPage({
               type="button"
               onClick={() => setShowResetDialog(true)}
               disabled={isResetting}
-              className="bg-red-600 text-white px-8 py-4 rounded-xl hover:bg-red-700 transition-all font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500 hover:shadow-lg"
+              className="bg-red-600 text-white px-8 py-4 rounded-xl hover:bg-red-700 transition-colors transition-shadow font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500 hover:shadow-lg"
             >
               {isResetting ? "Resetting..." : "Perform Hard Reset"}
             </button>
