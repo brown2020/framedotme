@@ -107,9 +107,9 @@ export function CapturePage() {
               <div className="p-2 bg-blue-100 rounded-lg">
                 <MousePointerClick className="text-blue-600" size={24} />
               </div>
-              <h3 className="text-lg font-bold text-gray-900">
+              <h2 className="text-lg font-bold text-gray-900">
                 1. Click Record
-              </h3>
+              </h2>
             </div>
             <p className="text-gray-600">
               Click the record button to open the recording controls in a new
@@ -122,9 +122,9 @@ export function CapturePage() {
               <div className="p-2 bg-green-100 rounded-lg">
                 <MonitorIcon className="text-green-600" size={24} />
               </div>
-              <h3 className="text-lg font-bold text-gray-900">
+              <h2 className="text-lg font-bold text-gray-900">
                 2. Choose Screen
-              </h3>
+              </h2>
             </div>
             <p className="text-gray-600">
               Select which screen, window, or tab you want to record from the
@@ -137,7 +137,7 @@ export function CapturePage() {
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Zap className="text-purple-600" size={24} />
               </div>
-              <h3 className="text-lg font-bold text-gray-900">3. Auto-Save</h3>
+              <h2 className="text-lg font-bold text-gray-900">3. Auto-Save</h2>
             </div>
             <p className="text-gray-600">
               Your recording is automatically saved to the cloud when you stop
@@ -165,9 +165,9 @@ export function CapturePage() {
             <div className="flex items-start gap-3">
               <div className="text-2xl">💡</div>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
+                <h3 className="font-semibold text-gray-900 mb-1">
                   Clear Your Desktop
-                </h4>
+                </h3>
                 <p className="text-sm text-gray-600">
                   Close unnecessary windows and notifications for a cleaner
                   recording
@@ -178,7 +178,7 @@ export function CapturePage() {
             <div className="flex items-start gap-3">
               <div className="text-2xl">🎯</div>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Test First</h4>
+                <h3 className="font-semibold text-gray-900 mb-1">Test First</h3>
                 <p className="text-sm text-gray-600">
                   Do a quick test recording to make sure everything works as
                   expected
@@ -189,9 +189,9 @@ export function CapturePage() {
             <div className="flex items-start gap-3">
               <div className="text-2xl">🔊</div>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
+                <h3 className="font-semibold text-gray-900 mb-1">
                   Check Audio
-                </h4>
+                </h3>
                 <p className="text-sm text-gray-600">
                   Select &quot;Share system audio&quot; in the browser prompt to include
                   sound
@@ -202,9 +202,9 @@ export function CapturePage() {
             <div className="flex items-start gap-3">
               <div className="text-2xl">⏱️</div>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
+                <h3 className="font-semibold text-gray-900 mb-1">
                   Plan Your Recording
-                </h4>
+                </h3>
                 <p className="text-sm text-gray-600">
                   Outline what you want to show before you start recording
                 </p>

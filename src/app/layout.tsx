@@ -47,9 +47,12 @@ export default function RootLayout({
           <div className="flex flex-col h-full">
             <Header />
             {/* Height adjusts for header (4rem) + mobile bottom nav (4rem on mobile only) */}
-            <div className="flex flex-col h-container-small md:h-container-custom overflow-y-scroll flex-1">
+            <main
+              id="main-content"
+              className="flex flex-col h-container-small md:h-container-custom overflow-y-scroll flex-1"
+            >
               {children}
-            </div>
+            </main>
           </div>
         </ClientProvider>
       </body>

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 
@@ -20,6 +20,15 @@ export function ProfileComponent(): ReactElement {
   const deleteAccount = useProfileStore((state) => state.deleteAccount);
   const uid = useAuthStore((s) => s.uid);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const updateProfile = useProfileStore((state) => state.updateProfile);
+  const [displayNameDraft, setDisplayNameDraft] = useState(profile.displayName || "");
+  const [savingName, setSavingName] = useState(false);
+
+  useEffect(() => {
+    const incoming = profile.displayName || "";
+    if (!incoming) return;
+    queueMicrotask(() => setDisplayNameDraft((prev) => (prev ? prev : incoming)));
+  }, [profile.displayName]);
 
   const { performSignOut, resetAllStores, clearAllCookies, clearAllStorage } = useSignOut();
 
@@ -98,6 +107,54 @@ export function ProfileComponent(): ReactElement {
             aria-label="Purchase 10,000 credits"
           >
             Buy 10,000 Credits
+          </button>
+        </div>
+      </section>
+
+      {/* Display name */}
+      <section
+        className="bg-gray-50 rounded-xl p-6 border border-gray-200"
+        aria-labelledby="display-name-section"
+      >
+        <h3 id="display-name-section" className="text-lg font-bold text-gray-900 mb-4">
+          Display Name
+        </h3>
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+          <div className="flex-1">
+            <label htmlFor="display-name" className="block text-sm font-medium text-gray-700 mb-1">
+              Name
+            </label>
+            <input
+              id="display-name"
+              type="text"
+              value={displayNameDraft}
+              onChange={(e) => setDisplayNameDraft(e.target.value)}
+              placeholder={profile.displayName || "Your name"}
+              autoComplete="nickname"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={!uid || savingName || !displayNameDraft.trim()}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors transition-shadow font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            aria-label="Save display name"
+            onClick={async () => {
+              if (!uid) return;
+              const next = displayNameDraft.trim();
+              if (!next) return;
+              setSavingName(true);
+              try {
+                await updateProfile(uid, { displayName: next });
+                toast.success("Display name saved");
+              } catch {
+                toast.error("Failed to save display name");
+              } finally {
+                setSavingName(false);
+              }
+            }}
+          >
+            {savingName ? "Saving..." : "Save name"}
           </button>
         </div>
       </section>

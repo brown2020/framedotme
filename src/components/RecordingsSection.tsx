@@ -38,6 +38,9 @@ export function RecordingsSection(): ReactElement {
 
   return (
     <ErrorBoundary featureName="Recordings">
+      <div className="px-4 pt-6">
+        <h1 className="text-3xl font-bold text-gray-900">My Recordings</h1>
+      </div>
       {loading ? (
         <div className="flex flex-col h-full justify-center items-center">
           <ClipLoader color="#3b82f6" size={60} />
