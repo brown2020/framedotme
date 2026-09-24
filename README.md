@@ -1,140 +1,138 @@
 # Frame.me
 
-Frame.me is a streamlined screen recording application built with Next.js and TypeScript that allows users to create, manage, and share screen recordings directly from their browser.
+Browser screen recorder: capture screen (optional mic/system audio), manage recordings in Firebase, and buy credits with Stripe. Live site: [https://frame.me](https://frame.me)
 
 ## Features
 
-- **Screen Recording**: Capture your screen with audio support (both system audio and microphone)
-- **Floating Controls**: Detached recording control window for easy access while recording
-- **Real-time Preview**: Live preview of your recording with dimension information
-- **Status Management**: Clear visual indicators of recording status and progress
-- **Error Handling**: Robust error handling for permission and device issues
-- **Firebase Integration**: Secure storage and management of recordings
+Verified from the current codebase:
 
-## Tech Stack
+- **Screen recording** — MediaStream + Recording managers; configurable frame rate; floating `/videocontrols` window
+- **Capture / recordings** — `/capture`, `/recordings` for authenticated users
+- **Auth** — Firebase Auth (login, signup, forgot password, loginfinish); server-signed JWT session cookie via `/api/session` (`frame_session` / `NEXT_PUBLIC_COOKIE_NAME`)
+- **Profile & credits** — profile page; Stripe payment attempt/success; credit balance on user docs
+- **Cookie consent** — `react-cookie-consent`
+- **Legal / support** — about, privacy, terms, support
+- **Security rules** — owner-scoped Firestore + Storage (`botcasts` recordings, payments create-only)
 
-- Next.js 16
-- React 19
-- TypeScript
-- Firebase client SDK and Firebase Admin SDK
-- Zustand
-- Tailwind CSS 4
-- Radix UI primitives/icons
-- shadcn/ui components
-- Stripe server SDK and Stripe.js
+## Tech stack
 
-## Firebase Security Rules (Firestore + Storage)
+| Area | Choice |
+|------|--------|
+| Framework | Next.js 16 (App Router) |
+| UI | React 19, Tailwind CSS 4, Radix slot, CVA, Lucide |
+| Language | TypeScript 6 |
+| Backend | Firebase 12 + firebase-admin 14 |
+| Session | `jose` HS256 JWT cookie; `cookies-next` |
+| Payments | Stripe + Stripe.js / React Stripe |
+| State | Zustand 5 |
+| Validation | Zod 4 |
+| Toasts | react-hot-toast |
+| Tests | Vitest 3 |
+| Node (CI) | 22 |
 
-This repo includes a “default deny” security posture and scopes user data by authenticated UID.
+`.npmrc` sets `legacy-peer-deps=true`.
 
-### Firestore (`firestore.rules`)
+## Project structure
 
-- **Default deny**: all reads/writes are denied unless explicitly allowed.
-- **User namespace**: `/users/{userId}` is readable/writable only by the authenticated owner (`request.auth.uid == userId`).
-- **Privilege escalation guard**: clients cannot set privileged flags on the user doc (`isAdmin`, `isAllowed`, `isInvited`, `premium` must be absent or `false` on create/update).
-- **Subcollections** (owner-only CRUD):
-  - `/users/{userId}/profile/userData`
-  - `/users/{userId}/settings/recorder`
-  - `/users/{userId}/botcasts/{botcastId}`
-- **Payments**:
-  - `/users/{userId}/payments/{paymentDocId}`: owner can read/create/delete
-  - **Updates are denied** (prevents client-side tampering after creation)
+```
+framedotme/
+├── src/
+│   ├── app/              # Pages + /api/session
+│   ├── components/       # Auth, home, UI
+│   ├── lib/              # media-stream/recording managers, auth, security
+│   ├── services/         # storage, session, user
+│   ├── actions/          # Stripe payment actions
+│   ├── firebase/, hooks/, zustand/, providers/
+├── .env.example
+├── firestore.rules
+├── storage.rules
+└── .github/workflows/ci.yml
+```
 
-### Storage (`storage.rules`)
-
-- **Default deny**: all reads/writes are denied unless explicitly allowed.
-- **Recording objects**: `/{userId}/botcasts/{filename}`
-  - **read**: owner-only
-  - **create/update**: owner-only and `< 500MB`
-  - **delete**: owner-only
-  - **list**: denied (recordings are discovered via Firestore, not bucket listing)
-
-## Core Components
-
-### Media Management
-
-- `MediaStreamManager`: Handles screen capture and audio stream management
-- `RecordingManager`: Controls recording operations and chunk management
-- `storageService`: Manages Firebase storage operations and metadata
-
-### UI Components
-
-- `VideoControlsLauncher`: Main recording trigger with status indication
-- `VideoControlsPage`: Detached window with full recording controls and preview
-- `RecorderStatusProvider`: Global recording status management
-
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
-- Node.js (Next.js in this repo requires Node `>=20.9.0`)
+- Node.js 22+ (CI uses 22)
+- npm
+- Firebase project (Auth, Firestore, Storage)
+- Stripe account
+- A random `JWT_SECRET` (≥32 characters)
 
-1. Clone the repository:
+### Install
 
 ```bash
 git clone https://github.com/brown2020/framedotme.git
 cd framedotme
-```
-
-2. Install dependencies:
-
-```bash
+git checkout dev
 npm install
-```
-
-3. Set up environment variables:
-   Create a `.env.local` file with your Firebase configuration:
-
-```
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-NEXT_PUBLIC_COOKIE_NAME=your_cookie_name
-```
-
-4. Run the development server:
-
-```bash
+cp .env.example .env.local
+# fill in values — never commit secrets
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000). Screen capture requires a supporting browser and user permission.
 
-## Usage
+## Environment variables
 
-1. Click the record button to open the recording controls
-2. Grant necessary permissions when prompted
-3. Use the floating control window to start/stop recording
-4. Access your recordings through the dashboard
-5. Download or share your recordings
+| Name | Purpose | Where to get it |
+|------|---------|-----------------|
+| `NEXT_PUBLIC_FIREBASE_APIKEY` | Firebase web API key | Firebase Console → Your apps |
+| `NEXT_PUBLIC_FIREBASE_AUTHDOMAIN` | Auth domain | Same |
+| `NEXT_PUBLIC_FIREBASE_PROJECTID` | Project ID | Same |
+| `NEXT_PUBLIC_FIREBASE_STORAGEBUCKET` | Storage bucket | Same |
+| `NEXT_PUBLIC_FIREBASE_MESSAGINGSENDERID` | Messaging sender ID | Same |
+| `NEXT_PUBLIC_FIREBASE_APPID` | App ID | Same |
+| `NEXT_PUBLIC_FIREBASE_MEASUREMENTID` | Analytics ID | Optional |
+| `FIREBASE_TYPE` | Admin type (`service_account`) | Service account JSON |
+| `FIREBASE_PROJECT_ID` | Admin project ID | Same |
+| `FIREBASE_PRIVATE_KEY_ID` | Key ID | Same |
+| `FIREBASE_PRIVATE_KEY` | Private key | Same |
+| `FIREBASE_CLIENT_EMAIL` | Client email | Same |
+| `FIREBASE_CLIENT_ID` | Client ID | Same |
+| `FIREBASE_AUTH_URI` / `FIREBASE_TOKEN_URI` / `FIREBASE_AUTH_PROVIDER_X509_CERT_URL` / `FIREBASE_CLIENT_CERTS_URL` / `FIREBASE_UNIVERSE_DOMAIN` | Admin OAuth metadata | Same / defaults |
+| `NEXT_PUBLIC_STRIPE_KEY` | Stripe publishable key | Stripe Dashboard |
+| `STRIPE_SECRET_KEY` | Stripe secret key | Stripe Dashboard |
+| `NEXT_PUBLIC_STRIPE_PRODUCT_NAME` | Product name for credits (e.g. `framedotme_demo_credits`) | Stripe product config |
+| `NEXT_PUBLIC_COOKIE_NAME` | Client cookie name hint (example: `framedotmeAuthToken`) | You |
+| `JWT_SECRET` | HS256 secret for session cookies (≥32 chars) | `openssl rand -base64 32` |
+| `NEXTAUTH_SECRET` | Optional fallback secret name referenced in code | Optional |
+
+## Firebase
+
+- Firestore: `firestore.rules` — owner-only user trees; payments readable/creatable/deletable by owner, **updates denied**
+- Storage: `storage.rules` — `/{userId}/botcasts/{filename}` owner R/W, max create size 500MB; listing denied
+
+Deploy with the Firebase CLI when rules change.
+
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Next.js dev server |
+| `npm run build` | Production build |
+| `npm start` | Serve production build |
+| `npm run lint` | ESLint (`--max-warnings=0`) |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Vitest |
+
+## Testing and CI
+
+Vitest covers Firebase auth errors, CSRF helpers, session service, and payment action auth.
+
+GitHub Actions (`.github/workflows/ci.yml`) on `dev` / `main` and PRs: `npm ci` → lint → typecheck → test → build. Secrets include Firebase public config, Stripe keys/product name, cookie name, and `JWT_SECRET`. Node 22.
+
+## Deployment
+
+Deploy as a Next.js app (e.g. Vercel) to [https://frame.me](https://frame.me). Set all env vars in the host.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- `main` — production
+- `dev` — integration
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+See [AGENTS.md](./AGENTS.md) and [SPEC.md](./SPEC.md).
 
 ## License
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-- Built with [shadcn/ui](https://ui.shadcn.com/)
-- Icons from [Lucide](https://lucide.dev/)
-- Powered by [Next.js](https://nextjs.org/)
-
-## Support
-
-For support, email info@ignitechannel.com or create an issue in the repository.
-
----
-
-Built with ❤️ by [brown2020](https://github.com/brown2020)
+[GNU Affero General Public License v3](./LICENSE.md) (AGPL-3.0).
