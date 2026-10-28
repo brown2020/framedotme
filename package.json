@@ -11,27 +11,27 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@radix-ui/react-slot": "^1.2.4",
-    "@stripe/react-stripe-js": "^6.8.0",
-    "@stripe/stripe-js": "^9.10.0",
+    "@radix-ui/react-slot": "^1.5.0",
+    "@stripe/react-stripe-js": "^7.0.1",
+    "@stripe/stripe-js": "^10.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cookies-next": "^6.1.1",
-    "firebase": "^12.16.0",
-    "firebase-admin": "^14.1.0",
-    "jose": "^6.2.2",
-    "lucide-react": "^1.24.0",
-    "next": "^16.2.10",
-    "react": "^19.2.5",
-    "react-cookie-consent": "^10.0.1",
-    "react-dom": "^19.2.5",
+    "firebase": "^13.1.0",
+    "firebase-admin": "^14.5.0",
+    "jose": "^6.2.13",
+    "lucide-react": "^1.63.0",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-cookie-consent": "^10.0.2",
+    "react-dom": "^19.3.1",
     "react-firebase-hooks": "^5.1.1",
-    "react-hot-toast": "^2.6.0",
-    "react-spinners": "^0.17.0",
-    "stripe": "^22.3.2",
-    "tailwind-merge": "^3.5.0",
-    "zod": "^4.3.6",
-    "zustand": "^5.0.12"
+    "react-hot-toast": "^2.6.1",
+    "react-spinners": "^0.17.1",
+    "stripe": "^23.0.1",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.7",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.5",
@@ -40,11 +40,12 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^10.7.0",
-    "eslint-config-next": "^16.2.10",
+    "eslint-config-next": "^16.4.3",
     "postcss": "^8.5.19",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
-    "vitest": "^3.2.7"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   },
   "overrides": {
     "protobufjs": ">=7.5.5",
@@ -52,7 +53,9 @@
     "@tootallnate/once": "3.0.1",
     "http-proxy-agent": "^7.0.0",
     "uuid": ">=14.0.0",
-    "postcss": "$postcss"
+    "postcss": "$postcss",
+    "@grpc/grpc-js": "^1.14.6",
+    "tinypool": "^2.1.2"
   },
   "allowScripts": {
     "@firebase/util@1.15.1": true,

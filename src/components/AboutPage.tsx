@@ -2,6 +2,7 @@
 
 import type { ReactElement } from "react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronUp,
@@ -57,6 +58,7 @@ const FAQ_DATA = [
 ] as const;
 
 export function AboutPage(): ReactElement {
+  const router = useRouter();
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
 
   const toggleFAQ = (index: number) => {
@@ -222,7 +224,7 @@ export function AboutPage(): ReactElement {
             </p>
             <button
               type="button"
-              onClick={() => (window.location.href = "/")}
+              onClick={() => router.push("/")}
               className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-[box-shadow,transform] hover:scale-105"
             >
               Get Started Free

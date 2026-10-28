@@ -2,6 +2,7 @@
 
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 
@@ -15,6 +16,7 @@ import { useAuthStore } from "@/zustand/useAuthStore";
 import useProfileStore from "@/zustand/useProfileStore";
 
 export function ProfileComponent(): ReactElement {
+  const router = useRouter();
   const profile = useProfileStore((state) => state.profile);
   const showCreditsSection = !isReactNativeWebView();
   const deleteAccount = useProfileStore((state) => state.deleteAccount);
@@ -37,11 +39,11 @@ export function ProfileComponent(): ReactElement {
 
   const handleBuyClick = useCallback(() => {
     if (showCreditsSection) {
-      window.location.href = "/payment-attempt";
+      router.push("/payment-attempt");
     } else {
       window.ReactNativeWebView?.postMessage("INIT_IAP");
     }
-  }, [showCreditsSection]);
+  }, [showCreditsSection, router]);
 
   const handleDeleteClick = () => {
     setShowDeleteModal(true);
@@ -69,15 +71,15 @@ export function ProfileComponent(): ReactElement {
 
       toast.success("Account deleted successfully.");
 
-      // 4. Force a full page reload
+      // 4. Navigate to home
       setTimeout(() => {
-        window.location.href = "/";
+        router.push("/");
       }, 500);
     } catch (error) {
       logger.error("Error on deletion of account", error);
       toast.error("Failed to delete account. Please try again.");
     }
-  }, [deleteAccount, uid, resetAllStores, clearAllCookies, clearAllStorage]);
+  }, [deleteAccount, uid, resetAllStores, clearAllCookies, clearAllStorage, router]);
 
   return (
     <div className="flex flex-col gap-6">
