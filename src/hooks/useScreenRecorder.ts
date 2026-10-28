@@ -3,6 +3,7 @@ import type { RecorderStatusType } from "@/types/recorder";
 import { useCallback, useRef, useState, useEffect, type MutableRefObject } from "react";
 
 import { getErrorMessage } from "@/lib/errors";
+import toast from "react-hot-toast";
 import { MediaStreamManager } from "@/lib/media-stream-manager";
 import { RecordingManager } from "@/lib/recording-manager";
 import { MediaStreamError } from "@/types/mediaStreamTypes";
@@ -65,7 +66,7 @@ const handleStatusTransition = async (
 
 export const useScreenRecorder = () => {
   const { recorderStatus, setRecorderStatus } = useRecorderStatusStore();
-  const { uid } = useAuthStore();
+  const { uid, authReady, authPending } = useAuthStore();
   const [isRecordingWindowOpen, setIsRecordingWindowOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
@@ -90,6 +91,7 @@ export const useScreenRecorder = () => {
     (error: unknown) => {
       const message = getErrorMessage(error, "An unexpected error occurred", "save recording");
       setError(message);
+      toast.error(message);
       if (error instanceof MediaStreamError) {
         logger.warn("Recording could not start", {
           type: error.type,
@@ -170,12 +172,17 @@ export const useScreenRecorder = () => {
   }, [handleRecordingData, recordingManager, updateStatus, handleError]);
 
   const initializeRecorder = useCallback(async () => {
-    if (isRecordingWindowOpen) return;
+    const live =
+      screenStream?.getVideoTracks().some((track) => track.readyState === "live") ?? false;
+    if (isRecordingWindowOpen && live) return;
 
     if (!uid) {
-      // Not an exceptional condition during initial render / redirect.
-      // Show a friendly message and bail without triggering the Next.js error overlay.
-      setError("Please sign in to start recording");
+      const message = authPending || !authReady
+        ? "Sign-in is still finishing. Wait a moment, then click Initialize Recording again."
+        : "Please sign in to start recording.";
+      setError(message);
+      toast.error(message);
+      updateStatus("error");
       return;
     }
 
@@ -186,9 +193,20 @@ export const useScreenRecorder = () => {
       setIsRecordingWindowOpen(true);
       updateStatus("ready");
     } catch (error) {
+      setScreenStream(null);
+      setIsRecordingWindowOpen(false);
       handleError(error);
     }
-  }, [isRecordingWindowOpen, mediaManager, updateStatus, handleError, uid]);
+  }, [
+    authPending,
+    authReady,
+    handleError,
+    isRecordingWindowOpen,
+    mediaManager,
+    screenStream,
+    uid,
+    updateStatus,
+  ]);
 
   const resetRecorder = useCallback(async () => {
     await mediaManager.cleanup();

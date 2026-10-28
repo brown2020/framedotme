@@ -1,7 +1,8 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { VideoIcon } from "lucide-react";
 import { useRecorderStatus } from "@/hooks/useRecorderStatus";
 import {
@@ -13,6 +14,7 @@ import {
 export function VideoControlsLauncher(): ReactElement {
   const { recorderStatus, updateStatus } = useRecorderStatus();
   const videoControlsWindowRef = useRef<Window | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
 
   const openVideoControls = () => {
     if (recorderStatus === "recording") {
@@ -25,7 +27,8 @@ export function VideoControlsLauncher(): ReactElement {
     ) {
       videoControlsWindowRef.current.focus();
     } else {
-      const left = window.screen.width - VIDEO_CONTROLS_WINDOW_WIDTH;
+      const screenWidth = window.screen?.width || VIDEO_CONTROLS_WINDOW_WIDTH;
+      const left = Math.max(0, screenWidth - VIDEO_CONTROLS_WINDOW_WIDTH);
       const top = 0;
 
       const features = `width=${VIDEO_CONTROLS_WINDOW_WIDTH},height=${VIDEO_CONTROLS_WINDOW_HEIGHT},left=${left},top=${top}`;
@@ -38,8 +41,12 @@ export function VideoControlsLauncher(): ReactElement {
         "videoControlsWindow",
         features,
       );
+      if (!popup) {
+        setOpenError("The recorder window was blocked. Allow popups for this site, or open the recorder in this tab.");
+        return;
+      }
+      setOpenError(null);
       videoControlsWindowRef.current = popup;
-
     }
   };
 
@@ -92,6 +99,15 @@ export function VideoControlsLauncher(): ReactElement {
   };
 
   return (
+    <div className="flex flex-col items-center gap-3">
+    {openError ? (
+      <p role="alert" className="max-w-sm rounded-xl bg-red-50 px-4 py-3 text-center text-sm text-red-800">
+        {openError}{" "}
+        <Link href="/videocontrols" className="font-semibold underline">
+          Open recorder
+        </Link>
+      </p>
+    ) : null}
     <button
       type="button"
       onClick={openVideoControls}
@@ -118,5 +134,6 @@ export function VideoControlsLauncher(): ReactElement {
         </span>
       )}
     </button>
+    </div>
   );
 }

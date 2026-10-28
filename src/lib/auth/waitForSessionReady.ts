@@ -1,3 +1,4 @@
+import { pathOnCurrentOrigin } from "@/lib/auth/safeRedirect";
 import { useAuthStore } from "@/zustand/useAuthStore";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
@@ -27,5 +28,6 @@ export async function hardNavigateAfterAuth(path: string): Promise<void> {
   if (!ready) {
     throw new Error("Session sync timed out. Please try again.");
   }
-  window.location.href = path;
+  // Relative path on the current host. Previews must not jump to frame.me.
+  window.location.assign(pathOnCurrentOrigin(path, window.location.origin));
 }

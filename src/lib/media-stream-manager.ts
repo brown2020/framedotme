@@ -1,7 +1,31 @@
 import { MediaStreamError } from "../types/mediaStreamTypes";
+import type { MediaStreamErrorType } from "../types/mediaStreamTypes";
 import type { RecorderStatusType } from "../types/recorder";
 import { logger } from "@/utils/logger";
 import { RECORDING_FRAME_RATE } from "@/constants/recording";
+import {
+  screenCaptureFailureMessage,
+  screenCaptureUnavailableMessage,
+} from "@/lib/screenCaptureError";
+
+function screenCaptureErrorType(error: unknown): MediaStreamErrorType {
+  const name = error instanceof Error ? error.name : "";
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") return "permission";
+  if (name === "InvalidStateError") return "interaction";
+  if (name === "SecurityError" || name === "TypeError" || name === "NotSupportedError") {
+    return "unsupported";
+  }
+  if (
+    name === "NotFoundError" ||
+    name === "NotReadableError" ||
+    name === "AbortError" ||
+    name === "TrackStartError" ||
+    name === "OverconstrainedError"
+  ) {
+    return "device";
+  }
+  return "unknown";
+}
 
 export class MediaStreamManager {
   private screenStream: MediaStream | null = null;
@@ -48,66 +72,58 @@ export class MediaStreamManager {
    * ```
    */
   async initializeScreenCapture(): Promise<MediaStream> {
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      throw new MediaStreamError(
-        "Screen sharing is not supported in this browser. Use a current Chrome, Edge, or other Chromium-based browser.",
-        "unsupported",
-      );
+    const unavailable = screenCaptureUnavailableMessage();
+    if (unavailable) {
+      throw new MediaStreamError(unavailable, "unsupported");
     }
 
     try {
       this.screenEndNotified = false;
-      this.screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          frameRate: { ideal: RECORDING_FRAME_RATE },
-        },
-        // Request audio without constraints because browser handles tab audio sharing
-        // automatically, and additional constraints can cause permission dialogs to fail
-        audio: true,
-      });
-
+      this.screenStream = await this.requestDisplayMedia();
+      const liveVideo = this.screenStream
+        .getVideoTracks()
+        .some((track) => track.readyState === "live");
+      if (!liveVideo) {
+        this.screenStream.getTracks().forEach((track) => track.stop());
+        this.screenStream = null;
+        throw new MediaStreamError(
+          "No screen was shared. Click Initialize Recording and choose a screen, window, or tab.",
+          "device",
+        );
+      }
       this.setupTrackListeners(this.screenStream);
       return this.screenStream;
     } catch (error) {
+      if (error instanceof MediaStreamError) throw error;
       const originalError = error instanceof Error ? error : undefined;
-
-      if (originalError?.name === "NotAllowedError") {
-        throw new MediaStreamError(
-          "Screen sharing was canceled or blocked. Click Initialize Recording and choose a screen, window, or tab.",
-          "permission",
-          originalError,
-        );
-      }
-
-      if (originalError?.name === "InvalidStateError") {
-        throw new MediaStreamError(
-          "Screen sharing must be started from the Initialize Recording button.",
-          "interaction",
-          originalError,
-        );
-      }
-
-      if (originalError?.name === "NotFoundError") {
-        throw new MediaStreamError(
-          "No screen, window, or browser tab is available to share.",
-          "device",
-          originalError,
-        );
-      }
-
-      if (originalError?.name === "NotReadableError") {
-        throw new MediaStreamError(
-          "The selected screen could not be captured. Check your browser and system screen-recording permissions, then try again.",
-          "device",
-          originalError,
-        );
-      }
-
       throw new MediaStreamError(
-        "Screen sharing could not start. Please try again.",
-        "unknown",
+        screenCaptureFailureMessage(error),
+        screenCaptureErrorType(error),
         originalError,
       );
+    }
+  }
+
+  /**
+   * Prefer system audio plus a frame rate, then retry video-only when the
+   * browser rejects those constraints. Permission and security failures are not retried.
+   */
+  private async requestDisplayMedia(): Promise<MediaStream> {
+    try {
+      return await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          frameRate: { ideal: RECORDING_FRAME_RATE },
+        },
+        audio: true,
+      });
+    } catch (error) {
+      const name = error instanceof Error ? error.name : "";
+      const retryable =
+        name === "NotSupportedError" ||
+        name === "OverconstrainedError" ||
+        name === "TypeError";
+      if (!retryable) throw error;
+      return navigator.mediaDevices.getDisplayMedia({ video: true });
     }
   }
 
