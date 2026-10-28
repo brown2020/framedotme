@@ -55,7 +55,10 @@
     "uuid": ">=14.0.0",
     "postcss": "$postcss",
     "@grpc/grpc-js": "^1.14.6",
-    "tinypool": "^2.1.2"
+    "tinypool": "^2.1.2",
+    "jwks-rsa": {
+      "jose": "5.10.0"
+    }
   },
   "allowScripts": {
     "@firebase/util@1.15.1": true,
