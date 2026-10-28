@@ -52,7 +52,10 @@
     "@tootallnate/once": "3.0.1",
     "http-proxy-agent": "^7.0.0",
     "uuid": ">=14.0.0",
-    "postcss": "$postcss"
+    "postcss": "$postcss",
+    "jwks-rsa": {
+      "jose": "5.10.0"
+    }
   },
   "allowScripts": {
     "@firebase/util@1.15.1": true,
