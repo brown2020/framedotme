@@ -9,6 +9,8 @@ export class MediaStreamManager {
   private combinedStream: MediaStream | null = null;
   private audioContext: AudioContext | null = null;
   private statusCallback?: (status: RecorderStatusType) => void;
+  private onScreenEnded?: () => void;
+  private screenEndNotified = false;
   private trackListeners: Map<MediaStreamTrack, {
     onended: () => void;
     onmute: () => void;
@@ -22,6 +24,11 @@ export class MediaStreamManager {
    */
   constructor(statusCallback?: (status: RecorderStatusType) => void) {
     this.statusCallback = statusCallback;
+  }
+
+  /** Called once when the user stops the browser screen share. */
+  setOnScreenEnded(handler: (() => void) | undefined) {
+    this.onScreenEnded = handler;
   }
 
   private updateStatus(status: RecorderStatusType) {
@@ -49,6 +56,7 @@ export class MediaStreamManager {
     }
 
     try {
+      this.screenEndNotified = false;
       this.screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           frameRate: { ideal: RECORDING_FRAME_RATE },
@@ -142,6 +150,12 @@ export class MediaStreamManager {
     stream.getTracks().forEach((track) => {
       const handlers = {
         onended: () => {
+          if (this.screenEndNotified) return;
+          this.screenEndNotified = true;
+          if (this.onScreenEnded) {
+            this.onScreenEnded();
+            return;
+          }
           this.updateStatus("idle");
           void this.cleanup();
         },

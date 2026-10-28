@@ -1,21 +1,15 @@
 /**
- * Next.js 16 Proxy - handles route protection at the edge.
+ * Next.js 16 proxy. Runs on the Node.js runtime.
  *
- * AUTHENTICATION STRATEGY:
- * This proxy validates server-signed JWT session cookies using the jose library.
- * The session cookie is created by /api/session after Firebase authentication.
- *
- * SECURITY MODEL:
- * - Session JWT is signed with a secret key (HS256)
- * - Signature is verified in Edge runtime using jose
- * - All data access is further protected by Firestore security rules
- * - This provides proper authentication without Node.js runtime
+ * The session cookie is minted by /api/session after Firebase authentication.
+ * Each request checks the JWT signature and that the token id is still in the
+ * server session registry. Firestore rules remain the data-access boundary.
  */
 
-import { jwtVerify } from "jose";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ROUTES } from "./constants/config";
+import { verifyAppSession } from "@/services/sessionRegistry";
 
 const SESSION_COOKIE_NAME = "frame_session";
 const REDIRECT_URL_COOKIE_NAME = "redirect_url";
@@ -46,6 +40,8 @@ const PUBLIC_ROUTES = [
   ROUTES.home,
 ] as const;
 
+const PAYMENT_ROUTES = [ROUTES.paymentAttempt, ROUTES.paymentSuccess] as const;
+
 function isProtectedRoute(path: string): boolean {
   return PROTECTED_ROUTES.some(
     (route) => path === route || path.startsWith(`${route}/`),
@@ -64,52 +60,10 @@ function isPublicRoute(path: string): boolean {
   );
 }
 
-type SessionData = {
-  uid: string;
-  email: string;
-  emailVerified: boolean;
-};
-
-function getJwtSecret(): Uint8Array {
-  const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error("JWT_SECRET not configured");
-  }
-  if (secret.length < 32) {
-    throw new Error("JWT_SECRET must be at least 32 characters for security");
-  }
-  return new TextEncoder().encode(secret);
-}
-
-async function validateSessionToken(
-  token: string,
-): Promise<SessionData | null> {
-  try {
-    const secret = getJwtSecret();
-    const { payload } = await jwtVerify(token, secret, {
-      algorithms: ["HS256"],
-    });
-
-    if (!payload.sub) {
-      return null;
-    }
-
-    return {
-      uid: payload.sub,
-      email: (payload.email as string) ?? "",
-      emailVerified: (payload.email_verified as boolean) ?? false,
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      const msg = error.message.toLowerCase();
-      if (!msg.includes("expired") && !msg.includes("signature")) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("[Proxy] Unexpected JWT validation error:", error);
-        }
-      }
-    }
-    return null;
-  }
+function isPaymentRoute(path: string): boolean {
+  return PAYMENT_ROUTES.some(
+    (route) => path === route || path.startsWith(`${route}/`),
+  );
 }
 
 function clearAuthCookies(response: NextResponse): void {
@@ -133,9 +87,7 @@ export async function proxy(request: NextRequest) {
     }
 
     const sessionToken = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-    const session = sessionToken
-      ? await validateSessionToken(sessionToken)
-      : null;
+    const session = sessionToken ? await verifyAppSession(sessionToken) : null;
     const isAuthenticated = !!session?.uid;
 
     if (process.env.NODE_ENV === "development") {
@@ -150,10 +102,8 @@ export async function proxy(request: NextRequest) {
     }
 
     if (isAuthPage(pathname)) {
+      // Email-link completion must run even when a session cookie already exists.
       if (pathname === ROUTES.loginFinish) {
-        if (isAuthenticated) {
-          return NextResponse.redirect(new URL(ROUTES.recordings, request.url));
-        }
         return NextResponse.next();
       }
 
@@ -171,6 +121,13 @@ export async function proxy(request: NextRequest) {
         );
         clearAuthCookies(response);
         setRedirectCookie(response, pathname);
+        return response;
+      }
+
+      if (isPaymentRoute(pathname) && !session.emailVerified) {
+        const response = NextResponse.redirect(
+          new URL("/profile?notice=verify-email", request.url),
+        );
         return response;
       }
 

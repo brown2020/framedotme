@@ -13,6 +13,7 @@ import { auth } from "@/firebase/firebaseClient";
 import { mapFirebaseAuthError } from "@/lib/firebaseAuthErrors";
 import { hardNavigateAfterAuth } from "@/lib/auth/waitForSessionReady";
 import { resolvePostAuthPath } from "@/lib/auth/resolvePostAuthPath";
+import { isSafeRedirectPath } from "@/lib/auth/safeRedirect";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { AuthSocialSection } from "@/components/auth/AuthSocialSection";
 import { browserStorage } from "@/services/browserStorageService";
@@ -29,10 +30,10 @@ export function LoginForm({ redirectTo = null }: LoginFormProps): ReactElement {
   const [submitting, setSubmitting] = useState(false);
   const errorId = useId();
 
-  const signupHref =
-    redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-      ? `/signup?redirect=${encodeURIComponent(redirectTo)}`
-      : "/signup";
+  const safeRedirect = isSafeRedirectPath(redirectTo) ? redirectTo : null;
+  const signupHref = safeRedirect
+    ? `/signup?redirect=${encodeURIComponent(safeRedirect)}`
+    : "/signup";
 
   const finishAuth = async () => {
     browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
@@ -40,10 +41,7 @@ export function LoginForm({ redirectTo = null }: LoginFormProps): ReactElement {
     if (emailName) {
       browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
     }
-    const path =
-      redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-        ? redirectTo
-        : resolvePostAuthPath();
+    const path = safeRedirect ?? resolvePostAuthPath();
     await hardNavigateAfterAuth(path);
   };
 
@@ -67,10 +65,7 @@ export function LoginForm({ redirectTo = null }: LoginFormProps): ReactElement {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      const path =
-        redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-          ? redirectTo
-          : resolvePostAuthPath();
+      const path = safeRedirect ?? resolvePostAuthPath();
       await hardNavigateAfterAuth(path);
     } catch (err) {
       setError(mapFirebaseAuthError(err));

@@ -7,12 +7,19 @@ service cloud.firestore {
     }
 
     function noPrivEscalationOnUserDoc() {
-      // Minimal protection: client may NOT set privileged flags.
-      // If these fields are absent, this evaluates true.
+      // Client may not set privileged flags. Absent fields are fine.
       return (!("isAdmin" in request.resource.data) || request.resource.data.isAdmin == false)
         && (!("isAllowed" in request.resource.data) || request.resource.data.isAllowed == false)
         && (!("isInvited" in request.resource.data) || request.resource.data.isInvited == false)
         && (!("premium" in request.resource.data) || request.resource.data.premium == false);
+    }
+
+    // Updates cannot clear or set privilege flags. Admin SDK writes bypass rules.
+    function privilegesUnchanged() {
+      return request.resource.data.get('isAdmin', false) == resource.data.get('isAdmin', false)
+        && request.resource.data.get('isAllowed', false) == resource.data.get('isAllowed', false)
+        && request.resource.data.get('isInvited', false) == resource.data.get('isInvited', false)
+        && request.resource.data.get('premium', false) == resource.data.get('premium', false);
     }
 
     // Default deny
@@ -24,11 +31,18 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId) && noPrivEscalationOnUserDoc();
-      allow update: if isOwner(userId) && noPrivEscalationOnUserDoc();
-      allow delete: if isOwner(userId);
+      allow update: if isOwner(userId) && noPrivEscalationOnUserDoc() && privilegesUnchanged();
+      // Account deletion is performed with the Admin SDK.
+      allow delete: if false;
 
       match /profile/userData {
-        allow read, create, update, delete: if isOwner(userId);
+        allow read: if isOwner(userId);
+        // Starter balance only. Later credit changes are Admin SDK only.
+        allow create: if isOwner(userId)
+          && request.resource.data.credits == 1000;
+        allow update: if isOwner(userId)
+          && request.resource.data.credits == resource.data.credits;
+        allow delete: if false;
       }
 
       match /settings/recorder {
@@ -36,18 +50,26 @@ service cloud.firestore {
       }
 
       match /botcasts/{botcastId} {
-        allow read, create, update, delete: if isOwner(userId);
+        allow read: if isOwner(userId);
+        // Metadata is written by the server after a credit charge.
+        allow create, update: if false;
+        allow delete: if isOwner(userId);
       }
 
       match /payments/{paymentDocId} {
         allow read: if isOwner(userId);
-        allow create: if isOwner(userId);
-        // Prevent client-side tampering of payment records after creation.
-        allow update: if false;
-        allow delete: if isOwner(userId);
+        // Immutable. Created by the Admin SDK after Stripe verification.
+        allow create, update, delete: if false;
+      }
+
+      match /uploadGrants/{grantId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /security/{docId} {
+        allow read, write: if false;
       }
     }
   }
 }
-
-

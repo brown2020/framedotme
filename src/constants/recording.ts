@@ -3,7 +3,7 @@
  */
 
 // Recording configuration
-export const RECORDING_CHUNK_INTERVAL_MS = 60 * 1000; // 1 minute
+export const RECORDING_CHUNK_INTERVAL_MS = 1000;
 export const MAX_RECORDING_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
 export const RECORDING_FRAME_RATE = 30;
 export const RECORDING_MIME_TYPE = "video/webm;codecs=vp8,opus";

@@ -1,20 +1,15 @@
 import type { DocumentData } from "firebase/firestore";
 import {
   collection,
-  addDoc,
   query,
   where,
   getDocs,
-  Timestamp,
-  runTransaction,
-  doc,
-  increment,
 } from "firebase/firestore";
 
-import type { Payment, PaymentInput } from "@/types/payment";
+import type { Payment } from "@/types/payment";
 import { db } from "@/firebase/firebaseClient";
-import { getUserPaymentsPath, getUserProfilePath } from "@/lib/firestore";
-import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
+import { getUserPaymentsPath } from "@/lib/firestore";
+import { firestoreRead } from "@/lib/firestoreOperations";
 import { PaymentSchema, validateUserId } from "@/lib/validation";
 
 /** Maps Firestore document data to Payment with runtime validation */
@@ -111,49 +106,6 @@ export async function checkPaymentExists(
 }
 
 /**
- * Creates a new payment record in Firestore
- *
- * @param uid - The user's unique identifier
- * @param payment - Payment data (without createdAt, will be added automatically)
- * @returns Promise resolving to the created payment with createdAt
- * @throws {ValidationError} If uid is invalid
- */
-export async function createPayment(
-  uid: string,
-  payment: PaymentInput,
-): Promise<Payment> {
-  const validatedUid = validateUserId(uid);
-  const createdAt = Timestamp.now();
-
-  await firestoreWrite(
-    () =>
-      addDoc(collection(db, getUserPaymentsPath(validatedUid)), {
-        id: payment.id,
-        amount: payment.amount,
-        createdAt,
-        status: payment.status,
-        mode: payment.mode,
-        currency: payment.currency,
-        platform: payment.platform,
-        productId: payment.productId,
-      }),
-    "Failed to create payment record",
-    { userId: validatedUid, paymentId: payment.id },
-  );
-
-  return {
-    id: payment.id,
-    amount: payment.amount,
-    createdAt,
-    status: payment.status,
-    mode: payment.mode,
-    currency: payment.currency,
-    platform: payment.platform,
-    productId: payment.productId,
-  };
-}
-
-/**
  * Finds a processed (succeeded) payment by ID
  *
  * @param uid - The user's unique identifier
@@ -198,121 +150,5 @@ export async function findProcessedPayment(
 export function sortPayments(payments: Payment[]): Payment[] {
   return payments.sort(
     (a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0),
-  );
-}
-
-const buildPaymentRecord = (
-  payment: PaymentInput,
-  createdAt: Timestamp,
-): Payment => ({
-  id: payment.id,
-  amount: payment.amount,
-  createdAt,
-  status: payment.status,
-  mode: payment.mode,
-  currency: payment.currency,
-  platform: payment.platform,
-  productId: payment.productId,
-});
-
-/**
- * Result of an idempotent payment processing operation
- */
-export interface ProcessPaymentWithCreditsResult {
-  /** The payment record (either newly created or existing) */
-  payment: Payment;
-  /** Whether the payment already existed (true) or was just created (false) */
-  alreadyExists: boolean;
-  /** Credits added by this call. Existing payments add zero credits. */
-  creditsAdded: number;
-}
-
-/**
- * Records a successful payment and adds credits atomically.
- *
- * This function is idempotent for a payment ID. If the payment already exists,
- * it returns the existing record and does not add credits again. If it is new,
- * the payment document and credit increment are committed in the same transaction.
- *
- * @param uid - The user's unique identifier
- * @param payment - Payment data (without createdAt, will be added automatically)
- * @param creditsToAdd - Number of credits to add for a newly processed payment
- * @returns Promise resolving to the payment, duplicate status, and credits added
- * @throws {AppError} If the transaction fails (not for duplicate detection)
- */
-export async function processPaymentWithCreditsIdempotent(
-  uid: string,
-  payment: PaymentInput,
-  creditsToAdd: number,
-): Promise<ProcessPaymentWithCreditsResult> {
-  const validatedUid = validateUserId(uid);
-  const paymentsCollectionPath = getUserPaymentsPath(validatedUid);
-  const profilePath = getUserProfilePath(validatedUid);
-
-  if (
-    !Number.isFinite(creditsToAdd) ||
-    !Number.isInteger(creditsToAdd) ||
-    creditsToAdd <= 0
-  ) {
-    throw new Error("creditsToAdd must be a positive integer");
-  }
-
-  return firestoreWrite(
-    async () => {
-      // Ensure Firebase auth is ready
-      const { auth } = await import("@/firebase/firebaseClient");
-      if (!auth.currentUser) {
-        throw new Error("Firebase auth not initialized - user not authenticated");
-      }
-
-      // Backward compatibility: older code wrote payment records under random
-      // Firestore IDs, so check those before the deterministic transaction path.
-      const legacyPaymentQuery = query(
-        collection(db, paymentsCollectionPath),
-        where("id", "==", payment.id),
-      );
-      const legacyPaymentSnapshot = await getDocs(legacyPaymentQuery);
-      if (!legacyPaymentSnapshot.empty && legacyPaymentSnapshot.docs[0]) {
-        return {
-          payment: mapDocumentToPayment(legacyPaymentSnapshot.docs[0].data()),
-          alreadyExists: true,
-          creditsAdded: 0,
-        };
-      }
-
-      const result = await runTransaction(db, async (transaction) => {
-        // Prefer deterministic document IDs for new Stripe payment records.
-        const paymentDocRef = doc(db, paymentsCollectionPath, payment.id);
-        const existingByDocId = await transaction.get(paymentDocRef);
-        if (existingByDocId.exists()) {
-          return {
-            payment: mapDocumentToPayment(existingByDocId.data()),
-            alreadyExists: true,
-            creditsAdded: 0,
-          };
-        }
-
-        const createdAt = Timestamp.now();
-        const newPaymentData = buildPaymentRecord(payment, createdAt);
-        const profileRef = doc(db, profilePath);
-
-        transaction.set(paymentDocRef, newPaymentData);
-        transaction.set(
-          profileRef,
-          { credits: increment(creditsToAdd) },
-          { merge: true },
-        );
-
-        return {
-          payment: newPaymentData,
-          alreadyExists: false,
-          creditsAdded: creditsToAdd,
-        };
-      });
-
-      return result;
-    },
-    "Failed to process payment and credits",
-    { userId: validatedUid, paymentId: payment.id },
   );
 }

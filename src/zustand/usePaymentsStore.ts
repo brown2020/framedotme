@@ -3,19 +3,15 @@ import { getErrorMessage, logError } from "@/lib/errors";
 import { logger } from "@/utils/logger";
 import {
   fetchUserPayments,
-  checkPaymentExists,
-  createPayment,
   findProcessedPayment,
-  sortPayments,
 } from "@/services/paymentsService";
-import type { Payment, PaymentInput } from "@/types/payment";
+import type { Payment } from "@/types/payment";
 
 interface PaymentsStoreState {
   payments: Payment[];
   paymentsLoading: boolean;
   paymentsError: string | null;
   fetchPayments: (uid: string) => Promise<void>;
-  addPayment: (uid: string, payment: PaymentInput) => Promise<void>;
   checkIfPaymentProcessed: (uid: string, paymentId: string) => Promise<Payment | null>;
 }
 
@@ -38,33 +34,6 @@ export const usePaymentsStore = create<PaymentsStoreState>((set) => ({
     } catch (error) {
       const errorMessage = getErrorMessage(error);
       logError("Payments - fetch payments", error);
-      set({ paymentsError: errorMessage, paymentsLoading: false });
-    }
-  },
-
-  addPayment: async (uid: string, payment: PaymentInput) => {
-    if (!uid) {
-      logger.error("Invalid UID for addPayment");
-      return;
-    }
-
-    set({ paymentsLoading: true, paymentsError: null });
-
-    try {
-      const paymentExists = await checkPaymentExists(uid, payment.id);
-      if (paymentExists) {
-        set({ paymentsLoading: false, paymentsError: "Payment with this ID already exists" });
-        return;
-      }
-
-      const newPayment = await createPayment(uid, payment);
-      set((state) => {
-        const updatedPayments = sortPayments([...state.payments, newPayment]);
-        return { payments: updatedPayments, paymentsLoading: false, paymentsError: null };
-      });
-    } catch (error) {
-      const errorMessage = getErrorMessage(error);
-      logError("Payments - add payment", error);
       set({ paymentsError: errorMessage, paymentsLoading: false });
     }
   },

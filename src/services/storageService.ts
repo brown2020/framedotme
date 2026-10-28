@@ -8,7 +8,6 @@ import {
   getDocs,
   orderBy,
   query,
-  setDoc,
   Timestamp,
 } from "firebase/firestore";
 import {
@@ -28,6 +27,11 @@ import {
 import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
 import { validateFilename, validateUserId } from "@/lib/validation";
 import { downloadFromUrl } from "@/utils/downloadUtils";
+import {
+  authorizeRecordingSave,
+  cancelRecordingSave,
+  completeRecordingSave,
+} from "@/actions/accountActions";
 
 /**
  * Fetches all recordings for a specific user from Firestore
@@ -122,17 +126,19 @@ export async function uploadRecording(
 
   onProgress?.({ progress: 0, status: "starting" });
 
+  let charged = false;
   try {
+    await authorizeRecordingSave(validatedFilename);
+    charged = true;
+
     // Storage path uses legacy collection name for backwards compatibility with existing data
     const filePath = `${validatedUserId}/${LEGACY_RECORDINGS_COLLECTION}/${validatedFilename}`;
     const storageRef = ref(storage, filePath);
     const uploadTask = uploadBytesResumable(storageRef, videoBlob, {
-      contentType: validatedFilename.endsWith(".webm")
-        ? "video/webm"
-        : "video/*",
+      contentType: "video/webm",
     });
 
-    return new Promise((resolve, reject) => {
+    return await new Promise<string>((resolve, reject) => {
       uploadTask.on(
         "state_changed",
         (snapshot) => {
@@ -163,11 +169,15 @@ export async function uploadRecording(
         async () => {
           try {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            await createFirestoreRecord(
-              validatedUserId,
-              validatedFilename,
-              downloadURL,
-            );
+            try {
+              await completeRecordingSave({
+                filename: validatedFilename,
+                downloadUrl: downloadURL,
+              });
+            } catch (finalizeError) {
+              await deleteObject(storageRef).catch(() => undefined);
+              throw finalizeError;
+            }
             onProgress?.({
               progress: 100,
               status: "completed",
@@ -192,6 +202,17 @@ export async function uploadRecording(
       );
     });
   } catch (error) {
+    if (charged) {
+      await cancelRecordingSave(validatedFilename).catch(() => undefined);
+    }
+    if (error instanceof AppError) {
+      onProgress?.({
+        progress: 0,
+        status: "error",
+        error,
+      });
+      throw error;
+    }
     const initError = new AppError("Failed to initialize upload", "storage", {
       stage: "upload-init",
       originalError: error as Error,
@@ -205,62 +226,6 @@ export async function uploadRecording(
     throw initError;
   }
 }
-
-/**
- * Creates a Firestore record for an uploaded recording
- *
- * @param userId - The user's unique identifier
- * @param filename - The uploaded file's name
- * @param downloadUrl - The Firebase Storage download URL
- * @throws {StorageError} If Firestore write fails
- * @internal
- */
-const createFirestoreRecord = async (
-  userId: string,
-  filename: string,
-  downloadUrl: string,
-): Promise<void> => {
-  const recordingRef = doc(db, `${getUserRecordingsPath(userId)}/${filename}`);
-  // Storage path uses legacy collection name for backwards compatibility with existing data
-  const storagePath = `${userId}/${LEGACY_RECORDINGS_COLLECTION}/${filename}`;
-
-  const metadata: VideoMetadata = {
-    id: recordingRef.id,
-    downloadUrl,
-    storagePath,
-    createdAt: Timestamp.now(),
-    filename,
-    showOnProfile: false,
-  };
-
-  // CRITICAL: Refresh token before Firestore write in multi-window scenarios
-  //
-  // Race condition: Video controls popup may hold an older credential while the parent
-  // window has already received a refreshed token from Firebase Auth.
-  //
-  // Why this happens:
-  // 1. Firebase Auth refreshes credentials in the parent window
-  // 2. Popup window opens with old Firebase auth state
-  // 3. Popup attempts Firestore write with stale token
-  // 4. Firestore rejects write (token expired or mismatch)
-  //
-  // Solution: Force token refresh before write ensures popup has fresh token,
-  // preventing "authentication or security rules denied access" errors.
-  if (auth.currentUser) {
-    await auth.currentUser.getIdToken(true);
-  }
-
-  await firestoreWrite(
-    () => setDoc(recordingRef, metadata),
-    "Failed to write to Firestore: authentication or security rules denied access",
-    {
-      path: recordingRef.path,
-      authUid: auth.currentUser?.uid ?? "null",
-      userId,
-      filename,
-    },
-  );
-};
 
 /**
  * Deletes a recording from both Firebase Storage and Firestore

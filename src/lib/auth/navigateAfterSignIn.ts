@@ -1,6 +1,7 @@
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { deleteCookie, getCookie } from "cookies-next";
 import { REDIRECT_URL_COOKIE_NAME } from "@/constants/auth";
+import { isSafeRedirectPath } from "@/lib/auth/safeRedirect";
 
 /**
  * Resolve post-sign-in destination and navigate via the App Router.
@@ -10,12 +11,7 @@ import { REDIRECT_URL_COOKIE_NAME } from "@/constants/auth";
 export function navigateAfterSignIn(router: AppRouterInstance): void {
   let redirectPath = "/capture";
   const cookieRedirect = getCookie(REDIRECT_URL_COOKIE_NAME);
-  if (
-    typeof cookieRedirect === "string" &&
-    cookieRedirect.startsWith("/") &&
-    !cookieRedirect.startsWith("//") &&
-    !cookieRedirect.includes("\\")
-  ) {
+  if (isSafeRedirectPath(cookieRedirect)) {
     redirectPath = cookieRedirect;
   }
   deleteCookie(REDIRECT_URL_COOKIE_NAME);

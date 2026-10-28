@@ -9,7 +9,9 @@ import { MediaStreamError } from "@/types/mediaStreamTypes";
 import { uploadRecording } from "@/services/storageService";
 import { downloadBlob } from "@/utils/downloadUtils";
 import { logger } from "@/utils/logger";
+import { RECORDING_CREDIT_COST } from "@/constants/payment";
 import { useAuthStore } from "@/zustand/useAuthStore";
+import useProfileStore from "@/zustand/useProfileStore";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
 
 /**
@@ -126,6 +128,7 @@ export const useScreenRecorder = () => {
             }
           }
         );
+        useProfileStore.getState().applyCreditsLocally(-RECORDING_CREDIT_COST);
 
         // Download locally
         downloadBlob(finalBlob, filename);
@@ -140,19 +143,19 @@ export const useScreenRecorder = () => {
   const startRecording = useCallback(async () => {
     try {
       const combinedStream = await mediaManager.createCombinedStream();
-      recordingManager.startRecording(combinedStream, () => {});
+      await recordingManager.startRecording(combinedStream, () => {});
       updateStatus("recording");
     } catch (error) {
       handleError(error);
     }
   }, [mediaManager, recordingManager, updateStatus, handleError]);
 
+  const stoppingRef = useRef(false);
   const stopRecording = useCallback(async () => {
-    // Guard: only stop if recording is actually in progress
-    if (!recordingManager.isRecording) {
-      logger.warn("Attempted to stop recording when no recording is in progress");
+    if (!recordingManager.isRecording || stoppingRef.current) {
       return;
     }
+    stoppingRef.current = true;
 
     try {
       updateStatus("saving");
@@ -161,6 +164,8 @@ export const useScreenRecorder = () => {
       updateStatus("ready");
     } catch (error) {
       handleError(error);
+    } finally {
+      stoppingRef.current = false;
     }
   }, [handleRecordingData, recordingManager, updateStatus, handleError]);
 
@@ -200,14 +205,31 @@ export const useScreenRecorder = () => {
     void handleStatusTransition(recorderStatus, startRecording, stopRecording, processingStatusChangeRef);
   }, [recorderStatus, startRecording, stopRecording]);
 
-  // Cleanup on unmount
+  const stopRecordingRef = useRef(stopRecording);
   useEffect(() => {
-    return () => {
-      // Fire-and-forget: cleanup errors are already logged internally
-      void mediaManager.cleanup();
-      void recordingManager.cleanup();
+    stopRecordingRef.current = stopRecording;
+  }, [stopRecording]);
+
+  // Save the take when the shared screen ends or this window is closing.
+  useEffect(() => {
+    mediaManager.setOnScreenEnded(() => {
+      void stopRecordingRef.current();
+    });
+
+    const saveBeforeLeave = () => {
+      void stopRecordingRef.current();
     };
-  }, [mediaManager, recordingManager]);
+    window.addEventListener("pagehide", saveBeforeLeave);
+
+    return () => {
+      mediaManager.setOnScreenEnded(undefined);
+      window.removeEventListener("pagehide", saveBeforeLeave);
+      void (async () => {
+        await stopRecordingRef.current();
+        await mediaManager.cleanup();
+      })();
+    };
+  }, [mediaManager]);
 
   return {
     recorderStatus,

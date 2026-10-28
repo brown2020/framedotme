@@ -17,6 +17,7 @@ export const DEFAULT_AUTH_STATE: AuthState = {
   authEmailVerified: false,
   authReady: false,
   authPending: false,
+  sessionError: null,
   isAdmin: false,
   isAllowed: false,
   isInvited: false,

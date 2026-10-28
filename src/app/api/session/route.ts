@@ -1,4 +1,3 @@
-import { SignJWT } from "jose";
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/firebase/firebaseAdmin";
 import { SESSION_COOKIE_NAME, SESSION_EXPIRES_IN_MS } from "@/constants/auth";
@@ -8,23 +7,11 @@ import {
   setCsrfTokenCookie,
   CSRF_COOKIE_NAME,
 } from "@/lib/security/csrf";
-
-/**
- * Get JWT secret for signing session tokens
- * Uses NEXTAUTH_SECRET or JWT_SECRET environment variable
- */
-function getJwtSecret(): Uint8Array {
-  const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error(
-      "JWT_SECRET or NEXTAUTH_SECRET environment variable not configured",
-    );
-  }
-  if (secret.length < 32) {
-    throw new Error("JWT_SECRET must be at least 32 characters for security");
-  }
-  return new TextEncoder().encode(secret);
-}
+import {
+  issueAppSession,
+  readAppSessionClaims,
+  revokeAppSessions,
+} from "@/services/sessionRegistry";
 
 const SESSION_DURATION_SECONDS = Math.floor(SESSION_EXPIRES_IN_MS / 1000);
 
@@ -40,10 +27,7 @@ export async function POST(request: Request) {
     const csrfResult = validateCsrfToken(request);
     if (!csrfResult.valid) {
       logger.warn("CSRF validation failed", { error: csrfResult.error });
-      return NextResponse.json(
-        { error: csrfResult.error },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: csrfResult.error }, { status: 403 });
     }
 
     let body: { idToken?: unknown } | null;
@@ -62,24 +46,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing idToken" }, { status: 400 });
     }
 
-    // Verify the Firebase ID token
-    const decoded = await adminAuth.verifyIdToken(idToken);
-
-    // Create custom JWT session cookie (works with Edge runtime validation)
-    const secret = getJwtSecret();
-    const sessionToken = await new SignJWT({
+    // checkRevoked rejects tokens Firebase has already revoked.
+    const decoded = await adminAuth.verifyIdToken(idToken, true);
+    const sessionToken = await issueAppSession({
+      uid: decoded.uid,
       email: decoded.email ?? "",
-      email_verified: decoded.email_verified ?? false,
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setSubject(decoded.uid)
-      .setIssuedAt()
-      .setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
-      .sign(secret);
+      emailVerified: decoded.email_verified ?? false,
+    });
 
     const response = NextResponse.json({ ok: true });
-
-    // Set session cookie
     response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -87,18 +62,13 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: SESSION_DURATION_SECONDS,
     });
-
-    // Set CSRF token cookie for subsequent requests
     setCsrfTokenCookie(response);
 
     logger.debug("Session cookie created successfully", { uid: decoded.uid });
     return response;
   } catch (error) {
     logger.error("Failed to create session cookie", error);
-    return NextResponse.json(
-      { error: "Failed to create session" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
   }
 }
 
@@ -106,10 +76,24 @@ export async function DELETE(request: Request) {
   const csrfResult = validateCsrfToken(request);
   if (!csrfResult.valid) {
     logger.warn("CSRF validation failed on DELETE", { error: csrfResult.error });
-    return NextResponse.json(
-      { error: csrfResult.error },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: csrfResult.error }, { status: 403 });
+  }
+
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  const sessionMatch = cookieHeader
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${SESSION_COOKIE_NAME}=`));
+  const sessionToken = sessionMatch
+    ? decodeURIComponent(sessionMatch.slice(SESSION_COOKIE_NAME.length + 1))
+    : "";
+  if (sessionToken) {
+    const claims = await readAppSessionClaims(sessionToken);
+    if (claims) {
+      await revokeAppSessions(claims.uid).catch((error: unknown) => {
+        logger.warn("Failed to revoke server sessions", error);
+      });
+    }
   }
 
   const response = NextResponse.json({ ok: true });

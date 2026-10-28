@@ -12,7 +12,7 @@ Verified from the current codebase:
 - **Profile & credits** — profile page; Stripe payment attempt/success; credit balance on user docs
 - **Cookie consent** — `react-cookie-consent`
 - **Legal / support** — about, privacy, terms, support
-- **Security rules** — owner-scoped Firestore + Storage (`botcasts` recordings, payments create-only)
+- **Security rules** — owner-scoped Firestore + Storage. Credits and payments are server-written only. Recording uploads require a short-lived grant and `video/webm`.
 
 ## Tech stack
 
@@ -93,17 +93,18 @@ Open [http://localhost:3000](http://localhost:3000). Screen capture requires a s
 | `FIREBASE_AUTH_URI` / `FIREBASE_TOKEN_URI` / `FIREBASE_AUTH_PROVIDER_X509_CERT_URL` / `FIREBASE_CLIENT_CERTS_URL` / `FIREBASE_UNIVERSE_DOMAIN` | Admin OAuth metadata | Same / defaults |
 | `NEXT_PUBLIC_STRIPE_KEY` | Stripe publishable key | Stripe Dashboard |
 | `STRIPE_SECRET_KEY` | Stripe secret key | Stripe Dashboard |
-| `NEXT_PUBLIC_STRIPE_PRODUCT_NAME` | Product name for credits (e.g. `framedotme_demo_credits`) | Stripe product config |
-| `NEXT_PUBLIC_COOKIE_NAME` | Client cookie name hint (example: `framedotmeAuthToken`) | You |
+| `NEXT_PUBLIC_STRIPE_PRODUCT_NAME` | Product name stored on the PaymentIntent | Stripe product config |
+| `STRIPE_WEBHOOK_SECRET` | Optional webhook signing secret. Unset: webhook returns 503 and does not grant credits. The success page still fulfills after a server-side Stripe check. | Stripe Dashboard → Webhooks |
+| `NEXT_PUBLIC_COOKIE_NAME` | Legacy cookie name cleared on sign-in (example: `framedotmeAuthToken`) | You |
 | `JWT_SECRET` | HS256 secret for session cookies (≥32 chars) | `openssl rand -base64 32` |
 | `NEXTAUTH_SECRET` | Optional fallback secret name referenced in code | Optional |
 
 ## Firebase
 
-- Firestore: `firestore.rules` — owner-only user trees; payments readable/creatable/deletable by owner, **updates denied**
-- Storage: `storage.rules` — `/{userId}/botcasts/{filename}` owner R/W, max create size 500MB; listing denied
+- Firestore: `firestore.rules` — owner reads; profile `credits` is fixed at create (1000) and immutable on client update; payments, upload grants, and session docs are Admin SDK only; recording metadata is server-written
+- Storage: `storage.rules` — `/{userId}/botcasts/{filename}` owner get/delete; create only for `video/webm` under 500MB when an unused upload grant exists
 
-Deploy with the Firebase CLI when rules change.
+Deploy **both** rules files together with the Firebase CLI when they change. This repo does not deploy them. No new composite indexes.
 
 ## Scripts
 

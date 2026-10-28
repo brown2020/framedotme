@@ -6,17 +6,16 @@ import { auth } from "@/firebase/firebaseClient";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { FirebaseError } from "firebase/app";
-import useProfileStore from "@/zustand/useProfileStore";
 import { logger } from "@/utils/logger";
 import { ClipLoader } from "react-spinners";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { navigateAfterSignIn } from "@/lib/auth/navigateAfterSignIn";
+import { hardNavigateAfterAuth } from "@/lib/auth/waitForSessionReady";
+import { resolvePostAuthPath } from "@/lib/auth/resolvePostAuthPath";
 
 export default function LoginFinish() {
   const router = useRouter();
   const setAuthDetails = useAuthStore((s) => s.setAuthDetails);
-  const updateProfile = useProfileStore((s) => s.updateProfile);
   const processingRef = useRef(false);
 
   const [status, setStatus] = useState<"loading" | "needEmail" | "error">(
@@ -67,7 +66,7 @@ export default function LoginFinish() {
     }
 
     signInWithEmailLink(auth, email, link)
-      .then((userCredential) => {
+      .then(async (userCredential) => {
         if (cancelled) return;
 
         const user = userCredential.user;
@@ -84,8 +83,7 @@ export default function LoginFinish() {
           authEmail,
           authDisplayName: selectedName,
         });
-        updateProfile(signedInUid, { displayName: selectedName });
-        navigateAfterSignIn(router);
+        await hardNavigateAfterAuth(resolvePostAuthPath());
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -108,7 +106,7 @@ export default function LoginFinish() {
     return () => {
       cancelled = true;
     };
-  }, [router, setAuthDetails, updateProfile, status]);
+  }, [setAuthDetails, status]);
 
   useEffect(() => {
     if (status !== "error") return;

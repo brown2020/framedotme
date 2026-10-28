@@ -3,50 +3,47 @@
 import Stripe from "stripe";
 import { logger } from "@/utils/logger";
 import { AppError } from "@/types/errors";
-import { MINIMUM_PAYMENT_AMOUNT_CENTS } from "@/constants/payment";
+import { creditPackAmountError } from "@/constants/payment";
 import { requireAuthenticatedSession } from "@/services/sessionService";
+import { fulfillStripePayment, type FulfillmentResult } from "@/services/billingService";
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) {
     throw new AppError("STRIPE_SECRET_KEY environment variable is required", "payment");
   }
-  // Fresh client per call — avoids mutable module-level state on the server.
   return new Stripe(key);
 }
 
-interface PaymentIntentResult {
-  id: string;
-  amount: number;
-  created: number;
-  status: string;
-  currency: string;
-  description: string | null;
+export type { FulfillmentResult };
+
+async function requireVerifiedSession() {
+  const session = await requireAuthenticatedSession();
+  if (!session.emailVerified) {
+    throw new AppError("Verify your email before purchasing credits", "payment");
+  }
+  return session;
 }
 
 export async function createPaymentIntent(amount: number): Promise<string | null> {
-  const session = await requireAuthenticatedSession();
+  const session = await requireVerifiedSession();
   const product = process.env.NEXT_PUBLIC_STRIPE_PRODUCT_NAME;
-
-  if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
-    throw new AppError("Amount must be a positive integer (in cents)", "payment");
+  const amountError = creditPackAmountError(amount);
+  if (amountError) {
+    throw new AppError(amountError, "payment");
   }
-
-  if (amount < MINIMUM_PAYMENT_AMOUNT_CENTS) {
-    throw new AppError(
-      `Amount must be at least ${MINIMUM_PAYMENT_AMOUNT_CENTS} cents`,
-      "payment",
-    );
-  }
+  if (!product) throw new AppError("Stripe product name is not defined", "payment");
 
   try {
-    if (!product) throw new AppError("Stripe product name is not defined", "payment");
-
     const paymentIntent = await getStripe().paymentIntents.create({
       amount,
       currency: "usd",
-      metadata: { product, userId: session.uid },
-      description: `Payment for product ${process.env.NEXT_PUBLIC_STRIPE_PRODUCT_NAME}`,
+      metadata: {
+        product,
+        userId: session.uid,
+        credits: "10000",
+      },
+      description: `Payment for product ${product}`,
     });
 
     return paymentIntent.client_secret;
@@ -59,10 +56,14 @@ export async function createPaymentIntent(amount: number): Promise<string | null
   }
 }
 
-export async function validatePaymentIntent(
+/**
+ * Re-checks a PaymentIntent with Stripe and grants the fixed credit pack once.
+ * Safe to call from the success page and from the webhook.
+ */
+export async function confirmStripePayment(
   paymentIntentId: string,
-): Promise<PaymentIntentResult> {
-  const session = await requireAuthenticatedSession();
+): Promise<FulfillmentResult> {
+  const session = await requireVerifiedSession();
 
   if (!/^pi_[A-Za-z0-9]+$/.test(paymentIntentId)) {
     throw new AppError("Invalid payment intent", "payment");
@@ -70,32 +71,23 @@ export async function validatePaymentIntent(
 
   try {
     const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
-
     if (paymentIntent.metadata.userId !== session.uid) {
       throw new AppError("Payment intent does not belong to this account", "payment", {
         paymentId: paymentIntentId,
       });
     }
-
-    if (paymentIntent.status === "succeeded") {
-      return {
-        id: paymentIntent.id,
-        amount: paymentIntent.amount,
-        created: paymentIntent.created,
-        status: paymentIntent.status,
-        currency: paymentIntent.currency,
-        description: paymentIntent.description,
-      };
-    }
-    throw new AppError("Payment was not successful", "payment", {
-      paymentId: paymentIntentId,
-    });
+    return await fulfillStripePayment(paymentIntent);
   } catch (error) {
-    logger.error("Error validating payment intent", error);
+    logger.error("Error confirming payment intent", error);
     if (error instanceof AppError) throw error;
-    throw new AppError("Failed to validate payment intent", "payment", {
+    throw new AppError("Failed to confirm payment intent", "payment", {
       paymentId: paymentIntentId,
       originalError: error as Error,
     });
   }
+}
+
+/** @deprecated Use confirmStripePayment. Kept so older clients fail closed. */
+export async function validatePaymentIntent(paymentIntentId: string): Promise<FulfillmentResult> {
+  return confirmStripePayment(paymentIntentId);
 }

@@ -1,14 +1,12 @@
 "use client";
 
-import { validatePaymentIntent } from "@/actions/paymentActions";
+import { confirmStripePayment } from "@/actions/paymentActions";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import useProfileStore from "@/zustand/useProfileStore";
-import { BONUS_CREDITS } from "@/constants/payment";
 import Link from "next/link";
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer } from "react";
 import { logger } from "@/utils/logger";
 import { LocalDateTime } from "@/components/ui/local-date-time";
-import { processPaymentWithCreditsIdempotent } from "@/services/paymentsService";
 
 interface Props {
   payment_intent: string;
@@ -69,9 +67,6 @@ const initialState: PaymentState = {
 export function PaymentSuccess({ payment_intent }: Props) {
   const [state, dispatch] = useReducer(paymentReducer, initialState);
 
-  const processingRef = useRef(false);
-  const handledPaymentRef = useRef<string | null>(null);
-
   const applyCreditsLocally = useProfileStore(
     (profileState) => profileState.applyCreditsLocally,
   );
@@ -83,69 +78,23 @@ export function PaymentSuccess({ payment_intent }: Props) {
       return;
     }
 
-    if (handledPaymentRef.current === payment_intent) {
-      return;
-    }
-
     if (!uid) return;
 
-    if (processingRef.current) {
-      logger.warn("Payment already being processed, skipping duplicate call");
-      return;
-    }
-
     let cancelled = false;
-    processingRef.current = true;
 
-    validatePaymentIntent(payment_intent)
-      .then(async (data) => {
+    confirmStripePayment(payment_intent)
+      .then((data) => {
         if (cancelled) return;
 
-        if (data.status !== "succeeded") {
-          logger.error(`Payment validation failed: ${data.status}`);
-          dispatch({ type: "SET_ERROR", message: "Payment validation failed" });
-          return;
+        if (data.creditsAdded > 0) {
+          applyCreditsLocally(data.creditsAdded);
         }
-
-        const creditsToAdd = Math.floor(data.amount / 100) + BONUS_CREDITS;
-        const { payment, alreadyExists, creditsAdded } =
-          await processPaymentWithCreditsIdempotent(
-            uid,
-            {
-              id: data.id,
-              amount: data.amount,
-              status: data.status,
-              mode: "one-time",
-              platform: "stripe",
-              productId: "payment_gateway",
-              currency: data.currency,
-            },
-            creditsToAdd,
-          );
-
-        if (cancelled) return;
-
-        handledPaymentRef.current = payment_intent;
-
-        if (alreadyExists) {
-          dispatch({
-            type: "SET_SUCCESS",
-            message: "Payment has already been processed.",
-            data: {
-              id: payment.id,
-              created: payment.createdAt?.toMillis() || 0,
-              amount: payment.amount,
-              status: payment.status,
-            },
-          });
-          return;
-        }
-
-        applyCreditsLocally(creditsAdded);
 
         dispatch({
           type: "SET_SUCCESS",
-          message: "Payment successful",
+          message: data.alreadyProcessed
+            ? "Payment has already been processed."
+            : "Payment successful",
           data: {
             id: data.id,
             created: data.created * 1000,
@@ -159,11 +108,11 @@ export function PaymentSuccess({ payment_intent }: Props) {
         logger.error("Error handling payment success", error);
         dispatch({
           type: "SET_ERROR",
-          message: "Error handling payment success",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Error handling payment success",
         });
-      })
-      .finally(() => {
-        processingRef.current = false;
       });
 
     return () => {

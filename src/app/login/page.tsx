@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { isSafeRedirectPath } from "@/lib/auth/safeRedirect";
 
 export const metadata: Metadata = {
   title: "Sign In",
@@ -22,8 +23,7 @@ function firstParam(
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = searchParams ? await searchParams : {};
   const raw = firstParam(params.redirect);
-  const redirectTo =
-    raw?.startsWith("/") && !raw.startsWith("//") ? raw : null;
+  const redirectTo = isSafeRedirectPath(raw) ? raw : null;
 
   return (
     <AuthCard

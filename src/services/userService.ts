@@ -5,12 +5,10 @@ import {
   setDoc,
   getDoc,
   updateDoc,
-  deleteDoc,
   serverTimestamp,
+  runTransaction,
 } from "firebase/firestore";
-import { deleteUser } from "firebase/auth";
 
-import { AppError } from "@/types/errors";
 import { db, auth } from "@/firebase/firebaseClient";
 import { getUserPath, getUserProfilePath } from "@/lib/firestore";
 import { firestoreRead, firestoreWrite } from "@/lib/firestoreOperations";
@@ -85,7 +83,10 @@ export async function fetchUserProfile(uid: string): Promise<Profile | null> {
         displayName: data.displayName || "",
         photoUrl: data.photoUrl || "",
         emailVerified: data.emailVerified || false,
-        credits: data.credits || 0,
+        credits:
+          typeof data.credits === "number" && Number.isFinite(data.credits)
+            ? data.credits
+            : 0,
         selectedAvatar: data.selectedAvatar || "",
         selectedTalkingPhoto: data.selectedTalkingPhoto || "",
         useCredits: data.useCredits !== undefined ? data.useCredits : true,
@@ -112,7 +113,11 @@ export async function saveUserProfile(
   await firestoreWrite(
     () => {
       const userRef = doc(db, getUserProfilePath(validatedUid));
-      return setDoc(userRef, profileData);
+      return runTransaction(db, async (transaction) => {
+        const existing = await transaction.get(userRef);
+        if (existing.exists()) return;
+        transaction.set(userRef, profileData);
+      });
     },
     "Failed to save user profile",
     { userId: validatedUid },
@@ -142,42 +147,3 @@ export async function updateUserProfile(
   );
 }
 
-/**
- * Deletes a user account from both Firestore and Firebase Authentication
- *
- * @param uid - The user's unique identifier
- * @throws {Error} If no current user is found
- * @throws {ValidationError} If uid is invalid
- */
-export async function deleteUserAccount(uid: string): Promise<void> {
-  const validatedUid = validateUserId(uid);
-
-  try {
-    const currentUser = auth.currentUser;
-
-    if (!currentUser) {
-      throw new AppError("No current user found", "storage", {
-        stage: "auth",
-        originalError: new Error("Authentication required"),
-        context: { userId: validatedUid },
-      });
-    }
-
-    const userRef = doc(db, getUserProfilePath(validatedUid));
-
-    // Delete the user profile data from Firestore
-    await deleteDoc(userRef);
-
-    // Delete the user from Firebase Authentication
-    await deleteUser(currentUser);
-  } catch (error) {
-    if (error instanceof AppError) {
-      throw error;
-    }
-    throw new AppError("Failed to delete user account", "storage", {
-      stage: "firestore-write",
-      originalError: error as Error,
-      context: { userId: validatedUid },
-    });
-  }
-}

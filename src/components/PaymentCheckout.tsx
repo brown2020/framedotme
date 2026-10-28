@@ -8,7 +8,7 @@ import {
 
 import { useEffect, useState } from "react";
 
-import convertToSubcurrency from "@/utils/convertToSubcurrency";
+import { CREDIT_PACK_AMOUNT_CENTS } from "@/constants/payment";
 import { ClipLoader } from "react-spinners";
 import { createPaymentIntent } from "@/actions/paymentActions";
 import { logger } from "@/utils/logger";
@@ -27,7 +27,7 @@ export function PaymentCheckout({ amount }: Props) {
   useEffect(() => {
     let cancelled = false;
 
-    createPaymentIntent(convertToSubcurrency(amount))
+    createPaymentIntent(CREDIT_PACK_AMOUNT_CENTS)
       .then((secret) => {
         if (cancelled || !secret) return;
         setClientSecret(secret);

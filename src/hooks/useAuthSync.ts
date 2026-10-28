@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { deleteCookie, setCookie } from "cookies-next";
+import { deleteCookie } from "cookies-next";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { getIdToken } from "firebase/auth";
 
@@ -22,7 +22,7 @@ import { updateUserDetailsInFirestore } from "@/services/userService";
 import { logger } from "@/utils/logger";
 import {
   CLIENT_ID_TOKEN_COOKIE_NAME,
-  SESSION_SYNC_TIMEOUT_MS,
+  SESSION_REFRESH_INTERVAL_MS,
 } from "@/constants/auth";
 import {
   clearServerSessionCookie,
@@ -83,12 +83,8 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
             return;
           }
 
-          // Set client cookie for Firebase SDK
-          setCookie(cookieName, idToken, {
-            path: "/",
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-          });
+          // Drop any legacy JS-readable ID token cookie. The HttpOnly session is enough.
+          deleteCookie(cookieName);
 
           // Create server session cookie (THIS IS CRITICAL - proxy validates this)
           const sessionCreated = await createSessionCookie(idToken);
@@ -103,32 +99,28 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
             setAuthDetails({
               uid: user.uid,
               authEmail: user.email || "",
-              authDisplayName: user.displayName || "",
+              authDisplayName:
+                user.displayName || useAuthStore.getState().authDisplayName || "",
               authPhotoUrl: user.photoURL || "",
               authEmailVerified: user.emailVerified || false,
               authReady: true, // Session is ready!
               authPending: false,
+              sessionError: null,
             });
           } else {
             logger.error("Failed to create session cookie");
             setAuthDetails({
               uid: user.uid,
               authEmail: user.email || "",
-              authDisplayName: user.displayName || "",
+              authDisplayName:
+                user.displayName || useAuthStore.getState().authDisplayName || "",
               authPhotoUrl: user.photoURL || "",
               authEmailVerified: user.emailVerified || false,
               authReady: false,
-              authPending: true,
+              authPending: false,
+              sessionError:
+                "Could not start a secure session. Check your connection and try again.",
             });
-            // Clear stuck pending so UI is not a forever spinner (Auth UX).
-            window.setTimeout(() => {
-              if (currentVersion !== sessionVersionRef.current) return;
-              const state = useAuthStore.getState();
-              if (state.authPending && !state.authReady) {
-                setAuthDetails({ authPending: false, authReady: true });
-                logger.error("Session sync timed out; cleared authPending");
-              }
-            }, SESSION_SYNC_TIMEOUT_MS);
           }
         } catch (error) {
           // Only update state if this version is still current
@@ -141,11 +133,14 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
           setAuthDetails({
             uid: user.uid,
             authEmail: user.email || "",
-            authDisplayName: user.displayName || "",
+            authDisplayName:
+              user.displayName || useAuthStore.getState().authDisplayName || "",
             authPhotoUrl: user.photoURL || "",
             authEmailVerified: user.emailVerified || false,
             authReady: false,
-            authPending: true,
+            authPending: false,
+            sessionError:
+              "Could not start a secure session. Check your connection and try again.",
           });
         }
       };
@@ -162,6 +157,7 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
         authEmailVerified: false,
         authReady: true, // Ready because we confirmed no user
         authPending: false,
+        sessionError: null,
         isAdmin: false,
         isAllowed: false,
         isInvited: false,
@@ -196,19 +192,13 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
       try {
         // Read auth state once to avoid stale closures during async operations
         const currentState = useAuthStore.getState();
+        // Privilege flags stay off this payload so a client login cannot clear them.
         const authData = {
           uid,
           authEmail: currentState.authEmail,
           authDisplayName: currentState.authDisplayName,
           authPhotoUrl: currentState.authPhotoUrl,
           authEmailVerified: currentState.authEmailVerified,
-          authReady: currentState.authReady,
-          authPending: currentState.authPending,
-          isAdmin: currentState.isAdmin,
-          isAllowed: currentState.isAllowed,
-          isInvited: currentState.isInvited,
-          lastSignIn: currentState.lastSignIn,
-          premium: currentState.premium,
         };
 
         await updateUserDetailsInFirestore(authData, uid);
@@ -220,6 +210,23 @@ export function useAuthSync(cookieName: string = CLIENT_ID_TOKEN_COOKIE_NAME) {
 
     void syncToFirestore();
   }, [user?.uid, loading]);
+
+  // Rotate the short-lived server session while the tab stays open.
+  useEffect(() => {
+    if (loading || !user) return;
+    const refresh = async () => {
+      try {
+        const idToken = await getIdToken(user, true);
+        await setServerSessionCookie(idToken);
+      } catch (refreshError) {
+        logger.warn("Session refresh failed", refreshError);
+      }
+    };
+    const intervalId = window.setInterval(() => {
+      void refresh();
+    }, SESSION_REFRESH_INTERVAL_MS);
+    return () => window.clearInterval(intervalId);
+  }, [loading, user]);
 
   return { uid: user?.uid, loading, error };
 }

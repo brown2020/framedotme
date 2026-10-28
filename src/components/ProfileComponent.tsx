@@ -3,12 +3,13 @@
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
+import { getIdToken, sendEmailVerification, signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 
 import { auth } from "@/firebase/firebaseClient";
 import { useIAPHandler } from "@/hooks/useIAPHandler";
 import { useSignOut } from "@/hooks/useSignOut";
+import { setServerSessionCookie } from "@/services/sessionCookieService";
 import { logger } from "@/utils/logger";
 import { isReactNativeWebView } from "@/utils/platform";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
@@ -21,6 +22,8 @@ export function ProfileComponent(): ReactElement {
   const showCreditsSection = !isReactNativeWebView();
   const deleteAccount = useProfileStore((state) => state.deleteAccount);
   const uid = useAuthStore((s) => s.uid);
+  const authEmailVerified = useAuthStore((s) => s.authEmailVerified);
+  const setAuthDetails = useAuthStore((s) => s.setAuthDetails);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const updateProfile = useProfileStore((state) => state.updateProfile);
   const [displayNameDraft, setDisplayNameDraft] = useState(profile.displayName || "");
@@ -84,7 +87,54 @@ export function ProfileComponent(): ReactElement {
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-2xl font-bold text-gray-900">Account Settings</h2>
-      
+
+      {!authEmailVerified && (
+        <section className="bg-amber-50 rounded-xl p-6 border border-amber-200">
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Verify your email</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Credit purchases stay locked until this address is verified.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold"
+              onClick={() => {
+                const current = auth.currentUser;
+                if (!current) return;
+                void sendEmailVerification(current)
+                  .then(() => toast.success("Verification email sent"))
+                  .catch(() => toast.error("Could not send verification email"));
+              }}
+            >
+              Send verification email
+            </button>
+            <button
+              type="button"
+              className="bg-white text-gray-900 px-4 py-2 rounded-lg font-semibold border border-gray-300"
+              onClick={() => {
+                const current = auth.currentUser;
+                if (!current) return;
+                void current
+                  .reload()
+                  .then(() => getIdToken(current, true))
+                  .then(async (idToken) => {
+                    if (!current.emailVerified) {
+                      toast.error("Email is not verified yet");
+                      return;
+                    }
+                    await setServerSessionCookie(idToken);
+                    setAuthDetails({ authEmailVerified: true });
+                    toast.success("Email verified");
+                  })
+                  .catch(() => toast.error("Could not refresh verification status"));
+              }}
+            >
+              I verified my email
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* Credits Section */}
       <section
         className="bg-blue-50 rounded-xl p-6 border border-blue-200"

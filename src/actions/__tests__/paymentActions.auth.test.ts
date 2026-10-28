@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 vi.mock("@/services/sessionService", () => ({
   requireAuthenticatedSession: vi.fn(),
 }));
@@ -33,6 +35,24 @@ describe("paymentActions auth + validation denial", () => {
     });
     await expect(createPaymentIntent(0)).rejects.toThrow(/positive integer/);
     await expect(createPaymentIntent(-5)).rejects.toThrow(/positive integer/);
+  });
+
+  it("rejects amounts that are not the credit pack", async () => {
+    vi.mocked(requireAuthenticatedSession).mockResolvedValue({
+      uid: "user_1",
+      email: "a@b.co",
+      emailVerified: true,
+    });
+    await expect(createPaymentIntent(50)).rejects.toThrow(/credit pack/);
+  });
+
+  it("rejects unverified emails before Stripe", async () => {
+    vi.mocked(requireAuthenticatedSession).mockResolvedValue({
+      uid: "user_1",
+      email: "a@b.co",
+      emailVerified: false,
+    });
+    await expect(createPaymentIntent(9999)).rejects.toThrow(/Verify your email/);
   });
 
   it("denies validatePaymentIntent for unauthenticated callers", async () => {

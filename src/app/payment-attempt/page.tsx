@@ -1,8 +1,7 @@
 "use client";
 
 import { PaymentCheckout } from "@/components/PaymentCheckout";
-import convertToSubcurrency from "@/utils/convertToSubcurrency";
-import { DEFAULT_PAYMENT_AMOUNT, DEFAULT_PAYMENT_CURRENCY } from "@/constants/payment";
+import { CREDIT_PACK_AMOUNT_CENTS, DEFAULT_PAYMENT_AMOUNT, DEFAULT_PAYMENT_CURRENCY } from "@/constants/payment";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { Elements } from "@stripe/react-stripe-js";
@@ -21,7 +20,7 @@ export default function PaymentAttempt() {
         stripe={stripePromise}
         options={{
           mode: "payment",
-          amount: convertToSubcurrency(DEFAULT_PAYMENT_AMOUNT),
+          amount: CREDIT_PACK_AMOUNT_CENTS,
           currency: DEFAULT_PAYMENT_CURRENCY,
         }}
       >

@@ -1,50 +1,32 @@
 import { useEffect } from "react";
-import { usePaymentsStore } from "@/zustand/usePaymentsStore";
-import useProfileStore from "@/zustand/useProfileStore";
+import { submitIapReceipt } from "@/actions/accountActions";
 import { logger } from "@/utils/logger";
+import toast from "react-hot-toast";
 
 /**
- * Hook to handle In-App Purchase (IAP) messages from React Native WebView
- * Listens for IAP_SUCCESS messages and updates payment and credit state accordingly
- * 
- * @param uid - The authenticated user's unique identifier
- * 
- * @example
- * ```typescript
- * useIAPHandler(user.uid);
- * ```
+ * Listens for in-app purchase messages from the same origin only.
+ * Credits are never applied here. The server refuses unverified receipts.
  */
 export const useIAPHandler = (uid: string | undefined) => {
-  const addCredits = useProfileStore((state) => state.addCredits);
-  const addPayment = usePaymentsStore((state) => state.addPayment);
-
   useEffect(() => {
-    const handleMessageFromRN = async (event: MessageEvent) => {
+    const handleMessageFromRN = (event: MessageEvent) => {
       if (!uid) return;
-      
+      if (event.origin !== window.location.origin) return;
+
       const message = event.data;
-      if (message?.type === "IAP_SUCCESS") {
-        try {
-          await addPayment(uid, {
-            id: message.message,
-            amount: message.amount,
-            status: "succeeded",
-            mode: "iap",
-            platform: message.platform,
-            productId: message.productId,
-            currency: message.currency,
-          });
-          await addCredits(uid, 10000);
-        } catch (error) {
-          logger.error("Failed to process IAP payment", error);
-        }
-      }
+      if (message?.type !== "IAP_SUCCESS") return;
+
+      void submitIapReceipt().catch((error: unknown) => {
+        logger.error("Failed to process IAP payment", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "In-app purchases are not available.",
+        );
+      });
     };
 
     window.addEventListener("message", handleMessageFromRN);
-
-    return () => {
-      window.removeEventListener("message", handleMessageFromRN);
-    };
-  }, [addCredits, addPayment, uid]);
+    return () => window.removeEventListener("message", handleMessageFromRN);
+  }, [uid]);
 };

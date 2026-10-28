@@ -3,46 +3,22 @@ import {
   fetchUserProfile,
   saveUserProfile,
   updateUserProfile,
-  deleteUserAccount
 } from "@/services/userService";
-import { DEFAULT_CREDITS, CREDITS_THRESHOLD } from "@/constants/payment";
+import { DEFAULT_CREDITS } from "@/constants/payment";
 import { logError } from "@/lib/errors";
 import { DEFAULT_PROFILE } from "@/constants/defaults";
-import { OperationQueue } from "@/utils/optimisticUpdate";
+import { deleteCurrentAccount } from "@/actions/accountActions";
 import type { Profile } from "@/types/profile";
 import type { AuthContext } from "@/types/auth";
-
-/**
- * Operation queue for credit modifications.
- * Ensures sequential execution of credit operations to prevent race conditions
- * when multiple operations (e.g., minusCredits and addCredits) overlap.
- *
- * Without this queue, concurrent operations could read stale credit values
- * and produce incorrect results or corrupt rollback state.
- */
-const creditOperationQueue = new OperationQueue<number>();
 
 interface ProfileState {
   profile: Profile;
   fetchProfile: (uid: string, authContext?: AuthContext) => Promise<void>;
   updateProfile: (uid: string, newProfile: Partial<Profile>) => Promise<void>;
-  minusCredits: (uid: string, amount: number) => Promise<boolean>;
-  addCredits: (uid: string, amount: number) => Promise<void>;
   applyCreditsLocally: (amount: number) => void;
   deleteAccount: (uid: string) => Promise<void>;
   resetProfile: () => void;
 }
-
-/**
- * Initializes user credits with validation
- * Returns existing credits if valid, otherwise returns default credits
- */
-const initializeCredits = (credits: number | undefined): number => {
-  if (credits && credits >= CREDITS_THRESHOLD) {
-    return credits;
-  }
-  return DEFAULT_CREDITS;
-};
 
 /**
  * Creates a new profile with default values
@@ -80,7 +56,10 @@ const buildProfileFromData = (
 ): Profile => ({
   ...DEFAULT_PROFILE,
   ...profile,
-  credits: initializeCredits(profile.credits),
+  credits:
+    typeof profile.credits === "number" && Number.isFinite(profile.credits)
+      ? profile.credits
+      : 0,
   email: authState.authEmail || profile.email || "",
   contactEmail: profile.contactEmail || authState.authEmail || "",
   displayName: profile.displayName || authState.authDisplayName || "",
@@ -101,19 +80,31 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     if (!uid) return;
 
     try {
-      const profileData = await fetchUserProfile(uid);
+      let profileData = await fetchUserProfile(uid);
 
-      const newProfile = profileData
-        ? buildProfileFromData(profileData, authContext || {})
-        : createNewProfile(
+      if (!profileData) {
+        await saveUserProfile(
+          uid,
+          createNewProfile(
             authContext?.authEmail,
             authContext?.authDisplayName,
             authContext?.authPhotoUrl,
-            authContext?.authEmailVerified
-          );
+            authContext?.authEmailVerified,
+          ),
+        );
+        profileData = await fetchUserProfile(uid);
+      }
 
-      await saveUserProfile(uid, newProfile);
-      set({ profile: newProfile });
+      set({
+        profile: profileData
+          ? buildProfileFromData(profileData, authContext || {})
+          : createNewProfile(
+              authContext?.authEmail,
+              authContext?.authDisplayName,
+              authContext?.authPhotoUrl,
+              authContext?.authEmailVerified,
+            ),
+      });
     } catch (error) {
       handleProfileError("fetching or creating profile", error);
     }
@@ -129,9 +120,9 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 
       // Optimistic update
       set({ profile: updatedProfile });
-      
-      // API call
-      await updateUserProfile(uid, updatedProfile);
+
+      // Persist only the fields the caller changed so credits are not rewritten.
+      await updateUserProfile(uid, newProfile);
     } catch (error) {
       // Rollback on failure
       set({ profile: previousProfile });
@@ -144,7 +135,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     if (!uid) return;
 
     try {
-      await deleteUserAccount(uid);
+      await deleteCurrentAccount();
       set({ profile: DEFAULT_PROFILE });
     } catch (error) {
       handleProfileError("deleting account", error);
@@ -157,106 +148,16 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   },
 
   /**
-   * Subtracts credits from the user's profile.
-   *
-   * Uses an operation queue to prevent race conditions when multiple
-   * credit operations occur simultaneously.
-   *
-   * @param uid - User ID
-   * @param amount - Amount of credits to subtract
-   * @returns true if successful, false if insufficient credits or error
-   */
-  minusCredits: async (uid: string, amount: number) => {
-    if (!uid) return false;
-
-    // Check credits before queueing to fail fast
-    const currentCredits = get().profile.credits;
-    if (currentCredits < amount) return false;
-
-    try {
-      let success = false;
-
-      await creditOperationQueue.execute(
-        // Get current value - reads fresh state when operation executes
-        () => get().profile.credits,
-        // Calculate new value
-        (current) => {
-          // Double-check credits are sufficient at execution time
-          if (current < amount) {
-            throw new Error("Insufficient credits");
-          }
-          return current - amount;
-        },
-        // Apply optimistic update
-        (newCredits) => {
-          set({ profile: { ...get().profile, credits: newCredits } });
-        },
-        // Perform actual operation
-        async (newCredits) => {
-          await updateUserProfile(uid, { credits: newCredits });
-          success = true;
-        },
-        // Rollback on failure - restore previous credits
-        (previousCredits) => {
-          set({ profile: { ...get().profile, credits: previousCredits } });
-        }
-      );
-
-      return success;
-    } catch (error) {
-      handleProfileError("using credits", error);
-      return false;
-    }
-  },
-
-  /**
-   * Adds credits to the user's profile.
-   *
-   * Uses an operation queue to prevent race conditions when multiple
-   * credit operations occur simultaneously.
-   *
-   * @param uid - User ID
-   * @param amount - Amount of credits to add
-   */
-  addCredits: async (uid: string, amount: number) => {
-    if (!uid) return;
-
-    try {
-      await creditOperationQueue.execute(
-        // Get current value - reads fresh state when operation executes
-        () => get().profile.credits,
-        // Calculate new value
-        (current) => current + amount,
-        // Apply optimistic update
-        (newCredits) => {
-          set({ profile: { ...get().profile, credits: newCredits } });
-        },
-        // Perform actual operation
-        async (newCredits) => {
-          await updateUserProfile(uid, { credits: newCredits });
-        },
-        // Rollback on failure - restore previous credits
-        (previousCredits) => {
-          set({ profile: { ...get().profile, credits: previousCredits } });
-        }
-      );
-    } catch (error) {
-      handleProfileError("adding credits", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Applies a local-only credit adjustment after another service has already
-   * committed the persisted credit change.
+   * Applies a local-only credit adjustment after the server has committed it.
+   * Negative amounts record a charge; positive amounts record a grant or refund.
    */
   applyCreditsLocally: (amount: number) => {
-    if (!Number.isFinite(amount) || amount <= 0) return;
+    if (!Number.isFinite(amount) || amount === 0) return;
 
     set((state) => ({
       profile: {
         ...state.profile,
-        credits: state.profile.credits + amount,
+        credits: Math.max(0, state.profile.credits + amount),
       },
     }));
   },

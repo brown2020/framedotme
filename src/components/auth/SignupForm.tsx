@@ -13,6 +13,7 @@ import { auth } from "@/firebase/firebaseClient";
 import { mapFirebaseAuthError } from "@/lib/firebaseAuthErrors";
 import { hardNavigateAfterAuth } from "@/lib/auth/waitForSessionReady";
 import { resolvePostAuthPath } from "@/lib/auth/resolvePostAuthPath";
+import { isSafeRedirectPath } from "@/lib/auth/safeRedirect";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { AuthSocialSection } from "@/components/auth/AuthSocialSection";
 import { browserStorage } from "@/services/browserStorageService";
@@ -33,10 +34,10 @@ export function SignupForm({
   const [submitting, setSubmitting] = useState(false);
   const errorId = useId();
 
-  const loginHref =
-    redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-      ? `/login?redirect=${encodeURIComponent(redirectTo)}`
-      : "/login";
+  const safeRedirect = isSafeRedirectPath(redirectTo) ? redirectTo : null;
+  const loginHref = safeRedirect
+    ? `/login?redirect=${encodeURIComponent(safeRedirect)}`
+    : "/login";
 
   const finishAuth = async () => {
     browserStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, email);
@@ -44,10 +45,7 @@ export function SignupForm({
     if (emailName) {
       browserStorage.setItem(AUTH_STORAGE_KEYS.NAME, emailName);
     }
-    const path =
-      redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-        ? redirectTo
-        : resolvePostAuthPath();
+    const path = safeRedirect ?? resolvePostAuthPath();
     await hardNavigateAfterAuth(path);
   };
 
@@ -89,10 +87,7 @@ export function SignupForm({
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      const path =
-        redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-          ? redirectTo
-          : resolvePostAuthPath();
+      const path = safeRedirect ?? resolvePostAuthPath();
       await hardNavigateAfterAuth(path);
     } catch (err) {
       setError(mapFirebaseAuthError(err));

@@ -1,10 +1,10 @@
 import "server-only";
 
-import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
 import { SESSION_COOKIE_NAME } from "@/constants/auth";
 import { AppError } from "@/types/errors";
+import { verifyAppSession } from "@/services/sessionRegistry";
 
 /**
  * Session verification service
@@ -18,44 +18,21 @@ export interface AuthenticatedSession {
   emailVerified: boolean;
 }
 
-function getJwtSecret(): Uint8Array {
-  const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error(
-      "JWT_SECRET or NEXTAUTH_SECRET environment variable not configured",
-    );
-  }
-  if (secret.length < 32) {
-    throw new Error("JWT_SECRET must be at least 32 characters for security");
-  }
-  return new TextEncoder().encode(secret);
-}
-
 /**
- * Verifies a session cookie and returns user information
- *
- * @param sessionCookie - The session cookie to verify
- * @returns User info if valid, null if invalid or missing
+ * Verifies a session cookie and the server-side session record.
+ * A valid signature is not enough after sign-out or expiry of the registry entry.
  */
 export async function verifySessionToken(
   sessionCookie: string,
 ): Promise<AuthenticatedSession | null> {
   if (!sessionCookie) return null;
-
-  try {
-    const { payload } = await jwtVerify(sessionCookie, getJwtSecret(), {
-      algorithms: ["HS256"],
-    });
-    if (!payload.sub) return null;
-
-    return {
-      uid: payload.sub,
-      email: typeof payload.email === "string" ? payload.email : "",
-      emailVerified: payload.email_verified === true,
-    };
-  } catch {
-    return null;
-  }
+  const claims = await verifyAppSession(sessionCookie);
+  if (!claims) return null;
+  return {
+    uid: claims.uid,
+    email: claims.email,
+    emailVerified: claims.emailVerified,
+  };
 }
 
 /**

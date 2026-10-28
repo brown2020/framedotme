@@ -21,6 +21,8 @@ export interface AuthState {
   authEmailVerified: boolean;
   authReady: boolean;
   authPending: boolean;
+  /** Set when the server session cookie could not be created. */
+  sessionError: string | null;
   isAdmin: boolean;
   isAllowed: boolean;
   isInvited: boolean;

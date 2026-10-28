@@ -47,7 +47,10 @@ export function VideoControlsLauncher(): ReactElement {
     const checkWindowClosed = () => {
       if (videoControlsWindowRef.current?.closed) {
         videoControlsWindowRef.current = null;
-        updateStatus("shouldStop");
+        // The popup saves on pagehide. Mark idle so this button is not stuck.
+        if (recorderStatus === "recording" || recorderStatus === "shouldStop") {
+          updateStatus("idle");
+        }
       }
     };
 
@@ -60,7 +63,7 @@ export function VideoControlsLauncher(): ReactElement {
       clearInterval(intervalId);
       videoControlsWindowRef.current = null;
     };
-  }, [updateStatus]);
+  }, [recorderStatus, updateStatus]);
 
   const getButtonText = () => {
     switch (recorderStatus) {

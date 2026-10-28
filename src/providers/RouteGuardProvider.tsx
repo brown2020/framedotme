@@ -18,7 +18,23 @@ export const RouteGuardProvider = ({
   children: ReactNode;
 }): ReactNode => {
   const authReady = useAuthStore((state) => state.authReady);
+  const sessionError = useAuthStore((state) => state.sessionError);
   const loading = !authReady;
+
+  if (sessionError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 bg-[#333b51] px-6 text-center">
+        <p className="text-white text-lg">{sessionError}</p>
+        <button
+          type="button"
+          className="bg-white text-gray-900 px-4 py-2 rounded-md font-semibold"
+          onClick={() => window.location.reload()}
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

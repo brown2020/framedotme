@@ -1,5 +1,7 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getStorage, type Storage } from "firebase-admin/storage";
 import { logger } from "@/utils/logger";
 
 /**
@@ -32,30 +34,32 @@ function initializeAdmin(): App | null {
   });
 }
 
-function getAdminAuth(): Auth {
+function requireApp(): App {
   const app = initializeAdmin();
   if (!app) {
     throw new Error(
       "Firebase Admin is not configured. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.",
     );
   }
-  return getAuth(app);
+  return app;
 }
 
-function createLazyAuth(): Auth {
-  let instance: Auth | null = null;
-  return new Proxy({} as Auth, {
+function createLazy<T extends object>(factory: () => T): T {
+  let instance: T | null = null;
+  return new Proxy({} as T, {
     get(_target, prop, receiver) {
       if (!instance) {
-        instance = getAdminAuth();
+        instance = factory();
       }
       const value = Reflect.get(instance as object, prop, receiver);
-      return typeof value === "function" ? value.bind(instance) : value;
+      return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(instance) : value;
     },
   });
 }
 
 /** Lazy Auth accessor — safe to import during build. */
-const adminAuth: Auth = createLazyAuth();
+const adminAuth: Auth = createLazy(() => getAuth(requireApp()));
+const adminDb: Firestore = createLazy(() => getFirestore(requireApp()));
+const adminStorage: Storage = createLazy(() => getStorage(requireApp()));
 
-export { adminAuth };
+export { adminAuth, adminDb, adminStorage };
