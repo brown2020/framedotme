@@ -1,4 +1,5 @@
 import { RECORDING_CHUNK_INTERVAL_MS, RECORDING_MIME_TYPE } from "@/constants/recording";
+import { MediaStreamError } from "@/types/mediaStreamTypes";
 import { logger } from "@/utils/logger";
 
 type RecordingSink = {
@@ -74,10 +75,7 @@ export class RecordingManager {
       await this.sink?.discard();
       this.sink = await createRecordingSink();
       this.onDataAvailableCallback = onDataAvailable;
-
-      this.mediaRecorder = new MediaRecorder(stream, {
-        mimeType: RECORDING_MIME_TYPE,
-      });
+      this.mediaRecorder = createMediaRecorder(stream);
 
       this.writeChain = Promise.resolve();
       this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
@@ -92,7 +90,12 @@ export class RecordingManager {
       return this.mediaRecorder;
     } catch (error) {
       logger.error("Failed to start recording", error);
-      throw error;
+      if (error instanceof MediaStreamError) throw error;
+      throw new MediaStreamError(
+        "Recording could not start in this browser. Use a current Chrome or Edge window.",
+        "unsupported",
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 
@@ -148,5 +151,27 @@ export class RecordingManager {
 
   get isRecording(): boolean {
     return this.mediaRecorder?.state === "recording" || false;
+  }
+}
+
+function createMediaRecorder(stream: MediaStream): MediaRecorder {
+  if (typeof MediaRecorder === "undefined") {
+    throw new MediaStreamError(
+      "MediaRecorder is not supported in this browser. Use a current Chrome or Edge window.",
+      "unsupported",
+    );
+  }
+  try {
+    return new MediaRecorder(stream, { mimeType: RECORDING_MIME_TYPE });
+  } catch (error) {
+    try {
+      return new MediaRecorder(stream);
+    } catch (fallbackError) {
+      throw new MediaStreamError(
+        "This browser could not start a recording. Use a current Chrome or Edge window.",
+        "unsupported",
+        fallbackError instanceof Error ? fallbackError : error instanceof Error ? error : undefined,
+      );
+    }
   }
 }

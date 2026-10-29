@@ -9,7 +9,7 @@ export function RecorderStatusProvider({
 }: {
   children: ReactNode;
 }) {
-  const { setRecorderStatus, setError } = useRecorderStatusStore();
+  const { setError } = useRecorderStatusStore();
   const { uid, authReady } = useAuthStore();
 
   useEffect(() => {
@@ -19,14 +19,15 @@ export function RecorderStatusProvider({
 
     const unsubscribe = subscribeToRecorderStatus(
       uid,
-      (status) => setRecorderStatus(status, true),
+      (update) =>
+        useRecorderStatusStore.getState().applyRemoteRecorderStatus(update),
       (error) => setError(error)
     );
 
     return () => {
       unsubscribe();
     };
-  }, [uid, authReady, setRecorderStatus, setError]);
+  }, [uid, authReady, setError]);
 
   return <>{children}</>;
 }

@@ -12,6 +12,7 @@ import { logger } from "@/utils/logger";
 import { VIDEO_DIMENSION_UPDATE_INTERVAL_MS } from "@/constants/recording";
 import { getRecorderButtonClass, getRecorderButtonText } from "@/utils/recorderStyles";
 import { screenCaptureUnavailableMessage } from "@/lib/screenCaptureError";
+import { reportRecorderFailure } from "@/lib/recorderStatus";
 
 function subscribeToCaptureSupport() {
   return () => {};
@@ -27,6 +28,7 @@ export function VideoControls(): ReactElement {
   const uid = useAuthStore((state) => state.uid);
   const {
     recorderStatus,
+    statusMessage,
     updateStatus,
     initializeRecorder,
     screenStream,
@@ -78,21 +80,26 @@ export function VideoControls(): ReactElement {
     screenStream?.getVideoTracks().some((track) => track.readyState === "live") ?? false;
   const needsScreenStream =
     !hasLiveVideo && ["idle", "ready", "error"].includes(recorderStatus);
-  const controlStatus = needsScreenStream ? "idle" : recorderStatus;
+  const controlStatus = recorderStatus === "error"
+    ? "error"
+    : needsScreenStream
+      ? "idle"
+      : recorderStatus;
 
   const captureUnavailable = useSyncExternalStore(
     subscribeToCaptureSupport,
     screenCaptureUnavailableMessage,
     noCaptureWarningOnServer,
   );
-  const visibleError = error || captureUnavailable;
+  const visibleError = statusMessage || error || captureUnavailable;
+  const shownStatus = visibleError ? "error" : recorderStatus;
 
   const handleRecordingControl = () => {
-    if (needsScreenStream) {
-      void initializeRecorder();
+    if (captureUnavailable && (needsScreenStream || !uid)) {
+      reportRecorderFailure(captureUnavailable);
       return;
     }
-    if (!uid) {
+    if (needsScreenStream || !uid) {
       void initializeRecorder();
       return;
     }
@@ -111,15 +118,20 @@ export function VideoControls(): ReactElement {
     <div className="flex flex-col space-y-3 h-full p-4">
       <div className="text-2xl font-bold">Video Controls</div>
 
+      <p className="text-sm text-gray-600" data-testid="recorder-status">
+        Status: {shownStatus}
+      </p>
+
       {visibleError && (
         <Alert variant="destructive">
-          <AlertDescription className="text-red-800">{visibleError}</AlertDescription>
+          <AlertDescription
+            className="text-sm font-medium text-red-800"
+            data-testid="recorder-error"
+          >
+            {visibleError}
+          </AlertDescription>
         </Alert>
       )}
-
-      <p className="text-sm text-gray-600">
-        Status: {visibleError ? `error — ${visibleError}` : recorderStatus}
-      </p>
 
       <div className="flex gap-2">
         <Button

@@ -34,7 +34,9 @@ export class MediaStreamManager {
   private audioContext: AudioContext | null = null;
   private statusCallback?: (status: RecorderStatusType) => void;
   private onScreenEnded?: () => void;
+  private onFailure?: (message: string) => void;
   private screenEndNotified = false;
+  private suppressFailure = false;
   private trackListeners: Map<MediaStreamTrack, {
     onended: () => void;
     onmute: () => void;
@@ -46,8 +48,12 @@ export class MediaStreamManager {
    *
    * @param statusCallback - Optional callback to receive recorder status updates
    */
-  constructor(statusCallback?: (status: RecorderStatusType) => void) {
+  constructor(
+    statusCallback?: (status: RecorderStatusType) => void,
+    onFailure?: (message: string) => void,
+  ) {
     this.statusCallback = statusCallback;
+    this.onFailure = onFailure;
   }
 
   /** Called once when the user stops the browser screen share. */
@@ -79,6 +85,7 @@ export class MediaStreamManager {
 
     try {
       this.screenEndNotified = false;
+      this.suppressFailure = false;
       this.screenStream = await this.requestDisplayMedia();
       const liveVideo = this.screenStream
         .getVideoTracks()
@@ -166,14 +173,16 @@ export class MediaStreamManager {
     stream.getTracks().forEach((track) => {
       const handlers = {
         onended: () => {
-          if (this.screenEndNotified) return;
+          if (this.suppressFailure || this.screenEndNotified) return;
           this.screenEndNotified = true;
           if (this.onScreenEnded) {
             this.onScreenEnded();
             return;
           }
-          this.updateStatus("idle");
-          void this.cleanup();
+          this.onFailure?.(
+            "Screen sharing stopped before recording started. Click Initialize Recording and choose a screen, window, or tab.",
+          );
+          this.updateStatus("error");
         },
         onmute: () => {
           logger.warn(`Track muted: ${track.kind}`);
@@ -309,6 +318,7 @@ export class MediaStreamManager {
    * Stops all tracks, removes event listeners, and closes audio context
    */
   async cleanup(): Promise<void> {
+    this.suppressFailure = true;
     [this.screenStream, this.micStream, this.combinedStream].forEach(
       (stream) => {
         if (stream) {

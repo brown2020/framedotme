@@ -10,11 +10,15 @@ import {
   VIDEO_CONTROLS_WINDOW_HEIGHT,
   VIDEO_CONTROLS_WINDOW_CHECK_INTERVAL_MS,
 } from "@/constants/recording";
+import { RECORDER_POPUP_BLOCKED, RECORDER_POPUP_CLOSED, reportRecorderFailure } from "@/lib/recorderStatus";
+import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
 
 export function VideoControlsLauncher(): ReactElement {
   const { recorderStatus, updateStatus } = useRecorderStatus();
+  const statusMessage = useRecorderStatusStore((state) => state.statusMessage);
   const videoControlsWindowRef = useRef<Window | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
+  const visibleError = openError || (recorderStatus === "error" ? statusMessage : null);
 
   const openVideoControls = () => {
     if (recorderStatus === "recording") {
@@ -33,20 +37,25 @@ export function VideoControlsLauncher(): ReactElement {
 
       const features = `width=${VIDEO_CONTROLS_WINDOW_WIDTH},height=${VIDEO_CONTROLS_WINDOW_HEIGHT},left=${left},top=${top}`;
 
-      // Reset status before opening window
-      updateStatus("idle");
-
       const popup = window.open(
         "/videocontrols",
         "videoControlsWindow",
         features,
       );
-      if (!popup) {
-        setOpenError("The recorder window was blocked. Allow popups for this site, or open the recorder in this tab.");
+      if (!popup || popup.closed) {
+        setOpenError(RECORDER_POPUP_BLOCKED);
+        reportRecorderFailure(RECORDER_POPUP_BLOCKED);
         return;
       }
       setOpenError(null);
       videoControlsWindowRef.current = popup;
+      window.setTimeout(() => {
+        if (popup.closed) {
+          setOpenError(RECORDER_POPUP_BLOCKED);
+          reportRecorderFailure(RECORDER_POPUP_BLOCKED);
+          videoControlsWindowRef.current = null;
+        }
+      }, 300);
     }
   };
 
@@ -54,9 +63,9 @@ export function VideoControlsLauncher(): ReactElement {
     const checkWindowClosed = () => {
       if (videoControlsWindowRef.current?.closed) {
         videoControlsWindowRef.current = null;
-        // The popup saves on pagehide. Mark idle so this button is not stuck.
-        if (recorderStatus === "recording" || recorderStatus === "shouldStop") {
-          updateStatus("idle");
+        if (recorderStatus !== "saving") {
+          setOpenError(RECORDER_POPUP_CLOSED);
+          reportRecorderFailure(RECORDER_POPUP_CLOSED);
         }
       }
     };
@@ -68,7 +77,6 @@ export function VideoControlsLauncher(): ReactElement {
 
     return () => {
       clearInterval(intervalId);
-      videoControlsWindowRef.current = null;
     };
   }, [recorderStatus, updateStatus]);
 
@@ -100,9 +108,9 @@ export function VideoControlsLauncher(): ReactElement {
 
   return (
     <div className="flex flex-col items-center gap-3">
-    {openError ? (
-      <p role="alert" className="max-w-sm rounded-xl bg-red-50 px-4 py-3 text-center text-sm text-red-800">
-        {openError}{" "}
+    {visibleError ? (
+      <p role="alert" data-testid="recorder-error" className="max-w-sm rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-800">
+        Status: error. {visibleError}{" "}
         <Link href="/videocontrols" className="font-semibold underline">
           Open recorder
         </Link>

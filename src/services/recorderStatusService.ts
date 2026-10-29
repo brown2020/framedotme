@@ -4,6 +4,13 @@ import type { RecorderStatusType } from "@/types/recorder";
 import { validateUserId } from "@/lib/validation";
 import { getUserRecorderSettingsPath } from "@/lib/firestore";
 import { firestoreWrite } from "@/lib/firestoreOperations";
+import { remoteUpdatedAtMillis } from "@/lib/recorderStatusTime";
+
+export type RemoteRecorderStatus = {
+  status: RecorderStatusType;
+  message: string | null;
+  updatedAt: number;
+};
 
 /**
  * Updates the recorder status in Firestore
@@ -21,13 +28,16 @@ import { firestoreWrite } from "@/lib/firestoreOperations";
  */
 export const updateRecorderStatus = async (
   uid: string,
-  newStatus: RecorderStatusType
+  newStatus: RecorderStatusType,
+  message: string | null = null,
+  updatedAt = Date.now(),
 ): Promise<void> => {
   const validatedUid = validateUserId(uid);
 
   const settings = {
     recorderStatus: newStatus,
-    lastUpdated: new Date(),
+    recorderError: newStatus === "error" ? message : null,
+    lastUpdated: updatedAt,
   };
 
   await firestoreWrite(
@@ -64,7 +74,7 @@ export const updateRecorderStatus = async (
  */
 export const subscribeToRecorderStatus = (
   uid: string,
-  onStatusChange: (status: RecorderStatusType) => void,
+  onStatusChange: (update: RemoteRecorderStatus) => void,
   onError: (error: Error) => void
 ): (() => void) => {
   try {
@@ -76,7 +86,11 @@ export const subscribeToRecorderStatus = (
       (doc) => {
         const data = doc.data();
         if (data?.recorderStatus) {
-          onStatusChange(data.recorderStatus);
+          onStatusChange({
+            status: data.recorderStatus,
+            message: typeof data.recorderError === "string" ? data.recorderError : null,
+            updatedAt: remoteUpdatedAtMillis(data.lastUpdated),
+          });
         }
       },
       (error) => {

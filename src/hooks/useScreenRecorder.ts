@@ -14,6 +14,7 @@ import { RECORDING_CREDIT_COST } from "@/constants/payment";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import useProfileStore from "@/zustand/useProfileStore";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
+import { RECORDER_SHARE_ENDED, reportRecorderFailure } from "@/lib/recorderStatus";
 
 /**
  * Handles recorder status transitions with concurrency protection
@@ -65,7 +66,7 @@ const handleStatusTransition = async (
 };
 
 export const useScreenRecorder = () => {
-  const { recorderStatus, setRecorderStatus } = useRecorderStatusStore();
+  const { recorderStatus, statusMessage, setRecorderStatus } = useRecorderStatusStore();
   const { uid, authReady, authPending } = useAuthStore();
   const [isRecordingWindowOpen, setIsRecordingWindowOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,17 +82,23 @@ export const useScreenRecorder = () => {
 
   const [mediaManager] = useState(
     () =>
-      new MediaStreamManager((status) => {
-        setRecorderStatus(status);
-      }),
+      new MediaStreamManager(
+        (status) => {
+          setRecorderStatus(status);
+        },
+        (message) => {
+          reportRecorderFailure(message);
+        },
+      ),
   );
   const [recordingManager] = useState(() => new RecordingManager());
 
   const handleError = useCallback(
     (error: unknown) => {
-      const message = getErrorMessage(error, "An unexpected error occurred", "save recording");
+      const message = getErrorMessage(error, "Screen sharing could not start. Please try again.", "save recording");
       setError(message);
       toast.error(message);
+      reportRecorderFailure(message);
       if (error instanceof MediaStreamError) {
         logger.warn("Recording could not start", {
           type: error.type,
@@ -101,15 +108,16 @@ export const useScreenRecorder = () => {
       } else {
         logger.error("Recording error", error);
       }
-      updateStatus("error");
     },
-    [updateStatus]
+    []
   );
 
   const handleRecordingData = useCallback(
     async (finalBlob: Blob) => {
       if (!uid) {
-        setError("Not authenticated. Please sign in to save recordings.");
+        const message = "Not authenticated. Please sign in to save recordings.";
+        setError(message);
+        reportRecorderFailure(message);
         return;
       }
 
@@ -182,7 +190,7 @@ export const useScreenRecorder = () => {
         : "Please sign in to start recording.";
       setError(message);
       toast.error(message);
-      updateStatus("error");
+      reportRecorderFailure(message);
       return;
     }
 
@@ -231,7 +239,13 @@ export const useScreenRecorder = () => {
   // Save the take when the shared screen ends or this window is closing.
   useEffect(() => {
     mediaManager.setOnScreenEnded(() => {
-      void stopRecordingRef.current();
+      if (recordingManager.isRecording) {
+        void stopRecordingRef.current();
+        return;
+      }
+      setScreenStream(null);
+      setIsRecordingWindowOpen(false);
+      reportRecorderFailure(RECORDER_SHARE_ENDED);
     });
 
     const saveBeforeLeave = () => {
@@ -247,10 +261,11 @@ export const useScreenRecorder = () => {
         await mediaManager.cleanup();
       })();
     };
-  }, [mediaManager]);
+  }, [mediaManager, recordingManager]);
 
   return {
     recorderStatus,
+    statusMessage,
     updateStatus,
     initializeRecorder,
     startRecording,

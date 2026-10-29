@@ -2,6 +2,7 @@
 
 import { VideoControlsLauncher } from "@/components/VideoControlsLauncher";
 import { useRecorderStatus } from "@/hooks/useRecorderStatus";
+import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
 import {
   MonitorIcon,
   CircleDotIcon,
@@ -20,6 +21,7 @@ import {
  */
 export function CapturePage() {
   const { recorderStatus } = useRecorderStatus();
+  const statusMessage = useRecorderStatusStore((state) => state.statusMessage);
 
   const getStatusInfo = () => {
     switch (recorderStatus) {
@@ -43,6 +45,13 @@ export function CapturePage() {
           subtitle: "Please wait while we save your video",
           color: "blue",
           icon: Layers,
+        };
+      case "error":
+        return {
+          title: "Recording could not start",
+          subtitle: statusMessage || "Screen sharing failed. Try again.",
+          color: "red",
+          icon: MonitorIcon,
         };
       default:
         return {
@@ -80,6 +89,18 @@ export function CapturePage() {
             {status.title}
           </h1>
           <p className="text-xl text-gray-600">{status.subtitle}</p>
+          <p className="mt-3 text-sm font-medium text-gray-700" data-testid="recorder-status">
+            Status: {recorderStatus}
+          </p>
+          {recorderStatus === "error" && statusMessage ? (
+            <p
+              role="alert"
+              data-testid="recorder-error"
+              className="mx-auto mt-4 max-w-xl rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800"
+            >
+              {statusMessage}
+            </p>
+          ) : null}
         </div>
 
         {/* Recording Controls */}

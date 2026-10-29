@@ -19,11 +19,12 @@ export function useRecorderStatus() {
     async (status: RecorderStatusType) => {
       // Update local state immediately
       setRecorderStatus(status);
+      const updatedAt = useRecorderStatusStore.getState().localUpdatedAt;
 
       // Only sync to Firestore if not already updating from Firestore
       if (uid && !isUpdatingFromFirestore) {
         try {
-          await updateRecorderStatus(uid, status);
+          await updateRecorderStatus(uid, status, null, updatedAt);
         } catch (error) {
           logger.error("Failed to sync recorder status to Firestore", error);
         }
