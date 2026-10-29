@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import { subscribeToRecorderStatus } from "@/services/recorderStatusService";
+import { subscribeRecorderStatus } from "@/lib/recorderStatus";
+import type { RecorderStatusType } from "@/types/recorder";
 
 export function RecorderStatusProvider({
   children,
@@ -11,6 +13,16 @@ export function RecorderStatusProvider({
 }) {
   const { setError } = useRecorderStatusStore();
   const { uid, authReady } = useAuthStore();
+
+  useEffect(() => {
+    return subscribeRecorderStatus((update) => {
+      useRecorderStatusStore.getState().applyRemoteRecorderStatus({
+        status: update.status as RecorderStatusType,
+        message: update.message,
+        updatedAt: update.updatedAt,
+      });
+    });
+  }, []);
 
   useEffect(() => {
     if (!authReady || !uid) {

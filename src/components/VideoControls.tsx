@@ -12,7 +12,7 @@ import { logger } from "@/utils/logger";
 import { VIDEO_DIMENSION_UPDATE_INTERVAL_MS } from "@/constants/recording";
 import { getRecorderButtonClass, getRecorderButtonText } from "@/utils/recorderStyles";
 import { screenCaptureUnavailableMessage } from "@/lib/screenCaptureError";
-import { reportRecorderFailure } from "@/lib/recorderStatus";
+import { publishRecorderStatus, reportRecorderFailure } from "@/lib/recorderStatus";
 
 function subscribeToCaptureSupport() {
   return () => {};
@@ -91,8 +91,14 @@ export function VideoControls(): ReactElement {
     screenCaptureUnavailableMessage,
     noCaptureWarningOnServer,
   );
-  const visibleError = statusMessage || error || captureUnavailable;
-  const shownStatus = visibleError ? "error" : recorderStatus;
+  const visibleError = recorderStatus === "starting"
+    ? null
+    : statusMessage || error || captureUnavailable;
+  const shownStatus = recorderStatus === "starting"
+    ? "starting"
+    : visibleError
+      ? "error"
+      : recorderStatus;
 
   const handleRecordingControl = () => {
     if (captureUnavailable && (needsScreenStream || !uid)) {
@@ -100,6 +106,7 @@ export function VideoControls(): ReactElement {
       return;
     }
     if (needsScreenStream || !uid) {
+      if (uid) publishRecorderStatus("starting");
       void initializeRecorder();
       return;
     }

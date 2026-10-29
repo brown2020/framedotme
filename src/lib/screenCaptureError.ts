@@ -51,6 +51,8 @@ export function screenCaptureFailureMessage(error: unknown): string {
       return "This page is not allowed to capture the screen. Open the recorder in its own tab on this site and try again.";
     case "TypeError":
       return "Screen sharing is not available in this browser. Use a current Chrome, Edge, or other Chromium-based browser.";
+    case "ScreenCaptureTimeout":
+      return "Screen capture did not start; check browser permissions.";
     default:
       return "Screen sharing could not start. Please try again.";
   }

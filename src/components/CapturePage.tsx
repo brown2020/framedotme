@@ -46,6 +46,13 @@ export function CapturePage() {
           color: "blue",
           icon: Layers,
         };
+      case "starting":
+        return {
+          title: "Starting screen share",
+          subtitle: "Choose a screen, window, or tab in the browser prompt.",
+          color: "blue",
+          icon: MonitorIcon,
+        };
       case "error":
         return {
           title: "Recording could not start",

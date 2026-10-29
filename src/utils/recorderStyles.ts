@@ -54,6 +54,8 @@ export function getRecorderButtonText(status: RecorderStatusType): string {
       return "Stop Recording";
     case "saving":
       return "Saving...";
+    case "starting":
+      return "Starting...";
     default:
       return "Initialize Recording";
   }

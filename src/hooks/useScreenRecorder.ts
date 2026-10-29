@@ -14,7 +14,7 @@ import { RECORDING_CREDIT_COST } from "@/constants/payment";
 import { useAuthStore } from "@/zustand/useAuthStore";
 import useProfileStore from "@/zustand/useProfileStore";
 import { useRecorderStatusStore } from "@/zustand/useRecorderStatusStore";
-import { RECORDER_SHARE_ENDED, reportRecorderFailure } from "@/lib/recorderStatus";
+import { RECORDER_SHARE_ENDED, publishRecorderStatus, reportRecorderFailure } from "@/lib/recorderStatus";
 
 /**
  * Handles recorder status transitions with concurrency protection
@@ -55,6 +55,7 @@ const handleStatusTransition = async (
     case "ready":
     case "recording":
     case "saving":
+    case "starting":
     case "error":
       // Expected stable states - no action needed
       break;
@@ -73,12 +74,9 @@ export const useScreenRecorder = () => {
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const processingStatusChangeRef = useRef(false);
 
-  const updateStatus = useCallback(
-    (status: RecorderStatusType) => {
-      setRecorderStatus(status);
-    },
-    [setRecorderStatus]
-  );
+  const updateStatus = useCallback((status: RecorderStatusType) => {
+    publishRecorderStatus(status);
+  }, []);
 
   const [mediaManager] = useState(
     () =>
@@ -196,6 +194,7 @@ export const useScreenRecorder = () => {
 
     try {
       setError(null);
+      publishRecorderStatus("starting");
       const stream = await mediaManager.initializeScreenCapture();
       setScreenStream(stream);
       setIsRecordingWindowOpen(true);

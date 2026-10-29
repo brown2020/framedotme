@@ -7,6 +7,7 @@ import {
   screenCaptureFailureMessage,
   screenCaptureUnavailableMessage,
 } from "@/lib/screenCaptureError";
+import { withScreenCaptureTimeout } from "@/lib/screenCaptureTimeout";
 
 function screenCaptureErrorType(error: unknown): MediaStreamErrorType {
   const name = error instanceof Error ? error.name : "";
@@ -86,7 +87,7 @@ export class MediaStreamManager {
     try {
       this.screenEndNotified = false;
       this.suppressFailure = false;
-      this.screenStream = await this.requestDisplayMedia();
+      this.screenStream = await withScreenCaptureTimeout(this.requestDisplayMedia());
       const liveVideo = this.screenStream
         .getVideoTracks()
         .some((track) => track.readyState === "live");
