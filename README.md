@@ -20,15 +20,15 @@ Verified from the current codebase:
 |------|--------|
 | Framework | Next.js 16 (App Router) |
 | UI | React 19, Tailwind CSS 4, Radix slot, CVA, Lucide |
-| Language | TypeScript 6 |
-| Backend | Firebase 12 + firebase-admin 14 |
+| Language | TypeScript 7.0 (`tsc` via `@typescript/native`). ESLint and Next still import the TypeScript 6 API (`typescript` → `@typescript/typescript6`) because TypeScript 7.0 has no compiler API yet |
+| Backend | Firebase 13 + firebase-admin 14 |
 | Session | `jose` HS256 JWT cookie; `cookies-next` |
 | Payments | Stripe + Stripe.js / React Stripe |
 | State | Zustand 5 |
 | Validation | Zod 4 |
 | Toasts | react-hot-toast |
-| Tests | Vitest 3 |
-| Node (CI) | 22 |
+| Tests | Vitest 5 |
+| Node (CI) | 24 |
 
 `.npmrc` sets `legacy-peer-deps=true`.
 
@@ -53,7 +53,7 @@ framedotme/
 
 ### Prerequisites
 
-- Node.js 22+ (CI uses 22)
+- Node.js 24 (CI uses 24)
 - npm
 - Firebase project (Auth, Firestore, Storage)
 - Stripe account
@@ -119,9 +119,9 @@ Deploy **both** rules files together with the Firebase CLI when they change. Thi
 
 ## Testing and CI
 
-Vitest covers Firebase auth errors, CSRF helpers, session service, and payment action auth.
+Vitest covers Firebase auth errors, CSRF helpers, the session API, post-login redirects, the Stripe webhook’s unconfigured response, session service auth denial, and payment action auth.
 
-GitHub Actions (`.github/workflows/ci.yml`) on `dev` / `main` and PRs: `npm ci` → lint → typecheck → test → build. Secrets include Firebase public config, Stripe keys/product name, cookie name, and `JWT_SECRET`. Node 22.
+GitHub Actions (`.github/workflows/ci.yml`) on `dev` / `main` and PRs: `npm ci` → lint → typecheck → test → build. Secrets include Firebase public config, Stripe keys/product name, cookie name, and `JWT_SECRET`. Node 24. `npm run typecheck` runs TypeScript 7.0.
 
 ## Deployment
 
