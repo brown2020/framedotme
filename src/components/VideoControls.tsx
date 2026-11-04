@@ -1,7 +1,7 @@
 // components/VideoControls.tsx
 "use client";
 
-import type { ReactElement } from "react";
+import type { ReactElement, RefObject } from "react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { VIDEO_DIMENSION_UPDATE_INTERVAL_MS } from "@/constants/recording";
 import { getRecorderButtonClass, getRecorderButtonText } from "@/utils/recorderStyles";
 import { screenCaptureUnavailableMessage } from "@/lib/screenCaptureError";
 import { publishRecorderStatus, reportRecorderFailure } from "@/lib/recorderStatus";
+import type { RecorderStatusType } from "@/types/recorder";
 
 function subscribeToCaptureSupport() {
   return () => {};
@@ -22,9 +23,169 @@ function noCaptureWarningOnServer() {
   return null;
 }
 
-export function VideoControls(): ReactElement {
+function useScreenPreviewSize(screenStream: MediaStream | null) {
   const [videoWidth, setVideoWidth] = useState(0);
   const [videoHeight, setVideoHeight] = useState(0);
+  const screenVideoElem = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const currentScreenVideoElem = screenVideoElem.current;
+
+    const updateVideoDimensions = () => {
+      const ratio = window.devicePixelRatio || 1;
+      if (!currentScreenVideoElem) return;
+      setVideoWidth(Math.round(currentScreenVideoElem.videoWidth / ratio));
+      setVideoHeight(Math.round(currentScreenVideoElem.videoHeight / ratio));
+    };
+
+    if (currentScreenVideoElem && screenStream) {
+      currentScreenVideoElem.srcObject = screenStream;
+      currentScreenVideoElem.play().catch((playError) => logger.error("Error playing video", playError));
+      currentScreenVideoElem.addEventListener("loadedmetadata", updateVideoDimensions);
+    }
+
+    const intervalId = setInterval(updateVideoDimensions, VIDEO_DIMENSION_UPDATE_INTERVAL_MS);
+
+    return () => {
+      currentScreenVideoElem?.removeEventListener("loadedmetadata", updateVideoDimensions);
+      clearInterval(intervalId);
+    };
+  }, [screenStream]);
+
+  return { videoWidth, videoHeight, screenVideoElem };
+}
+
+function deriveRecorderControls(input: {
+  recorderStatus: RecorderStatusType;
+  statusMessage: string | null;
+  error: string | null;
+  screenStream: MediaStream | null;
+  captureUnavailable: string | null;
+}) {
+  const hasLiveVideo =
+    input.screenStream?.getVideoTracks().some((track) => track.readyState === "live") ?? false;
+  const needsScreenStream =
+    !hasLiveVideo && ["idle", "ready", "error"].includes(input.recorderStatus);
+  const controlStatus: RecorderStatusType = input.recorderStatus === "error"
+    ? "error"
+    : needsScreenStream
+      ? "idle"
+      : input.recorderStatus;
+  const visibleError = input.recorderStatus === "starting"
+    ? null
+    : input.statusMessage || input.error || input.captureUnavailable;
+  const shownStatus = input.recorderStatus === "starting"
+    ? "starting"
+    : visibleError
+      ? "error"
+      : input.recorderStatus;
+
+  return {
+    needsScreenStream,
+    controlStatus,
+    visibleError,
+    shownStatus,
+    isRecordButtonDisabled: !["idle", "ready", "recording", "error"].includes(controlStatus),
+  };
+}
+
+function requestRecordingControl(input: {
+  captureUnavailable: string | null;
+  needsScreenStream: boolean;
+  uid: string;
+  recorderStatus: RecorderStatusType;
+  initializeRecorder: () => Promise<void> | void;
+  updateStatus: (status: RecorderStatusType) => Promise<void> | void;
+}) {
+  if (input.captureUnavailable && (input.needsScreenStream || !input.uid)) {
+    reportRecorderFailure(input.captureUnavailable);
+    return;
+  }
+  if (input.needsScreenStream || !input.uid) {
+    if (input.uid) publishRecorderStatus("starting");
+    void input.initializeRecorder();
+    return;
+  }
+  if (input.recorderStatus === "ready") {
+    void input.updateStatus("shouldStart");
+  } else if (input.recorderStatus === "recording") {
+    void input.updateStatus("shouldStop");
+  }
+}
+
+function RecorderError({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <Alert variant="destructive">
+      <AlertDescription
+        className="text-sm font-medium text-red-800"
+        data-testid="recorder-error"
+      >
+        {message}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function ResetControl({
+  recorderStatus,
+  onReset,
+}: {
+  recorderStatus: RecorderStatusType;
+  onReset: () => void;
+}) {
+  return (
+    <Button
+      variant="secondary"
+      onClick={onReset}
+      disabled={recorderStatus === "recording" || recorderStatus === "saving"}
+    >
+      Reset
+    </Button>
+  );
+}
+
+function ScreenPreview({
+  videoRef,
+  screenStream,
+  visibleError,
+}: {
+  videoRef: RefObject<HTMLVideoElement | null>;
+  screenStream: MediaStream | null;
+  visibleError: string | null;
+}) {
+  return (
+    <div className="relative w-full min-h-48 border border-gray-200 rounded-lg overflow-hidden bg-black">
+      <video
+        ref={videoRef}
+        className="w-full h-48 object-contain bg-black"
+        autoPlay
+        muted
+        controls
+      />
+      {!screenStream && (
+        <p className="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-gray-300">
+          {visibleError ? "Screen share did not start" : "No screen shared yet"}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function DimensionReadout({ videoWidth, videoHeight }: { videoWidth: number; videoHeight: number }) {
+  const aspect = videoWidth && videoHeight ? (videoWidth / videoHeight).toFixed(2) : "N/A";
+  return (
+    <div className="flex gap-3 text-sm text-gray-600">
+      <div className="flex flex-col">
+        <div>Width: {videoWidth}px</div>
+        <div>Height: {videoHeight}px</div>
+        <div>Aspect: {aspect}</div>
+      </div>
+    </div>
+  );
+}
+
+export function VideoControls(): ReactElement {
   const uid = useAuthStore((state) => state.uid);
   const {
     recorderStatus,
@@ -35,159 +196,59 @@ export function VideoControls(): ReactElement {
     resetRecorder,
     error,
   } = useScreenRecorder();
-  const screenVideoElem = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    const currentScreenVideoElem = screenVideoElem.current;
-
-    const updateVideoDimensions = () => {
-      const ratio = window.devicePixelRatio || 1;
-      if (currentScreenVideoElem) {
-        setVideoWidth(Math.round(currentScreenVideoElem.videoWidth / ratio));
-        setVideoHeight(Math.round(currentScreenVideoElem.videoHeight / ratio));
-      }
-    };
-
-    const handleLoadedMetadata = () => {
-      updateVideoDimensions();
-    };
-
-    if (currentScreenVideoElem && screenStream) {
-      currentScreenVideoElem.srcObject = screenStream;
-      currentScreenVideoElem.play().catch((error) => logger.error("Error playing video", error));
-      currentScreenVideoElem.addEventListener(
-        "loadedmetadata",
-        handleLoadedMetadata
-      );
-    }
-
-    const intervalId = setInterval(updateVideoDimensions, VIDEO_DIMENSION_UPDATE_INTERVAL_MS);
-
-    return () => {
-      if (currentScreenVideoElem) {
-        currentScreenVideoElem.removeEventListener(
-          "loadedmetadata",
-          handleLoadedMetadata
-        );
-      }
-      clearInterval(intervalId);
-    };
-  }, [screenStream]);
-
-  // A persisted cross-window "ready" status does not mean this document owns
-  // a capture stream. A failed attempt is also safe to retry from this button.
-  const hasLiveVideo =
-    screenStream?.getVideoTracks().some((track) => track.readyState === "live") ?? false;
-  const needsScreenStream =
-    !hasLiveVideo && ["idle", "ready", "error"].includes(recorderStatus);
-  const controlStatus = recorderStatus === "error"
-    ? "error"
-    : needsScreenStream
-      ? "idle"
-      : recorderStatus;
-
+  const { videoWidth, videoHeight, screenVideoElem } = useScreenPreviewSize(screenStream);
   const captureUnavailable = useSyncExternalStore(
     subscribeToCaptureSupport,
     screenCaptureUnavailableMessage,
     noCaptureWarningOnServer,
   );
-  const visibleError = recorderStatus === "starting"
-    ? null
-    : statusMessage || error || captureUnavailable;
-  const shownStatus = recorderStatus === "starting"
-    ? "starting"
-    : visibleError
-      ? "error"
-      : recorderStatus;
-
-  const handleRecordingControl = () => {
-    if (captureUnavailable && (needsScreenStream || !uid)) {
-      reportRecorderFailure(captureUnavailable);
-      return;
-    }
-    if (needsScreenStream || !uid) {
-      if (uid) publishRecorderStatus("starting");
-      void initializeRecorder();
-      return;
-    }
-    if (recorderStatus === "ready") {
-      void updateStatus("shouldStart");
-    } else if (recorderStatus === "recording") {
-      void updateStatus("shouldStop");
-    }
-  };
-
-  const isRecordButtonDisabled = !["idle", "ready", "recording", "error"].includes(
-    controlStatus,
-  );
+  const controls = deriveRecorderControls({
+    recorderStatus,
+    statusMessage,
+    error,
+    screenStream,
+    captureUnavailable,
+  });
 
   return (
     <div className="flex flex-col space-y-3 h-full p-4">
       <div className="text-2xl font-bold">Video Controls</div>
 
       <p className="text-sm text-gray-600" data-testid="recorder-status">
-        Status: {shownStatus}
+        Status: {controls.shownStatus}
       </p>
 
-      {visibleError && (
-        <Alert variant="destructive">
-          <AlertDescription
-            className="text-sm font-medium text-red-800"
-            data-testid="recorder-error"
-          >
-            {visibleError}
-          </AlertDescription>
-        </Alert>
-      )}
+      <RecorderError message={controls.visibleError} />
 
       <div className="flex gap-2">
         <Button
           variant="default"
-          className={cn(getRecorderButtonClass(controlStatus, "controls"))}
-          onClick={handleRecordingControl}
-          disabled={isRecordButtonDisabled}
-        >
-          {getRecorderButtonText(controlStatus)}
-        </Button>
-
-        <Button
-          variant="secondary"
-          onClick={resetRecorder}
-          disabled={
-            recorderStatus === "recording" || recorderStatus === "saving"
+          className={cn(getRecorderButtonClass(controls.controlStatus, "controls"))}
+          onClick={() =>
+            requestRecordingControl({
+              captureUnavailable,
+              needsScreenStream: controls.needsScreenStream,
+              uid,
+              recorderStatus,
+              initializeRecorder,
+              updateStatus,
+            })
           }
+          disabled={controls.isRecordButtonDisabled}
         >
-          Reset
+          {getRecorderButtonText(controls.controlStatus)}
         </Button>
+
+        <ResetControl recorderStatus={recorderStatus} onReset={resetRecorder} />
       </div>
 
-      <div className="relative w-full min-h-48 border border-gray-200 rounded-lg overflow-hidden bg-black">
-        <video
-          ref={screenVideoElem}
-          className="w-full h-48 object-contain bg-black"
-          autoPlay
-          muted
-          controls
-        />
-        {!screenStream && (
-          <p className="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-gray-300">
-            {visibleError ? "Screen share did not start" : "No screen shared yet"}
-          </p>
-        )}
-      </div>
+      <ScreenPreview
+        videoRef={screenVideoElem}
+        screenStream={screenStream}
+        visibleError={controls.visibleError}
+      />
 
-      <div className="flex gap-3 text-sm text-gray-600">
-        <div className="flex flex-col">
-          <div>Width: {videoWidth}px</div>
-          <div>Height: {videoHeight}px</div>
-          <div>
-            Aspect:{" "}
-            {videoWidth && videoHeight
-              ? (videoWidth / videoHeight).toFixed(2)
-              : "N/A"}
-          </div>
-        </div>
-      </div>
+      <DimensionReadout videoWidth={videoWidth} videoHeight={videoHeight} />
     </div>
   );
 }

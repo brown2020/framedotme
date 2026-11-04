@@ -45,8 +45,11 @@ export async function authorizeRecordingUpload(
   let denial: AppError | null = null;
 
   await adminDb.runTransaction(async (transaction) => {
-    const profileSnap = await transaction.get(profile);
-    const grantSnap = await transaction.get(grant);
+    const [profileSnap, grantSnap] = await transaction.getAll(profile, grant);
+    if (!profileSnap || !grantSnap) {
+      denial = new AppError("Could not read recording authorization", "validation");
+      return;
+    }
     const credits = profileSnap.exists ? Number(profileSnap.data()?.credits ?? 0) : 0;
     if (!Number.isFinite(credits) || credits < RECORDING_CREDIT_COST) {
       denial = new AppError("Not enough credits to save a recording", "payment");

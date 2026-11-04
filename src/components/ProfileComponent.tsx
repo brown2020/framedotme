@@ -32,7 +32,14 @@ export function ProfileComponent(): ReactElement {
   useEffect(() => {
     const incoming = profile.displayName || "";
     if (!incoming) return;
-    queueMicrotask(() => setDisplayNameDraft((prev) => (prev ? prev : incoming)));
+    let ignore = false;
+    queueMicrotask(() => {
+      if (ignore) return;
+      setDisplayNameDraft((prev) => (prev ? prev : incoming));
+    });
+    return () => {
+      ignore = true;
+    };
   }, [profile.displayName]);
 
   const { performSignOut, resetAllStores, clearAllCookies, clearAllStorage } = useSignOut();

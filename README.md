@@ -20,7 +20,7 @@ Verified from the current codebase:
 |------|--------|
 | Framework | Next.js 16 (App Router) |
 | UI | React 19, Tailwind CSS 4, Radix slot, CVA, Lucide |
-| Language | TypeScript 7.0 (`tsc` via `@typescript/native`). ESLint and Next still import the TypeScript 6 API (`typescript` → `@typescript/typescript6`) because TypeScript 7.0 has no compiler API yet |
+| Language | TypeScript 6.0.3. TypeScript 7 is not used: 7.0 has no compiler API, and typescript-eslint cannot load it |
 | Backend | Firebase 13 + firebase-admin 14 |
 | Session | `jose` HS256 JWT cookie; `cookies-next` |
 | Payments | Stripe + Stripe.js / React Stripe |
@@ -121,7 +121,7 @@ Deploy **both** rules files together with the Firebase CLI when they change. Thi
 
 Vitest covers Firebase auth errors, CSRF helpers, the session API, post-login redirects, the Stripe webhook’s unconfigured response, session service auth denial, and payment action auth.
 
-GitHub Actions (`.github/workflows/ci.yml`) on `dev` / `main` and PRs: `npm ci` → lint → typecheck → test → build. Secrets include Firebase public config, Stripe keys/product name, cookie name, and `JWT_SECRET`. Node 24. `npm run typecheck` runs TypeScript 7.0.
+GitHub Actions (`.github/workflows/ci.yml`) on `dev` / `main` and PRs: `npm ci` → lint → typecheck → test → build. `npm ci` runs before Firebase, Stripe, and session secrets are added to the environment. Node 24. `npm run typecheck` runs TypeScript 6.0.3.
 
 ## Deployment
 
